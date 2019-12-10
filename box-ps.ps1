@@ -29,8 +29,6 @@ TODO
         -use Get-Help -Full commandlet to generate bound parameter definitions
             -if this is easy enough, there will be no Unbound params because every override will
             easily become a fully implemented advanced function clone of the real one
-    -script argument validation and useful error message
-    -separate out namespace from Actor (have a field with just the commandlet)
 
     Faking it...
         -Go through and allow more functions to do their stuff under certain circumstances
