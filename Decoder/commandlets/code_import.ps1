@@ -15,6 +15,6 @@ function Add-Type {
     #>
     $TypeDefinition = ($TypeDefinition.Replace("^", "SAVECARET"))
 
-    RecordAction $([Action]::new(@("code_import"), "[Microsoft.PowerShell.Utility] Add-Type", `
-        $behaviorProps, $MyInvocation))
+    RecordAction $([Action]::new(@("code_import"), "Add-Type", 
+        "Microsoft.PowerShell.Utility\Add-Type", $behaviorProps, $MyInvocation))
 }

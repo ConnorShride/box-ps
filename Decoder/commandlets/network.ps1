@@ -11,8 +11,8 @@ function Invoke-WebRequest {
         "uri" = $Uri
     }
 
-    RecordAction $([Action]::new(@("network"), "[Microsoft.PowerShell.Utility] Invoke-WebRequest", `
-        $behaviorProps, $MyInvocation))
+    RecordAction $([Action]::new(@("network"), "Invoke-WebRequest", 
+        "Microsoft.PowerShell.Utility\Invoke-WebRequest", $behaviorProps, $MyInvocation))
 }
 
 # not fully implemented
@@ -26,6 +26,6 @@ function Invoke-RestMethod {
         "uri" = $Uri
     }
 
-    RecordAction $([Action]::new(@("network"), "[Microsoft.PowerShell.Utility] Invoke-RestMethod", `
-        $behaviorProps, $MyInvocation))
+    RecordAction $([Action]::new(@("network"), "Invoke-RestMethod", 
+        "Microsoft.PowerShell.Utility\Invoke-RestMethod", $behaviorProps, $MyInvocation))
 }

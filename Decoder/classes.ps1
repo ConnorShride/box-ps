@@ -6,8 +6,9 @@ class BoxPSWebClient : System.Net.WebClient {
             "uri" = $Uri
         }
 
-        RecordAction $([Action]::new(@("network", "download"), "[System.Net.WebClient] DownloadFile", `
-            $behaviorProps, $PSBoundParameters, $MyInvocation.Line))
+        RecordAction $([Action]::new(@("network", "download"), "DownloadFile", 
+            "System.Net.WebClient.DownloadFile", $behaviorProps, $PSBoundParameters, 
+            $MyInvocation.Line))
     }
 
     [void] DownloadString ([string]$Uri) {
@@ -16,8 +17,9 @@ class BoxPSWebClient : System.Net.WebClient {
             "uri" = $Uri
         }
 
-        RecordAction $([Action]::new(@("network", "download"), "[System.Net.WebClient] DownloadString", `
-            $behaviorProps, $PSBoundParameters, $MyInvocation.Line))
+        RecordAction $([Action]::new(@("network", "download"), "DownloadString", 
+            "System.Net.WebClient.DownloadString", $behaviorProps, $PSBoundParameters, 
+            $MyInvocation.Line))
     }
 
     [void] DownloadData ([string]$Uri) {
@@ -26,8 +28,9 @@ class BoxPSWebClient : System.Net.WebClient {
             "uri" = $Uri
         }
 
-        RecordAction $([Action]::new(@("network", "download"), "[System.Net.WebClient] DownloadData", `
-            $behaviorProps, $PSBoundParameters, $MyInvocation.Line))
+        RecordAction $([Action]::new(@("network", "download"), "DownloadData", 
+            "System.Net.WebClient.DownloadData", $behaviorProps, $PSBoundParameters, 
+            $MyInvocation.Line))
     }
 
     [void] UploadString ([string]$Uri, [string]$Data) {
@@ -37,7 +40,8 @@ class BoxPSWebClient : System.Net.WebClient {
             "data" = $Data
         }
 
-        RecordAction $([Action]::new(@("network", "upload"), "[System.Net.WebClient] UploadString", `
-            $behaviorProps, $PSBoundParameters, $MyInvocation.Line))
+        RecordAction $([Action]::new(@("network", "upload"), "UploadString", 
+            "System.Net.WebClient.UploadString", $behaviorProps, $PSBoundParameters, 
+            $MyInvocation.Line))
     }
 }

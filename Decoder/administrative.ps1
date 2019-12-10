@@ -2,17 +2,19 @@ class Action <# lawsuit... I'll be here all week #> {
 
     [String[]] $Behaviors
     [String] $Actor
+    [String] $FullActor
     [String] $Line
     [hashtable] $BehaviorProps
     [hashtable] $BoundParams
     [String[]] $UnboundParams
     [String[]] $Switches
 
-    Action ([String[]] $Behaviors, [String] $Actor, [hashtable] $BehaviorProps,
+    Action ([String[]] $Behaviors, [String] $Actor, [String] $FullActor, [hashtable] $BehaviorProps,
         [System.Management.Automation.InvocationInfo] $Invocation) {
 
         $this.Behaviors = $Behaviors
         $this.Actor = $Actor
+        $this.FullActor = $FullActor
         $this.BehaviorProps = $BehaviorProps
         $this.Line = $Invocation.Line.Trim()
 
@@ -27,10 +29,11 @@ class Action <# lawsuit... I'll be here all week #> {
     #   These are guaranteed not to have unbound or switches, and the MyInvocation variable does not
     #   contain boundparameters, so callers need to be able to pass the PSBoundParameters variable
     # e.g. System.Net.WebClient.DownloadFile
-    Action ([String[]] $Behaviors, [String] $Actor, [hashtable] $BehaviorProps,
+    Action ([String[]] $Behaviors, [String] $Actor, [String] $FullActor, [hashtable] $BehaviorProps,
         [hashtable] $BoundParams, [String] $Line) {
 
         $this.Behaviors = $Behaviors
+        $this.FullActor = $FullActor
         $this.Actor = $Actor
         $this.BehaviorProps = $BehaviorProps
         $this.BoundParams = $BoundParams
@@ -39,6 +42,10 @@ class Action <# lawsuit... I'll be here all week #> {
         $this.Switches = @()
     }
 
+    <#
+    linear walk through all parameters rebuilding bound params and switches. Unbound arguments are, 
+    for some reason, not present in MyCommand.Parameters (thanks for the help, pwsh)
+    #>
     [hashtable] SplitParams([System.Management.Automation.InvocationInfo] $Invocation) {
 
         $allParams = $Invocation.MyCommand.Parameters
@@ -46,11 +53,6 @@ class Action <# lawsuit... I'll be here all week #> {
         $bound = @{}
         $localSwitches = @() # not allowed to name this $switches (thanks for the help, pwsh)
         
-        <#
-        linear walk through all parameters rebuilding bound params and switches
-        unbound arguments are, for some reason, not present in MyCommand.Parameters (thanks for the 
-        help, pwsh)
-        #>
         foreach ($paramName in $allParams.Keys) {
 
             <#

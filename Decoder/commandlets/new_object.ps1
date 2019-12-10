@@ -18,8 +18,8 @@ function New-Object {
         $behaviorProps["object"] = $TypeName.ToLower()
     }
 
-    RecordAction $([Action]::new(@("new_object"), "[Microsoft.PowerShell.Utility] New-Object", `
-        $behaviorProps, $MyInvocation))
+    RecordAction $([Action]::new(@("new_object"), "New-Object", 
+        "Microsoft.PowerShell.Utility\New-Object", $behaviorProps, $MyInvocation))
 
     # redirect object creation to our own webclient implementation
     if ($TypeName.tolower() -like "*net.webclient") {

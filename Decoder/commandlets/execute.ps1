@@ -10,8 +10,8 @@ function Invoke-Expression {
     }
 
     RecordLayer($Command)
-    RecordAction $([Action]::new(@("script_exec"), "[Microsoft.PowerShell.Utility] InvokeExpression", `
-        $behaviorProps, $MyInvocation))
+    RecordAction $([Action]::new(@("script_exec"), "Invoke-Expression",
+        "Microsoft.PowerShell.Utility\InvokeExpression", $behaviorProps, $MyInvocation))
 }
 
 function Start-Process {
@@ -24,8 +24,8 @@ function Start-Process {
         "files" = @($FilePath)
     }
 
-    RecordAction $([Action]::new(@("file_exec"), "[Microsoft.PowerShell.Management] Start-Process", `
-        $behaviorProps, $MyInvocation))
+    RecordAction $([Action]::new(@("file_exec"), "Start-Process", 
+        "Microsoft.PowerShell.Management\Start-Process", $behaviorProps, $MyInvocation))
 }
 
 # ADVANCED FUNCTION ALL PARAMS BOUND
@@ -51,6 +51,6 @@ function Invoke-Item {
         $behaviorProps["files"] = $LiteralPath
     }
 
-    RecordAction $([Action]::new(@("file_exec"), "[Microsoft.PowerShell.Management] Invoke-Item", `
-        $behaviorProps, $MyInvocation))
+    RecordAction $([Action]::new(@("file_exec"), "Invoke-Item", 
+        "Microsoft.PowerShell.Management\Invoke-Item", $behaviorProps, $MyInvocation))
 }

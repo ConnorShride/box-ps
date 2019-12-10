@@ -18,6 +18,7 @@ TODO
 
     -Output each layer's stderr as a possible canary?
     -Have the "Line" field split by semicolons and show just the statement?
+        - or run a beautifier to make sure each line is on it's own (make sure it doesn't break it)
     -Add code inspection and replacement of explicit namespace references that is getting around our 
     overrides + Some deob of layers so we can have a chance of replacing namespaces
     -catch commands run like schtasks.exe
@@ -206,8 +207,8 @@ while ($layers.Count -gt 0) {
 
     $decoder = $baseDecoder + "`r`n`r`n" + $layer
 
-    Write-Host $decoder
-    Read-Host
+    #Write-Host $decoder
+    #Read-Host
 
     $tmpFile = GetTmpFilePath
     $decoder | Out-File -FilePath $tmpFile

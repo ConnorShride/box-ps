@@ -24,8 +24,8 @@ function Remove-Item {
         $behaviorProps["paths"] = $LiteralPath
     }
 
-    RecordAction $([Action]::new(@("file_system"), "[Microsoft.PowerShell.Management] Remove-Item", `
-        $behaviorProps, $MyInvocation))
+    RecordAction $([Action]::new(@("file_system"), "Remove-Item", 
+        "Microsoft.PowerShell.Management\Remove-Item", $behaviorProps, $MyInvocation))
 }
 
 # ADVANCED FUNCTION ALL PARAMS BOUND
@@ -51,8 +51,8 @@ function Get-Item {
         $behaviorProps["paths"] = $LiteralPath
     }
 
-    RecordAction $([Action]::new(@("file_system"), "[Microsoft.PowerShell.Management] Get-Item", `
-        $behaviorProps, $MyInvocation))
+    RecordAction $([Action]::new(@("file_system"), "Get-Item", 
+        "Microsoft.PowerShell.Management\Get-Item", $behaviorProps, $MyInvocation))
 
     return Microsoft.PowerShell.Management\Get-Item @PSBoundParameters
 }
@@ -87,8 +87,8 @@ function Set-Content {
         $behaviorProps["paths"] = $LiteralPath
     }
 
-    RecordAction $([Action]::new(@("file_system"), "[Microsoft.PowerShell.Management] Set-Content", `
-        $behaviorProps, $MyInvocation))
+    RecordAction $([Action]::new(@("file_system"), "Set-Content", 
+        "Microsoft.PowerShell.Management\Set-Content", $behaviorProps, $MyInvocation))
 }
 
 # ADVANCED FUNCTION ALL PARAMS BOUND
@@ -110,8 +110,8 @@ function Set-Location {
         $behaviorProps["paths"] = @($LiteralPath)
     }
 
-    RecordAction $([Action]::new(@("file_system"), "[Microsoft.PowerShell.Management] Set-Location",
-        $behaviorProps, $MyInvocation))
+    RecordAction $([Action]::new(@("file_system"), "Set-Location", 
+        "Microsoft.PowerShell.Management\Set-Location", $behaviorProps, $MyInvocation))
 }
 
 # ADVANCED FUNCTION ALL PARAMS BOUND
@@ -137,8 +137,8 @@ function New-Item {
         $behaviorProps["paths"] = $Name
     }
 
-    RecordAction $([Action]::new(@("file_system"), "[Microsoft.PowerShell.Management] New-Item", `
-        $behaviorProps, $MyInvocation))
+    RecordAction $([Action]::new(@("file_system"), "New-Item", 
+        "Microsoft.PowerShell.Management\New-Item", $behaviorProps, $MyInvocation))
 }
 
 # replicate the mkdir that's on windows. On linux, it's an alias for /bin/mkdir
@@ -157,7 +157,7 @@ function mkdir {
         "paths" = $Path
     }
 
-    RecordAction $([Action]::new(@("file_system"), "[Microsoft.PowerShell.Core] mkdir", `
+    RecordAction $([Action]::new(@("file_system"), "mkdir", "Microsoft.PowerShell.Core\mkdir",
         $behaviorProps, $MyInvocation))
 }
 
@@ -172,8 +172,8 @@ function Get-ChildItem {
         "paths" = $Path
     }
 
-    RecordAction $([Action]::new(@("file_system"), "[Microsoft.PowerShell.Management] Get-ChildItem", `
-        $behaviorProps, $MyInvocation))
+    RecordAction $([Action]::new(@("file_system"), "Get-ChildItem", 
+        "Microsoft.PowerShell.Management\Get-ChildItem", $behaviorProps, $MyInvocation))
 }
 
 # not fully implemented
@@ -187,8 +187,8 @@ function Test-Path {
         "paths" = $Path
     }
 
-    RecordAction $([Action]::new(@("file_system"), "[Microsoft.PowerShell.Management] Test-Path", `
-        $behaviorProps, $MyInvocation))
+    RecordAction $([Action]::new(@("file_system"), "Test-Path", 
+        "Microsoft.PowerShell.Management\Test-Path", $behaviorProps, $MyInvocation))
 }
 
 # not fully implemented
@@ -208,6 +208,6 @@ function Get-Content {
         $behaviorProps["paths"] = $LiteralPath
     }
 
-    RecordAction $([Action]::new(@("file_system"), "[Microsoft.PowerShell.Management] Get-Content", `
-        $behaviorProps, $MyInvocation))
+    RecordAction $([Action]::new(@("file_system"), "Get-Content", 
+        "Microsoft.PowerShell.Management\Get-Content", $behaviorProps, $MyInvocation))
 }

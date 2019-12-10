@@ -3,7 +3,7 @@ function Set-ExecutionPolicy {
 
     $behaviorProps = @{}
 
-    RecordAction $([Action]::new(@("other"), "[Microsoft.PowerShell.Security] Set-ExecutionPolicy", `
-        $behaviorProps, $MyInvocation))
+    RecordAction $([Action]::new(@("other"), "Set-ExecutionPolicy", 
+        "Microsoft.PowerShell.Security\Set-ExecutionPolicy", $behaviorProps, $MyInvocation))
 }
 

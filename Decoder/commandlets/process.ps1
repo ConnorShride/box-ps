@@ -44,8 +44,8 @@ function Get-Process {
         $PSBoundParameters["InputObject"] = FlattenProcessObjects $PSBoundParameters["InputObject"]
     }
 
-    RecordAction $([Action]::new(@("process"), "[Microsoft.PowerShell.Management] Get-Process", `
-        $behaviorProps, $MyInvocation))
+    RecordAction $([Action]::new(@("process"), "Get-Process", 
+        "Microsoft.PowerShell.Management\Get-Process", $behaviorProps, $MyInvocation))
 
     return Microsoft.PowerShell.Management\Get-Process @PSBoundParameters
 }
@@ -80,8 +80,8 @@ function Stop-Process {
         $behaviorProps["processes"] = $Id
     }
 
-    RecordAction $([Action]::new(@("process"), "[Microsoft.PowerShell.Management] Stop-Process", `
-        $behaviorProps, $MyInvocation))
+    RecordAction $([Action]::new(@("process"), "Stop-Process", 
+        "Microsoft.PowerShell.Management\Stop-Process", $behaviorProps, $MyInvocation))
 }
 
 # ADVANCED FUNCTION ALL PARAMS BOUND
@@ -96,6 +96,6 @@ function Start-Sleep {
         "processes" = @("self")
     }
 
-    RecordAction $([Action]::new(@("process"), "[Microsoft.PowerShell.Utility] Start-Sleep", `
-        $behaviorProps, $MyInvocation))
+    RecordAction $([Action]::new(@("process"), "Start-Sleep", 
+        "Microsoft.PowerShell.Utility\Start-Sleep", $behaviorProps, $MyInvocation))
 }
