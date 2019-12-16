@@ -1,6 +1,12 @@
 <# known issues 
     Overrides do not support wildcard arguments, so if the malicious powershell uses wildcards and the
     override goes ahead and executes the function because it's safe, it may error out (which is fine)
+
+    liable to have AmbiguousParameterSet errors...
+        - Get-Help doesn't say whether or not the param is required differently accross parameter sets,
+            so if it's required in one but not the other, we may get this error
+        -Maybe just on New-Object so far? There was weird discrepancies between the linux Get-Help and the
+            windows one
 #>
 
 param (
@@ -15,6 +21,12 @@ if (!(Test-Path $InFile)) {
 
 <###################################################################################################
 TODO
+
+    -dynamic override generation
+    -move env variables into config
+    -have recordAction get the short name given the fullactor
+    -commandlets that may fit into two behaviors (upload/download) like Invoke-WebRequest or
+        Invoke-RestMethod. maybe back off the specificity and just go network behavior
 
     -Output each layer's stderr as a possible canary?
     -Have the "Line" field split by semicolons and show just the statement?
@@ -68,6 +80,283 @@ function ReadNewLayers {
     }
 }
 
+function TabPad {
+    
+    param (
+        [string] $block
+    )
+
+    $newBlock = ""
+
+    foreach ($line in $block.Split("`r`n")) {
+        $newBlock += "`t" + $line + "`r`n"
+    }
+    
+    return $newBlock
+}
+
+function BuildFuncParamsCode {
+
+    param(
+        [string] $Commandlet,
+        [hashtable] $ArgAdditions
+    )
+
+    $helpParams = Get-Help -Full $Commandlet
+    $helpParams = $helpParams.parameters.parameter
+
+    if ($ArgAdditions) {
+        foreach ($argAddition in $ArgAdditions.Keys) {
+            $helpParams += $(New-Object PSObject -Property $ArgAdditions[$argAddition])
+        }
+    }
+
+    $code = "param(`r`n"
+
+    foreach ($helpParam in $HelpParams) {
+
+        $advancedArgOps = ""
+
+        if ($helpParam.parameterSetName -ne "(All)") {
+            $setNames = $helpParam.parameterSetName.Split(",")
+            if ($setNames.Length -gt 1) {
+                foreach ($setName in $setNames) {
+                    $code += "`t[Parameter(ParameterSetName=`"$($setName.Trim())`")]`r`n"
+                }
+            }
+            else {
+                $advancedArgOps += "ParameterSetName=`"$($helpParam.parameterSetName)`","
+            }
+        }
+
+        if ($helpParam.pipelineInput.Contains("true")) {
+            $advancedArgOps += "ValueFromPipeline=`$true,"
+        }
+        if ($helpParam.position -ne "Named") {
+            $advancedArgOps += "Position=$($helpParam.position),"
+        }
+        if ($helpParam.required -eq "true") {
+            $advancedArgOps += "Mandatory=`$true,"
+        }
+        $advancedArgOps = $advancedArgOps.TrimEnd(',') 
+
+        if ($advancedArgOps) {
+            $code += "`t[Parameter($advancedArgOps)]`r`n"
+        }
+
+        if ($helpParam.aliases -ne "None") {
+            $code += "`t[Alias("
+            foreach ($alias in $helpParam.aliases) {
+                $code += "`"$alias`","
+            }
+            $code = $code.TrimEnd(",") + ")]`r`n"
+        }
+
+        $code += "`t[$($helpParam.type.name)] `$$($helpParam.Name),`r`n"
+    }
+
+    $code = $code.TrimEnd(",`r`n`t") + "`r`n)"
+
+    return $code
+}
+
+function BuildBehaviorPropsCode {
+
+    param(
+        [hashtable] $BehaviorPropArgs
+    )
+
+    $code = "`$behaviorProps = @{}`r`n"
+
+    # functions belonging to the "other" behavior will not have defined behavior properties
+    if ($BehaviorPropArgs) {
+
+        foreach ($behaviorProp in $BehaviorPropArgs.Keys) {
+
+            # behavior property value is a hard-coded string, not a function argument
+            if ($BehaviorPropArgs[$behaviorProp].GetType() -eq [string]) {
+                $code += "`$behaviorProps[`"$behaviorProp`"] = @(`"$($BehaviorPropArgs[$behaviorProp])`")`r`n"
+            }
+            else {
+                # if there are multiple args in the function that can give you the desired 
+                # behavior property, take either argument that is present
+                if ($BehaviorPropArgs[$behaviorProp].Count -gt 1) {
+
+                    $first = $true
+                    foreach ($arg in $BehaviorPropArgs[$behaviorProp]) {
+
+                        $block = "if (`$PSBoundParameters.ContainsKey(`"$arg`")) {`r`n"
+                        $block += "`t`$behaviorProps[`"$behaviorProp`"] = @(`$$arg)`r`n"
+                        $block += "}`r`n"
+
+                        if (!$first) {
+                            $block = $block.Replace("if ", "elseif ")
+                        }
+
+                        $first = $false
+                        $code += $block
+                    }
+                }
+                elseif ($BehaviorPropArgs[$behaviorProp].Count -eq 1) {
+                    $code += "`$behaviorProps[`"$behaviorProp`"] = `@(`$$($BehaviorPropArgs[$behaviorProp][0]))`r`n"
+                }
+            }
+        }
+    }
+
+    return $code
+}
+
+function BuildClassFuncOverrides {
+
+    param(
+        [string] $ParentClass,
+        [string] $Behavior,
+        [string] $FuncName,
+        [hashtable] $BehaviorPropArgs
+    )
+
+    # have Get-Member give us all the function's signatures
+    $tmpObject = Microsoft.PowerShell.Utility\New-Object $ParentClass
+    $signatures = $tmpObject | Get-Member | where Name -eq $FuncName
+    $signatures = $signatures.Definition.Split("),")
+    $code = ""
+
+    # iterate over each signature the function has 
+    foreach ($signature in $signatures) {
+
+        $signature = $signature.ToString().Trim()
+
+        if (!($signature.EndsWith(")"))) {
+            $signature += ")"
+        }
+
+        $signature = TranslateClassFuncSignature $signature
+
+        $code += $signature + " {`r`n"
+        $code += TabPad $(BuildBehaviorPropsCode $BehaviorPropArgs)
+        $code += "`tRecordAction `$([Action]::new(@(`"$Behavior`"), `"$FuncName`", `"$ParentClass`", `$behaviorProps, `$PSBoundParameters, `$MyInvocation.Line))`r`n"
+        if (!$signature.StartsWith("[void]")) {
+            $code += "`treturn `$null`r`n"
+        }
+        $code += "}`r`n"
+    }
+
+    return $code
+}
+
+# translate .Net function signature into PS syntax
+function TranslateClassFuncSignature {
+
+    param(
+        [string] $Signature
+    )
+
+    # function return value type
+    $Signature = $Signature.Insert(0, "[").Insert($Signature.IndexOf(" ") + 1, "]")
+
+    # first argument type and variables 
+    $firstArgTypeNdx = $Signature.IndexOf('(') + 1
+    $Signature = $Signature.Insert($firstArgTypeNdx, "[")
+    $firstArgNdx = $Signature.IndexOf(' ', $firstArgTypeNdx) + 2
+    $Signature = $Signature.Insert($firstArgNdx - 2, "]").Insert($firstArgNdx, "$")
+    
+    # subsequent argument types and variables
+    $scanNdx = $firstArgNdx
+    while ($Signature.IndexOf(',', $scanNdx) -ne -1) {
+        $typeNdx = $Signature.IndexOf(',', $scanNdx) + 2
+        $Signature = $Signature.Insert($typeNdx, '[')
+        $endTypeNdx = $Signature.IndexOf(' ', $typeNdx)
+        $Signature = $Signature.Insert($endTypeNdx, ']').Insert($endTypeNdx + 2, '$')
+        $scanNdx = $endTypeNdx
+    }
+
+    return $Signature
+}
+
+function BuildClassOverride {
+
+    param(
+        [string] $FullClassName,
+        [hashtable] $Functions
+    )
+
+    $shortName = $FullClassName.Split(".")[-1]
+    $code = "class BoxPS$shortName : $FullClassName {`r`n"
+
+    # iterate over the behaviors
+    foreach ($behavior in $Functions.Keys) {
+
+        # iterate over the functions we want to create overrides for
+        foreach ($functionName in $Functions[$behavior].Keys) {
+
+            $behaviorPropArgs = $Functions[$behavior][$functionName]
+            $code += TabPad $(BuildClassFuncOverrides $FullClassName $behavior $functionName `
+                $behaviorPropArgs)
+        }
+    }
+
+    return $code + "}`r`n"
+}
+
+function BuildArgModificationCode {
+
+    param(
+        [hashtable] $ArgModifications
+    )
+
+    $code = ""
+
+    foreach ($argument in $ArgModifications.Keys) {
+
+        $code += "if (`$PSBoundParameters.ContainsKey(`"$argument`")) {`r`n"
+
+        foreach ($modification in $ArgModifications[$argument]) {
+            $modification = $modification.Replace("<arg>", "`$PSBoundParameters[`"$argument`"]")
+            $code += "`t`$$argument = $modification`r`n"
+            $code += "`t`$PSBoundParameters[`"$argument`"] = $modification`r`n"
+        }
+
+        $code += "}`r`n"
+    }
+
+    return $code
+}
+
+function BuildCmdletOverride {
+    
+    param (
+        [string] $Behavior,
+        [string] $CmdletName,
+        [hashtable] $CmdletInfo
+    )
+
+    $code = "function $CmdletName {`r`n"
+    $code += TabPad $(BuildFuncParamsCode $CmdletName $CmdletInfo["ArgAdditions"])
+    $code += TabPad $(BuildArgModificationCode $CmdletInfo["ArgModifications"])
+    $code += TabPad $(BuildBehaviorPropsCode $CmdletInfo.BehaviorPropArgs)
+
+    if ($CmdletInfo.LayerArg) {
+        $code += "`tRecordLayer(`$$($CmdletInfo.LayerArg))`r`n"
+    }
+
+    $code += "`tRecordAction `$([Action]::new(@(`"$Behavior`"), `"$CmdletName`", `"$($CmdletInfo.FullActor)`", `$behaviorProps, `$MyInvocation))`r`n"
+
+    if ($CmdletInfo.ExtraCode) {
+        foreach ($line in $CmdletInfo.ExtraCode) {
+            $code += "`t" + $line + "`r`n"
+        }
+    }
+
+    if ($CmdletInfo.Flags) {
+        if ($CmdletInfo.Flags -contains "call_parent") {
+            $code += "`treturn $($CmdletInfo.FullActor) @PSBoundParameters`r`n"
+        }
+    }
+
+    return $code + "}`r`n"
+}
+
 ####################################################################################################
 function BuildBaseDecoder {
 
@@ -76,7 +365,7 @@ function BuildBaseDecoder {
         [String] $LayersFilePath
     )
 
-    $decoderPath = "$PSScriptRoot/Decoder"
+    $decoderPath = "$PSScriptRoot/decoder"
     $baseDecoder = ""
 
     $baseDecoder += [IO.File]::ReadAllText("$decoderPath/administrative.ps1") + "`n`n"
@@ -84,14 +373,22 @@ function BuildBaseDecoder {
     $baseDecoder = $baseDecoder.Replace("ACTIONS_OUTFILE_PLACEHOLDER", $ActionFilePath)
     $baseDecoder = $baseDecoder.Replace("LAYERS_OUTFILE_PLACEHOLDER", $LayersFilePath)
 
-    $baseDecoder += [IO.File]::ReadAllText("$decoderPath/classes.ps1") + "`n`n"
+    $config = Get-Content .\config.json | ConvertFrom-Json -AsHashtable
 
-    foreach ($decoderFile in Get-ChildItem -Path $decoderPath/commandlets | Select-Object FullName) {
-        $baseDecoder += [IO.File]::ReadAllText($decoderFile.FullName) + "`n`n"
+    foreach ($class in $config["classes"].Keys) {
+        $baseDecoder += BuildClassOverride $class $config["classes"][$class]
     }
 
-    $baseDecoder += [IO.File]::ReadAllText("$decoderPath/environment.ps1") + "`n`n"
-    $baseDecoder += [IO.File]::ReadAllText("$decoderPath/initial_setup.ps1") + "`n`n"
+    foreach ($behavior in $config["commandlets"].keys) {
+        foreach($commandlet in $config["commandlets"][$behavior].keys) {
+            $cmdletInfo = $config["commandlets"][$behavior][$commandlet]
+            $baseDecoder += BuildCmdletOverride $behavior $commandlet $cmdletInfo
+        }
+    }
+
+    $baseDecoder += [IO.File]::ReadAllText("$decoderPath/manual_overrides.ps1") + "`r`n`r`n"
+    $baseDecoder += [IO.File]::ReadAllText("$decoderPath/environment.ps1") + "`r`n`r`n"
+    $baseDecoder += [IO.File]::ReadAllText("$decoderPath/initial_setup.ps1") + "`r`n`r`n"
 
     return $baseDecoder
 }
@@ -205,12 +502,11 @@ while ($layers.Count -gt 0) {
 
     $decoder = $baseDecoder + "`r`n`r`n" + $layer
 
-    #Write-Host $decoder
-    #Read-Host
+    $decoder | Out-File ./decoder.txt
 
     $tmpFile = GetTmpFilePath
     $decoder | Out-File -FilePath $tmpFile
-    (timeout 5 pwsh -noni $tmpFile 2> 'stderr.txt')
+    (timeout 5 pwsh -noni $tmpFile 2> $null)
     Remove-Item -Path $tmpFile
 
     foreach ($newLayer in ReadNewLayers($layersFilePath)) {

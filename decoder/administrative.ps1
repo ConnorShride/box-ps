@@ -1,3 +1,11 @@
+# using namespaces to find the necessary types of the parameters generated for the overrides
+using namespace System.Management.Automation
+using namespace System.IO
+using namespace System.Text
+using namespace Microsoft.PowerShell.Commands
+using namespace System.Diagnostics
+using namespace System.Collections
+
 class Action <# lawsuit... I'll be here all week #> {
 
     [String[]] $Behaviors
@@ -10,7 +18,7 @@ class Action <# lawsuit... I'll be here all week #> {
     [String[]] $Switches
 
     Action ([String[]] $Behaviors, [String] $Actor, [String] $FullActor, [hashtable] $BehaviorProps,
-        [System.Management.Automation.InvocationInfo] $Invocation) {
+        [InvocationInfo] $Invocation) {
 
         $this.Behaviors = $Behaviors
         $this.Actor = $Actor
@@ -46,7 +54,7 @@ class Action <# lawsuit... I'll be here all week #> {
     linear walk through all parameters rebuilding bound params and switches. Unbound arguments are, 
     for some reason, not present in MyCommand.Parameters (thanks for the help, pwsh)
     #>
-    [hashtable] SplitParams([System.Management.Automation.InvocationInfo] $Invocation) {
+    [hashtable] SplitParams([InvocationInfo] $Invocation) {
 
         $allParams = $Invocation.MyCommand.Parameters
 
@@ -102,4 +110,39 @@ function RecordLayer {
 
     $output = ("LAYERDELIM" + $layer + "LAYERDELIM")
     $output | Out-File -Append $layersOutFile
+}
+
+function RedirectObjectCreation {
+
+    param(
+        [string] $TypeName
+    )
+
+    return Microsoft.PowerShell.Utility\New-Object -TypeName "BoxPS$($TypeName.Split(".")[-1])"
+}
+
+function GetOverridedClasses {
+    $config = Microsoft.PowerShell.Management\Get-Content .\config.json | ConvertFrom-Json -AsHashtable
+    return $config["classes"].Keys | % { $_.ToLower() }
+}
+
+<# 
+process objects make the output huge and it's not that useful
+just keep the string representation
+#> 
+function FlattenProcessObjects {
+
+    param(
+        [System.Diagnostics.Process[]] $ProcessList
+    )
+
+    $strings = @()
+
+    $count = 0;
+    while ($count -lt $ProcessList.Count) {
+        $strings += $ProcessList[$count].ProcessName
+        $count++
+    }
+
+    return $strings
 }

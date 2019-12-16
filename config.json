@@ -1,0 +1,179 @@
+{
+    "BehaviorProps": {
+        "code_import": ["code"],
+        "file_system": ["paths"],
+        "script_exec": ["script"],
+        "process": ["processes"],
+        "new_object": ["object"],
+        "download": ["uri"],
+        "upload": ["uri", "data"],
+        "file_exec": ["files"]
+    },
+    "commandlets": {
+        "file_system": {
+            "Get-Item": {
+                "FullActor": "Microsoft.PowerShell.Management\\Get-Item",
+                "BehaviorPropArgs": {
+                    "paths": ["Path", "LiteralPath"]
+                },
+                "Flags": ["call_parent"]
+            },
+            "Set-Content": {
+                "FullActor": "Microsoft.PowerShell.Management\\Set-Content",
+                "BehaviorPropArgs": {
+                    "paths": ["Path", "LiteralPath"]
+                }
+            },
+            "Set-Location": {
+                "FullActor": "Microsoft.PowerShell.Management\\Set-Location",
+                "BehaviorPropArgs": {
+                    "paths": ["Path", "LiteralPath"]
+                }
+            },
+            "New-Item": {
+                "FullActor": "Microsoft.PowerShell.Management\\New-Item",
+                "BehaviorPropArgs": {
+                    "paths": ["Path", "Name"]
+                }
+            },
+            "Get-ChildItem": {
+                "FullActor": "Microsoft.PowerShell.Management\\Get-ChildItem",
+                "BehaviorPropArgs": {
+                    "paths": ["Path"]
+                }
+            },
+            "Test-Path": {
+                "FullActor": "Microsoft.PowerShell.Management\\Test-Path",
+                "BehaviorPropArgs": {
+                    "paths": ["Path"]
+                }
+            },
+            "Get-Content": {
+                "FullActor": "Microsoft.PowerShell.Management\\Get-Content",
+                "BehaviorPropArgs": {
+                    "paths": ["Path", "LiteralPath"]
+                }
+            },
+            "Remove-Item": {
+                "FullActor": "Microsoft.PowerShell.Management\\Remove-Item",
+                "BehaviorPropArgs": {
+                    "paths": ["Path", "LiteralPath"]
+                }
+            }
+        },
+        "process": {
+            "Get-Process": {
+                "FullActor": "Microsoft.PowerShell.Management\\Get-Process",
+                "BehaviorPropArgs": {
+                    "processes": ["Name", "Id", "InputObject"]
+                },
+                "ArgModifications": {
+                    "InputObject": ["FlattenProcessObjects <arg>"]
+                }
+            },
+            "Stop-Process": {
+                "FullActor": "Microsoft.PowerShell.Management\\Stop-Process",
+                "BehaviorPropArgs": {
+                    "processes": ["Name", "Id", "InputObject"]
+                },
+                "ArgModifications": {
+                    "InputObject": ["FlattenProcessObjects <arg>"]
+                }
+            },
+            "Start-Sleep": {
+                "FullActor": "Microsoft.PowerShell.Utility\\Start-Sleep",
+                "BehaviorPropArgs": {
+                    "processes": "self"
+                }
+            }
+        },
+        "code_import": {
+            "Add-Type": {
+                "FullActor": "Microsoft.PowerShell.Utility\\Add-Type",
+                "BehaviorPropArgs": {
+                    "code": ["TypeDefinition"]
+                }
+            }
+        },
+        "script_exec": {
+            "Invoke-Expression": {
+                "FullActor": "Microsoft.PowerShell.Utility\\Invoke-Expression",
+                "BehaviorPropArgs": {
+                    "script": ["Command"]
+                },
+                "LayerArg": "Command"
+            }
+        },
+        "file_exec": {
+            "Start-Process": {
+                "FullActor": "Microsoft.PowerShell.Management\\Start-Process",
+                "BehaviorPropArgs": {
+                    "files": ["FilePath"]
+                }
+            },
+            "Invoke-Item": {
+                "FullActor": "Microsoft.PowerShell.Management\\Invoke-Item",
+                "BehaviorPropArgs": {
+                    "files": ["Path", "LiteralPath"]
+                }
+            }
+        },
+        "new_object": {
+            "New-Object": {
+                "FullActor": "Microsoft.PowerShell.Utility\\New-Object",
+                "BehaviorPropArgs": {
+                    "object": ["COMObject", "TypeName"]
+                },
+                "ArgAdditions": {
+                    "COMObject": {
+                        "pipelineInput": "false",
+                        "type": {
+                            "name": "string"
+                        },
+                        "aliases": "None",
+                        "name": "COMObject",
+                        "position": "Named",
+                        "parameterSetName": "(All)",
+                        "required": "false"
+                    }
+                },
+                "ArgModifications": {
+                    "TypeName": "<arg>.ToLower()",
+                    "COMObject": "<arg>.ToLower()"
+                },
+                "ExtraCode": [
+                    "if ($(GetOverridedClasses).Contains($TypeName.ToLower())) {",
+                    "   return RedirectObjectCreation $TypeName",
+                    "}"
+                ],
+                "Flags": ["call_parent"]
+            }
+        },
+        "other": {
+            "Set-ExecutionPolicy": {
+                "FullActor": "Microsoft.PowerShell.Security\\Set-ExecutionPolicy"
+            }
+        }
+    },
+    "classes": {
+        "System.Net.WebClient": {
+            "download": {
+                "DownloadFile": {
+                    "uri": ["address"]
+                },
+                "DownloadString": {
+                    "uri": ["address"]
+                },
+                "DownloadData": {
+                    "uri": ["address"]
+                }
+            },
+            "upload": {
+                "UploadString": {
+                    "uri": ["address"],
+                    "data": ["data"]
+                }
+            }
+        }
+    }
+}
