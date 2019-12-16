@@ -19,10 +19,11 @@ if (!(Test-Path $InFile)) {
     exit -1
 }
 
+$config = Get-Content .\config.json | ConvertFrom-Json -AsHashtable
+
 <###################################################################################################
 TODO
 
-    -dynamic override generation
     -move env variables into config
     -have recordAction get the short name given the fullactor
     -commandlets that may fit into two behaviors (upload/download) like Invoke-WebRequest or
@@ -357,6 +358,15 @@ function BuildCmdletOverride {
     return $code + "}`r`n"
 }
 
+function BuildEnvVars {
+
+    $code = ""
+    foreach ($var in $config["environment"].keys) {
+        $code += "$var = `"$($config["environment"][$var])`"`r`n"
+    }
+    return $code
+}
+
 ####################################################################################################
 function BuildBaseDecoder {
 
@@ -373,8 +383,6 @@ function BuildBaseDecoder {
     $baseDecoder = $baseDecoder.Replace("ACTIONS_OUTFILE_PLACEHOLDER", $ActionFilePath)
     $baseDecoder = $baseDecoder.Replace("LAYERS_OUTFILE_PLACEHOLDER", $LayersFilePath)
 
-    $config = Get-Content .\config.json | ConvertFrom-Json -AsHashtable
-
     foreach ($class in $config["classes"].Keys) {
         $baseDecoder += BuildClassOverride $class $config["classes"][$class]
     }
@@ -387,7 +395,7 @@ function BuildBaseDecoder {
     }
 
     $baseDecoder += [IO.File]::ReadAllText("$decoderPath/manual_overrides.ps1") + "`r`n`r`n"
-    $baseDecoder += [IO.File]::ReadAllText("$decoderPath/environment.ps1") + "`r`n`r`n"
+    $baseDecoder += BuildEnvVars
     $baseDecoder += [IO.File]::ReadAllText("$decoderPath/initial_setup.ps1") + "`r`n`r`n"
 
     return $baseDecoder
@@ -425,44 +433,11 @@ function EnvReplacement {
         [String] $Layer
     )
 
-    $knownVars = @(
-        "`$env:allusersprofile",
-        "`$env:allusersprofile",
-        "`$env:appdata",
-        "`$env:commonprogramfiles",
-        "`${env:commonprogramfiles}",
-        "`$env:commonprogramw6432",
-        "`$env:computername",
-        "`$env:comspec",
-        "`$env:homedrive",
-        "`$env:homepath",
-        "`$env:localappdata",
-        "`$env:logonserver",
-        "`$env:path",
-        "`$env:programdata",
-        "`$env:programfiles",
-        "`${env:programfiles(x86)}",
-        "`$env:program6432",
-        "`$env:psmodulepath",
-        "`$env:public",
-        "`$env:systemdrive",
-        "`$env:systemroot",
-        "`$env:temp",
-        "`$env:tmp",
-        "`$env:userdomain",
-        "`$env:username",
-        "`$env:userprofile",
-        "`$env:windir",
-        "`$maximumdrivecount",
-        "`$pshome",
-        "`$pshome1"
-    )
-
-    foreach ($var in $knownVars) {
+    foreach ($var in $config["environment"].keys) {
         $Layer = $Layer -ireplace [regex]::Escape($var), $var
     }
 
-    return $Layer -replace "pshome", "bshome"
+    return $Layer -ireplace "pshome", "bshome"
 }
 
 # ensures no file name collision
@@ -506,7 +481,7 @@ while ($layers.Count -gt 0) {
 
     $tmpFile = GetTmpFilePath
     $decoder | Out-File -FilePath $tmpFile
-    (timeout 5 pwsh -noni $tmpFile 2> $null)
+    (timeout 5 pwsh -noni $tmpFile 2> "stderr.txt")
     Remove-Item -Path $tmpFile
 
     foreach ($newLayer in ReadNewLayers($layersFilePath)) {
