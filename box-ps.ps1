@@ -24,7 +24,6 @@ $config = Get-Content .\config.json | ConvertFrom-Json -AsHashtable
 <###################################################################################################
 TODO
 
-    -move env variables into config
     -have recordAction get the short name given the fullactor
     -commandlets that may fit into two behaviors (upload/download) like Invoke-WebRequest or
         Invoke-RestMethod. maybe back off the specificity and just go network behavior
@@ -236,7 +235,7 @@ function BuildClassFuncOverrides {
 
         $code += $signature + " {`r`n"
         $code += TabPad $(BuildBehaviorPropsCode $BehaviorPropArgs)
-        $code += "`tRecordAction `$([Action]::new(@(`"$Behavior`"), `"$FuncName`", `"$ParentClass`", `$behaviorProps, `$PSBoundParameters, `$MyInvocation.Line))`r`n"
+        $code += "`tRecordAction `$([Action]::new(@(`"$Behavior`"), `"$ParentClass`.$FuncName`", `$behaviorProps, `$PSBoundParameters, `$MyInvocation.Line))`r`n"
         if (!$signature.StartsWith("[void]")) {
             $code += "`treturn `$null`r`n"
         }
@@ -341,7 +340,7 @@ function BuildCmdletOverride {
         $code += "`tRecordLayer(`$$($CmdletInfo.LayerArg))`r`n"
     }
 
-    $code += "`tRecordAction `$([Action]::new(@(`"$Behavior`"), `"$CmdletName`", `"$($CmdletInfo.FullActor)`", `$behaviorProps, `$MyInvocation))`r`n"
+    $code += "`tRecordAction `$([Action]::new(@(`"$Behavior`"), `"$($CmdletInfo.FullActor)`", `$behaviorProps, `$MyInvocation))`r`n"
 
     if ($CmdletInfo.ExtraCode) {
         foreach ($line in $CmdletInfo.ExtraCode) {

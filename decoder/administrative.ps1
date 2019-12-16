@@ -17,12 +17,15 @@ class Action <# lawsuit... I'll be here all week #> {
     [String[]] $UnboundParams
     [String[]] $Switches
 
-    Action ([String[]] $Behaviors, [String] $Actor, [String] $FullActor, [hashtable] $BehaviorProps,
+    Action ([String[]] $Behaviors, [String] $FullActor, [hashtable] $BehaviorProps,
         [InvocationInfo] $Invocation) {
 
         $this.Behaviors = $Behaviors
-        $this.Actor = $Actor
         $this.FullActor = $FullActor
+        $this.Actor = $this.GetShortActor($FullActor)
+
+        Write-Host $this.Actor
+
         $this.BehaviorProps = $BehaviorProps
         $this.Line = $Invocation.Line.Trim()
 
@@ -37,12 +40,12 @@ class Action <# lawsuit... I'll be here all week #> {
     #   These are guaranteed not to have unbound or switches, and the MyInvocation variable does not
     #   contain boundparameters, so callers need to be able to pass the PSBoundParameters variable
     # e.g. System.Net.WebClient.DownloadFile
-    Action ([String[]] $Behaviors, [String] $Actor, [String] $FullActor, [hashtable] $BehaviorProps,
+    Action ([String[]] $Behaviors, [String] $FullActor, [hashtable] $BehaviorProps, 
         [hashtable] $BoundParams, [String] $Line) {
 
         $this.Behaviors = $Behaviors
         $this.FullActor = $FullActor
-        $this.Actor = $Actor
+        $this.Actor = $this.GetShortActor($FullActor)
         $this.BehaviorProps = $BehaviorProps
         $this.BoundParams = $BoundParams
         $this.Line = $Line.Trim()
@@ -83,6 +86,17 @@ class Action <# lawsuit... I'll be here all week #> {
             "switches" = $localSwitches
         }
     }
+
+    [string] GetShortActor([string] $FullActor) {
+        # commandlet notation
+        if ($FullActor.Contains("\")) {
+            return $FullActor.Split("\")[-1]
+        }
+        # class member notation
+        else {
+            return $FullActor.Split(".")[-1]
+        }
+    }
 }
 
 
@@ -94,6 +108,8 @@ function RecordAction {
         [Action] $Action
     )
 
+    Write-Host $Action.Actor
+    Write-Host $Action.Behaviors
     $actionsOutFile = "ACTIONS_OUTFILE_PLACEHOLDER"
 
     $json = $Action | ConvertTo-Json -Depth 10
