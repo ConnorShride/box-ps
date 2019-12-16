@@ -14,5 +14,5 @@ function mkdir {
         "paths" = $Path
     }
 
-    RecordAction $([Action]::new(@("file_system"), "mkdir", "Microsoft.PowerShell.Core\mkdir", $behaviorProps, $MyInvocation))
+    RecordAction $([Action]::new(@("file_system"), "Microsoft.PowerShell.Core\mkdir", $behaviorProps, $MyInvocation))
 }

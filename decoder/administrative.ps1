@@ -23,14 +23,10 @@ class Action <# lawsuit... I'll be here all week #> {
         $this.Behaviors = $Behaviors
         $this.FullActor = $FullActor
         $this.Actor = $this.GetShortActor($FullActor)
-
-        Write-Host $this.Actor
-
         $this.BehaviorProps = $BehaviorProps
         $this.Line = $Invocation.Line.Trim()
 
         $paramsSplit = $this.SplitParams($Invocation)
-
         $this.BoundParams = $paramsSplit["bound"]
         $this.UnboundParams = $paramsSplit["unbound"]
         $this.Switches = $paramsSplit["switches"]
@@ -108,8 +104,6 @@ function RecordAction {
         [Action] $Action
     )
 
-    Write-Host $Action.Actor
-    Write-Host $Action.Behaviors
     $actionsOutFile = "ACTIONS_OUTFILE_PLACEHOLDER"
 
     $json = $Action | ConvertTo-Json -Depth 10

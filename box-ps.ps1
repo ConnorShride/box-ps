@@ -24,7 +24,6 @@ $config = Get-Content .\config.json | ConvertFrom-Json -AsHashtable
 <###################################################################################################
 TODO
 
-    -have recordAction get the short name given the fullactor
     -commandlets that may fit into two behaviors (upload/download) like Invoke-WebRequest or
         Invoke-RestMethod. maybe back off the specificity and just go network behavior
 
