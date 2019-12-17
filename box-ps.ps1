@@ -10,13 +10,25 @@
 #>
 
 param (
-    [parameter(Position=0, Mandatory=$true)][String]$InFile,
-    [parameter(Position=1, Mandatory=$true)][String]$OutFile
+    [parameter(Position=0, Mandatory=$true)][String] $InFile,
+    [parameter(Position=1, Mandatory=$true)][String] $OutFile,
+    [parameter(Position=2)][String] $ErrorDir
 )
 
 if (!(Test-Path $InFile)) {
     Write-Host "[-] input file does not exist. exiting."
     exit -1
+}
+
+if ($PSBoundParameters.ContainsKey("ErrorDir")) {
+
+    if (!(Test-Path $ErrorDir)) {
+        New-Item -ItemType "directory" -Path $ErrorDir
+        Write-Host "[+] created directory $ErrorDir"
+    }
+    else {
+        Write-Host "[+] error directory $ErrorDir already exists"
+    }
 }
 
 $config = Get-Content .\config.json | ConvertFrom-Json -AsHashtable
@@ -498,6 +510,7 @@ $encodedScript.Trim() | ConvertTo-Json | Out-File -Append $OutFile
 $layersFilePath = GetTmpFilePath
 $layers = New-Object System.Collections.Queue
 $layers.Enqueue($encodedScript)
+$layerCount = 1
 
 $baseDecoder = BuildBaseDecoder $OutFile $layersFilePath
 
@@ -513,7 +526,7 @@ while ($layers.Count -gt 0) {
 
     $tmpFile = GetTmpFilePath
     $decoder | Out-File -FilePath $tmpFile
-    (timeout 5 pwsh -noni $tmpFile 2> $null)
+    (timeout 5 pwsh -noni $tmpFile 2> "$ErrorDir/layer$($layerCount)error.txt")
     Remove-Item -Path $tmpFile
 
     foreach ($newLayer in ReadNewLayers($layersFilePath)) {
