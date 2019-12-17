@@ -13,10 +13,8 @@ class Action <# lawsuit... I'll be here all week #> {
     [String] $FullActor
     [String] $Line
     [hashtable] $BehaviorProps
-    [hashtable] $BoundParams
-    [String[]] $UnboundParams
-    [String[]] $Switches
-
+    [hashtable] $Parameters
+    
     Action ([String[]] $Behaviors, [String] $FullActor, [hashtable] $BehaviorProps,
         [InvocationInfo] $Invocation) {
 
@@ -27,13 +25,15 @@ class Action <# lawsuit... I'll be here all week #> {
         $this.Line = $Invocation.Line.Trim()
 
         $paramsSplit = $this.SplitParams($Invocation)
-        $this.BoundParams = $paramsSplit["bound"]
-        $this.UnboundParams = $paramsSplit["unbound"]
-        $this.Switches = $paramsSplit["switches"]
+        $this.Parameters = $paramsSplit["bound"]
+
+        if ($paramsSplit["switches"]) {
+            $this.Parameters["Switches"] = $paramsSplit["switches"]
+        }
     }
 
     # for class members
-    #   These are guaranteed not to have unbound or switches, and the MyInvocation variable does not
+    #   These are guaranteed not to have switches, and the MyInvocation variable does not
     #   contain boundparameters, so callers need to be able to pass the PSBoundParameters variable
     # e.g. System.Net.WebClient.DownloadFile
     Action ([String[]] $Behaviors, [String] $FullActor, [hashtable] $BehaviorProps, 
@@ -43,16 +43,11 @@ class Action <# lawsuit... I'll be here all week #> {
         $this.FullActor = $FullActor
         $this.Actor = $this.GetShortActor($FullActor)
         $this.BehaviorProps = $BehaviorProps
-        $this.BoundParams = $BoundParams
+        $this.Parameters = $BoundParams
         $this.Line = $Line.Trim()
-        $this.UnboundParams = @()
-        $this.Switches = @()
     }
 
-    <#
-    linear walk through all parameters rebuilding bound params and switches. Unbound arguments are, 
-    for some reason, not present in MyCommand.Parameters (thanks for the help, pwsh)
-    #>
+    # linear walk through all parameters rebuilding bound params and switches
     [hashtable] SplitParams([InvocationInfo] $Invocation) {
 
         $allParams = $Invocation.MyCommand.Parameters
@@ -62,10 +57,6 @@ class Action <# lawsuit... I'll be here all week #> {
         
         foreach ($paramName in $allParams.Keys) {
 
-            <#
-            for some reason, all common parameters are in MyCommand.Parameters even if they are not
-            given explicitely and don't even have default values (thanks for the help, pwsh)
-            #>
             if ($allParams[$paramName].SwitchParameter -and $Invocation.BoundParameters.Keys -eq `
                     $paramName) {
 
@@ -78,7 +69,6 @@ class Action <# lawsuit... I'll be here all week #> {
 
         return @{
             "bound" = $bound;
-            "unbound" = $Invocation.UnboundArguments;
             "switches" = $localSwitches
         }
     }

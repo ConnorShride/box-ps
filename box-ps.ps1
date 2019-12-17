@@ -35,23 +35,20 @@ $config = Get-Content .\config.json | ConvertFrom-Json -AsHashtable
 
 <###################################################################################################
 TODO
-
     -commandlets that may fit into two behaviors (upload/download) like Invoke-WebRequest or
         Invoke-RestMethod. maybe back off the specificity and just go network behavior
-    -test out new overrides using CommonParameters
 
-
-    -Output each layer's stderr as a possible canary?
     -Add code inspection and replacement of explicit namespace references that is getting around our 
         overrides + Some deob of layers so we can have a chance of replacing namespaces
         -can you even obfuscate a namespace?
+
     -catch commands run like schtasks.exe
         See if hook is available in powershell to do something every time an executable that is not 
         .Net executes List of aliases to override (pointing straight to linux binaries)
 
-    Faking it...
-        -Go through and allow more functions to do their stuff under certain circumstances
-            ex. Get-ChildItem all the time
+    -Faking it...
+        -framework for allowing functions to execute under certain circumstances
+        -ex. Get-ChildItem all the time, Invoke-WebRequest in dangerous mode
         -Have webclient methods return dummy data to keep the script from erroring out?
 
 To Sandbox...
@@ -378,21 +375,25 @@ function SeparateLines
     param([char[]]$Script)
 
     $prevChar = ''
-    $beautified = ''
+    $separated = ''
     $inLiteral = $false
+    $inParentheses = $false
     $quotingChar = ''
     $quotes = '"', "'"
     $whitespace = ''
 
     foreach ($char in $Script) {
 
-        # if the character is not inside a string literal
-        if ($inLiteral -eq $false) {
+        # if the character is not inside a string literal or parentheses
+        if (!$inLiteral -and !$inParentheses) {
             
             # if this is the start of a string literal, record the quote used to start it
             if ($char -contains $quotes) {
                 $quotingChar = $char
                 $inLiteral = $true
+            }
+            elseif ($char -eq '(') {
+                $inParentheses = $true
             }
             elseif ($char -eq ';') { $whitespace = "`r`n" }
         }
@@ -401,13 +402,17 @@ function SeparateLines
             $quotingChar = ''
             $inLiteral = $false
         }
+        #otherwise if it's an ending parentheses
+        elseif ($char -eq ')') {
+            $inParentheses = $false
+        }
 
-        $beautified += $char + $whitespace
+        $separated += $char + $whitespace
         $prevChar = $char
         $whitespace = ''
     }
 
-    return $beautified
+    return $separated
 }
 
 
