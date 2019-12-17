@@ -26,21 +26,16 @@ TODO
 
     -commandlets that may fit into two behaviors (upload/download) like Invoke-WebRequest or
         Invoke-RestMethod. maybe back off the specificity and just go network behavior
+    -test out new overrides using CommonParameters
 
 
     -Output each layer's stderr as a possible canary?
-    -Have the "Line" field split by semicolons and show just the statement?
-        - or run a beautifier to make sure each line is on it's own (make sure it doesn't break it)
     -Add code inspection and replacement of explicit namespace references that is getting around our 
-    overrides + Some deob of layers so we can have a chance of replacing namespaces
+        overrides + Some deob of layers so we can have a chance of replacing namespaces
+        -can you even obfuscate a namespace?
     -catch commands run like schtasks.exe
         See if hook is available in powershell to do something every time an executable that is not 
         .Net executes List of aliases to override (pointing straight to linux binaries)
-    -overrides are formulaic. Make it easy to add a new one
-        -don't rule out doing invoke expression
-        -use Get-Help -Full commandlet to generate bound parameter definitions
-            -if this is easy enough, there will be no Unbound params because every override will
-            easily become a fully implemented advanced function clone of the real one
 
     Faking it...
         -Go through and allow more functions to do their stuff under certain circumstances
@@ -496,7 +491,7 @@ function GetTmpFilePath {
 $encodedScript = (Get-Content $InFile -ErrorAction Stop | Out-String)
 
 # record original encoded script, start building JSON for actions
-"{`"EncodedScript`": " | Out-File $OutFile
+"{`"Script`": " | Out-File $OutFile
 $encodedScript.Trim() | ConvertTo-Json | Out-File -Append $OutFile
 ",`"Actions`": [" | Out-File -Append $OutFile
 
