@@ -27,6 +27,7 @@ TODO
     -commandlets that may fit into two behaviors (upload/download) like Invoke-WebRequest or
         Invoke-RestMethod. maybe back off the specificity and just go network behavior
 
+
     -Output each layer's stderr as a possible canary?
     -Have the "Line" field split by semicolons and show just the statement?
         - or run a beautifier to make sure each line is on it's own (make sure it doesn't break it)
@@ -217,7 +218,7 @@ function BuildClassFuncOverrides {
 
     # have Get-Member give us all the function's signatures
     $tmpObject = Microsoft.PowerShell.Utility\New-Object $ParentClass
-    $signatures = $tmpObject | Get-Member | where Name -eq $FuncName
+    $signatures = $tmpObject | Get-Member | Where-Object Name -eq $FuncName
     $signatures = $signatures.Definition.Split("),")
     $code = ""
 
@@ -365,6 +366,44 @@ function BuildEnvVars {
     return $code
 }
 
+function SeparateLines
+{
+    param([char[]]$Script)
+
+    $prevChar = ''
+    $beautified = ''
+    $inLiteral = $false
+    $quotingChar = ''
+    $quotes = '"', "'"
+    $whitespace = ''
+
+    foreach ($char in $Script) {
+
+        # if the character is not inside a string literal
+        if ($inLiteral -eq $false) {
+            
+            # if this is the start of a string literal, record the quote used to start it
+            if ($char -contains $quotes) {
+                $quotingChar = $char
+                $inLiteral = $true
+            }
+            elseif ($char -eq ';') { $whitespace = "`r`n" }
+        }
+        # otherwise if it's the ending quote of a string literal
+        elseif ($char -contains $quotes -and $quotingChar -eq $char -and $prevChar -ne '`') {
+            $quotingChar = ''
+            $inLiteral = $false
+        }
+
+        $beautified += $char + $whitespace
+        $prevChar = $char
+        $whitespace = ''
+    }
+
+    return $beautified
+}
+
+
 ####################################################################################################
 function BuildBaseDecoder {
 
@@ -472,14 +511,14 @@ while ($layers.Count -gt 0) {
     $layer = $layers.Dequeue()
     $layer = EnvReplacement $layer
     $layer = SplitReplacement $layer
+    $layer = SeparateLines $layer
 
     $decoder = $baseDecoder + "`r`n`r`n" + $layer
-
     $decoder | Out-File ./decoder.txt
 
     $tmpFile = GetTmpFilePath
     $decoder | Out-File -FilePath $tmpFile
-    (timeout 5 pwsh -noni $tmpFile 2> "stderr.txt")
+    (timeout 5 pwsh -noni $tmpFile 2> $null)
     Remove-Item -Path $tmpFile
 
     foreach ($newLayer in ReadNewLayers($layersFilePath)) {

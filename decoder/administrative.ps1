@@ -133,7 +133,7 @@ function RedirectObjectCreation {
 
 function GetOverridedClasses {
     $config = Microsoft.PowerShell.Management\Get-Content .\config.json | ConvertFrom-Json -AsHashtable
-    return $config["classes"].Keys | % { $_.ToLower() }
+    return $config["classes"].Keys | ForEach-Object { $_.ToLower() }
 }
 
 <# 
