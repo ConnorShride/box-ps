@@ -35,12 +35,12 @@ $config = Get-Content .\config.json | ConvertFrom-Json -AsHashtable
 
 <###################################################################################################
 TODO
+    -add automatic overrides for static class functions, then explicit namespace removal
+        -ex [regex]::Escape("fo\oo")
     -commandlets that may fit into two behaviors (upload/download) like Invoke-WebRequest or
         Invoke-RestMethod. maybe back off the specificity and just go network behavior
 
-    -Add code inspection and replacement of explicit namespace references that is getting around our 
-        overrides + Some deob of layers so we can have a chance of replacing namespaces
-        -can you even obfuscate a namespace?
+    -add some static deob for scrubbing explicit namespaces?
 
     -catch commands run like schtasks.exe
         See if hook is available in powershell to do something every time an executable that is not 
@@ -450,6 +450,18 @@ function BuildBaseDecoder {
     return $baseDecoder
 }
 
+# find and remove fully qualified namespace from commandlet and function calls
+# ensures that our overrides are called instead of the real ones
+function ScrubExplicitNamespaces {
+
+    param([string] $Layer)
+
+    $cmdletRegex = "(\w+\.){1,}\w+\\"
+
+    $Layer -match $cmdletRegex > $null
+    return $Layer.Replace($Matches[0], "")
+}
+
 ####################################################################################################
 function SplitReplacement {
 
@@ -525,6 +537,7 @@ while ($layers.Count -gt 0) {
     $layer = EnvReplacement $layer
     $layer = SplitReplacement $layer
     $layer = SeparateLines $layer
+    $layer = ScrubExplicitNamespaces $layer
 
     $decoder = $baseDecoder + "`r`n`r`n" + $layer
     $decoder | Out-File ./decoder.txt
