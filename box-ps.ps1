@@ -9,59 +9,71 @@
             windows one
 #>
 
-param (
-    [parameter(Position=0, Mandatory=$true)][String] $InFile,
-    [parameter(Position=1, Mandatory=$true)][String] $OutFile,
-    [parameter(Position=2)][String] $ErrorDir
-)
-
-if (!(Test-Path $InFile)) {
-    Write-Host "[-] input file does not exist. exiting."
-    exit -1
-}
-
-if ($PSBoundParameters.ContainsKey("ErrorDir")) {
-
-    if (!(Test-Path $ErrorDir)) {
-        New-Item -ItemType "directory" -Path $ErrorDir
-        Write-Host "[+] created directory $ErrorDir"
-    }
-    else {
-        Write-Host "[+] error directory $ErrorDir already exists"
-    }
-}
-
-$config = Get-Content .\config.json | ConvertFrom-Json -AsHashtable
-
 <###################################################################################################
 TODO
-    -add automatic overrides for static class functions, then explicit namespace removal
-        -ex [regex]::Escape("fo\oo")
+
+    Before open source..
+
+        -add in properties for overrided classes (ex. Headers property for webclient) 
+        (see iranianshit.ps1)
+
+        -Faking it...
+        -framework for allowing functions to execute under certain circumstances
+        -ex. Get-ChildItem all the time, Invoke-WebRequest in dangerous mode
+        -Have webclient methods return dummy data to keep the script from erroring out?
+        -danger level option...
+            when there's a download being fed into an IEX, actually do the download because it's 
+            another script
+
+        -commenting, style (variable/funciton names), readme, other documentation?
+
+        -investigate SplitReplacement and see what it does (hopefully remove it)
+
+        -generalize stuff into the utils class (configs access is pretty repeated throughout)
+
+        To Sandbox...
+        
+            Get-Date
+            Get-WmiObject
+            Get-Host
+            Class System.Net.WebRequest
+
+        After inspection/replacement...
+
+            [Environment]::GetFolderPath
+            [IO.File]::WriteAllBytes
+            [Diagnostics.Process]::Start
+
+
     -commandlets that may fit into two behaviors (upload/download) like Invoke-WebRequest or
         Invoke-RestMethod. maybe back off the specificity and just go network behavior
 
+    -add type goverernor (or something named like that), so we can add entries in the config file that
+    determine which member of an object to use as it's representation in the output file (encoding
+    and process objects)
+
     -add some static deob for scrubbing explicit namespaces?
+        - string deob could be really easy... just detect if it's being done (like a bunch of formatting)
+          and run powershell on the string (see iranianshit.ps1)
 
     -catch commands run like schtasks.exe
         See if hook is available in powershell to do something every time an executable that is not 
         .Net executes List of aliases to override (pointing straight to linux binaries)
 
-    -Faking it...
-        -framework for allowing functions to execute under certain circumstances
-        -ex. Get-ChildItem all the time, Invoke-WebRequest in dangerous mode
-        -Have webclient methods return dummy data to keep the script from erroring out?
+    -Find a way to preserve script action order when there are IEX. Right now the actions from that next
+        layer are after the current layer, when in reality they are right in the middle
 
-To Sandbox...
-    Get-Date
-    Get-WmiObject
-    Get-Host
-    Class System.Net.WebRequest
+    -show enum name when it's an argument? 
+        -ex. [BoxPSStatics]::GetFolderPath([System.Environment+SpecialFolder]::Desktop) gives
+        argument value of 0
 
-After inspection/replacement...
-
-    [Environment]::GetFolderPath
-    [IO.File]::WriteAllBytes
 ###################################################################################################>
+
+param (
+    [parameter(Position=0, Mandatory=$true)][String] $InFile,
+    [parameter(Position=1, Mandatory=$true)][String] $OutFile,
+    [parameter(Position=2)][String] $ErrorDir
+)
 
 ####################################################################################################
 function ReadNewLayers {
@@ -84,438 +96,33 @@ function ReadNewLayers {
     }
 }
 
-function TabPad {
-    
-    param (
-        [string] $block
-    )
-
-    $newBlock = ""
-
-    foreach ($line in $block.Split("`r`n")) {
-        $newBlock += "`t" + $line + "`r`n"
-    }
-    
-    return $newBlock
+if (!(Test-Path $InFile)) {
+    Write-Host "[-] input file does not exist. exiting."
+    exit -1
 }
 
-function BuildFuncParamsCode {
+if ($PSBoundParameters.ContainsKey("ErrorDir")) {
 
-    param(
-        [string] $Commandlet,
-        [hashtable] $ArgAdditions
-    )
-
-    $helpParams = Get-Help -Full $Commandlet
-    $helpParams = $helpParams.parameters.parameter
-
-    if ($ArgAdditions) {
-        foreach ($argAddition in $ArgAdditions.Keys) {
-            $helpParams += $(New-Object PSObject -Property $ArgAdditions[$argAddition])
-        }
+    if (!(Test-Path $ErrorDir)) {
+        New-Item -ItemType "directory" -Path $ErrorDir > $null
+        Write-Host "[+] created directory $ErrorDir"
     }
-
-    $code = "param(`r`n"
-
-    foreach ($helpParam in $HelpParams) {
-
-        $advancedArgOps = ""
-
-        if ($helpParam.parameterSetName -ne "(All)") {
-            $setNames = $helpParam.parameterSetName.Split(",")
-            if ($setNames.Length -gt 1) {
-                foreach ($setName in $setNames) {
-                    $code += "`t[Parameter(ParameterSetName=`"$($setName.Trim())`")]`r`n"
-                }
-            }
-            else {
-                $advancedArgOps += "ParameterSetName=`"$($helpParam.parameterSetName)`","
-            }
-        }
-
-        if ($helpParam.pipelineInput.Contains("true")) {
-            $advancedArgOps += "ValueFromPipeline=`$true,"
-        }
-        if ($helpParam.position -ne "Named") {
-            $advancedArgOps += "Position=$($helpParam.position),"
-        }
-        if ($helpParam.required -eq "true") {
-            $advancedArgOps += "Mandatory=`$true,"
-        }
-        $advancedArgOps = $advancedArgOps.TrimEnd(',') 
-
-        if ($advancedArgOps) {
-            $code += "`t[Parameter($advancedArgOps)]`r`n"
-        }
-
-        if ($helpParam.aliases -ne "None") {
-            $code += "`t[Alias("
-            foreach ($alias in $helpParam.aliases) {
-                $code += "`"$alias`","
-            }
-            $code = $code.TrimEnd(",") + ")]`r`n"
-        }
-
-        $code += "`t[$($helpParam.type.name)] `$$($helpParam.Name),`r`n"
+    else {
+        Write-Host "[+] error directory $ErrorDir already exists"
+        Remove-Item -Force $ErrorDir/*
+        Write-Host "[+] cleared contents of directory $ErrorDir"
     }
-
-    $code = $code.TrimEnd(",`r`n`t") + "`r`n)"
-
-    return $code
 }
 
-function BuildBehaviorPropsCode {
-
-    param(
-        [hashtable] $BehaviorPropArgs
-    )
-
-    $code = "`$behaviorProps = @{}`r`n"
-
-    # functions belonging to the "other" behavior will not have defined behavior properties
-    if ($BehaviorPropArgs) {
-
-        foreach ($behaviorProp in $BehaviorPropArgs.Keys) {
-
-            # behavior property value is a hard-coded string, not a function argument
-            if ($BehaviorPropArgs[$behaviorProp].GetType() -eq [string]) {
-                $code += "`$behaviorProps[`"$behaviorProp`"] = @(`"$($BehaviorPropArgs[$behaviorProp])`")`r`n"
-            }
-            else {
-                # if there are multiple args in the function that can give you the desired 
-                # behavior property, take either argument that is present
-                if ($BehaviorPropArgs[$behaviorProp].Count -gt 1) {
-
-                    $first = $true
-                    foreach ($arg in $BehaviorPropArgs[$behaviorProp]) {
-
-                        $block = "if (`$PSBoundParameters.ContainsKey(`"$arg`")) {`r`n"
-                        $block += "`t`$behaviorProps[`"$behaviorProp`"] = @(`$$arg)`r`n"
-                        $block += "}`r`n"
-
-                        if (!$first) {
-                            $block = $block.Replace("if ", "elseif ")
-                        }
-
-                        $first = $false
-                        $code += $block
-                    }
-                }
-                elseif ($BehaviorPropArgs[$behaviorProp].Count -eq 1) {
-                    $code += "`$behaviorProps[`"$behaviorProp`"] = `@(`$$($BehaviorPropArgs[$behaviorProp][0]))`r`n"
-                }
-            }
-        }
-    }
-
-    return $code
+# DEBUG
+if (Test-Path ./dbgdecoder) {
+    Remove-Item -Force ./dbgdecoder/*
+    Write-Host "[+] cleared directory dbgdecoder"
 }
 
-function BuildClassFuncOverrides {
-
-    param(
-        [string] $ParentClass,
-        [string] $Behavior,
-        [string] $FuncName,
-        [hashtable] $BehaviorPropArgs
-    )
-
-    # have Get-Member give us all the function's signatures
-    $tmpObject = Microsoft.PowerShell.Utility\New-Object $ParentClass
-    $signatures = $tmpObject | Get-Member | Where-Object Name -eq $FuncName
-    $signatures = $signatures.Definition.Split("),")
-    $code = ""
-
-    # iterate over each signature the function has 
-    foreach ($signature in $signatures) {
-
-        $signature = $signature.ToString().Trim()
-
-        if (!($signature.EndsWith(")"))) {
-            $signature += ")"
-        }
-
-        $signature = TranslateClassFuncSignature $signature
-
-        $code += $signature + " {`r`n"
-        $code += TabPad $(BuildBehaviorPropsCode $BehaviorPropArgs)
-        $code += "`tRecordAction `$([Action]::new(@(`"$Behavior`"), `"$ParentClass`.$FuncName`", `$behaviorProps, `$PSBoundParameters, `$MyInvocation.Line))`r`n"
-        if (!$signature.StartsWith("[void]")) {
-            $code += "`treturn `$null`r`n"
-        }
-        $code += "}`r`n"
-    }
-
-    return $code
-}
-
-# translate .Net function signature into PS syntax
-function TranslateClassFuncSignature {
-
-    param(
-        [string] $Signature
-    )
-
-    # function return value type
-    $Signature = $Signature.Insert(0, "[").Insert($Signature.IndexOf(" ") + 1, "]")
-
-    # first argument type and variables 
-    $firstArgTypeNdx = $Signature.IndexOf('(') + 1
-    $Signature = $Signature.Insert($firstArgTypeNdx, "[")
-    $firstArgNdx = $Signature.IndexOf(' ', $firstArgTypeNdx) + 2
-    $Signature = $Signature.Insert($firstArgNdx - 2, "]").Insert($firstArgNdx, "$")
-    
-    # subsequent argument types and variables
-    $scanNdx = $firstArgNdx
-    while ($Signature.IndexOf(',', $scanNdx) -ne -1) {
-        $typeNdx = $Signature.IndexOf(',', $scanNdx) + 2
-        $Signature = $Signature.Insert($typeNdx, '[')
-        $endTypeNdx = $Signature.IndexOf(' ', $typeNdx)
-        $Signature = $Signature.Insert($endTypeNdx, ']').Insert($endTypeNdx + 2, '$')
-        $scanNdx = $endTypeNdx
-    }
-
-    return $Signature
-}
-
-function BuildClassOverride {
-
-    param(
-        [string] $FullClassName,
-        [hashtable] $Functions
-    )
-
-    $shortName = $FullClassName.Split(".")[-1]
-    $code = "class BoxPS$shortName : $FullClassName {`r`n"
-
-    # iterate over the behaviors
-    foreach ($behavior in $Functions.Keys) {
-
-        # iterate over the functions we want to create overrides for
-        foreach ($functionName in $Functions[$behavior].Keys) {
-
-            $behaviorPropArgs = $Functions[$behavior][$functionName]
-            $code += TabPad $(BuildClassFuncOverrides $FullClassName $behavior $functionName `
-                $behaviorPropArgs)
-        }
-    }
-
-    return $code + "}`r`n"
-}
-
-function BuildArgModificationCode {
-
-    param(
-        [hashtable] $ArgModifications
-    )
-
-    $code = ""
-
-    foreach ($argument in $ArgModifications.Keys) {
-
-        $code += "if (`$PSBoundParameters.ContainsKey(`"$argument`")) {`r`n"
-
-        foreach ($modification in $ArgModifications[$argument]) {
-            $modification = $modification.Replace("<arg>", "`$PSBoundParameters[`"$argument`"]")
-            $code += "`t`$$argument = $modification`r`n"
-            $code += "`t`$PSBoundParameters[`"$argument`"] = $modification`r`n"
-        }
-
-        $code += "}`r`n"
-    }
-
-    return $code
-}
-
-function BuildCmdletOverride {
-    
-    param (
-        [string] $Behavior,
-        [string] $CmdletName,
-        [hashtable] $CmdletInfo
-    )
-
-    $code = "function $CmdletName {`r`n"
-    $code += TabPad $(BuildFuncParamsCode $CmdletName $CmdletInfo["ArgAdditions"])
-    $code += TabPad $(BuildArgModificationCode $CmdletInfo["ArgModifications"])
-    $code += TabPad $(BuildBehaviorPropsCode $CmdletInfo.BehaviorPropArgs)
-
-    if ($CmdletInfo.LayerArg) {
-        $code += "`tRecordLayer(`$$($CmdletInfo.LayerArg))`r`n"
-    }
-
-    $code += "`tRecordAction `$([Action]::new(@(`"$Behavior`"), `"$($CmdletInfo.FullActor)`", `$behaviorProps, `$MyInvocation))`r`n"
-
-    if ($CmdletInfo.ExtraCode) {
-        foreach ($line in $CmdletInfo.ExtraCode) {
-            $code += "`t" + $line + "`r`n"
-        }
-    }
-
-    if ($CmdletInfo.Flags) {
-        if ($CmdletInfo.Flags -contains "call_parent") {
-            $code += "`treturn $($CmdletInfo.FullActor) @PSBoundParameters`r`n"
-        }
-    }
-
-    return $code + "}`r`n"
-}
-
-function BuildEnvVars {
-
-    $code = ""
-    foreach ($var in $config["environment"].keys) {
-        $code += "$var = `"$($config["environment"][$var])`"`r`n"
-    }
-    return $code
-}
-
-function SeparateLines
-{
-    param([char[]]$Script)
-
-    $prevChar = ''
-    $separated = ''
-    $inLiteral = $false
-    $inParentheses = $false
-    $quotingChar = ''
-    $quotes = '"', "'"
-    $whitespace = ''
-
-    foreach ($char in $Script) {
-
-        # if the character is not inside a string literal or parentheses
-        if (!$inLiteral -and !$inParentheses) {
-            
-            # if this is the start of a string literal, record the quote used to start it
-            if ($char -contains $quotes) {
-                $quotingChar = $char
-                $inLiteral = $true
-            }
-            elseif ($char -eq '(') {
-                $inParentheses = $true
-            }
-            elseif ($char -eq ';') { $whitespace = "`r`n" }
-        }
-        # otherwise if it's the ending quote of a string literal
-        elseif ($char -contains $quotes -and $quotingChar -eq $char -and $prevChar -ne '`') {
-            $quotingChar = ''
-            $inLiteral = $false
-        }
-        #otherwise if it's an ending parentheses
-        elseif ($char -eq ')') {
-            $inParentheses = $false
-        }
-
-        $separated += $char + $whitespace
-        $prevChar = $char
-        $whitespace = ''
-    }
-
-    return $separated
-}
-
-
-####################################################################################################
-function BuildBaseDecoder {
-
-    param(
-        [String] $ActionFilePath,
-        [String] $LayersFilePath
-    )
-
-    $decoderPath = "$PSScriptRoot/decoder"
-    $baseDecoder = ""
-
-    $baseDecoder += [IO.File]::ReadAllText("$decoderPath/administrative.ps1") + "`n`n"
-
-    $baseDecoder = $baseDecoder.Replace("ACTIONS_OUTFILE_PLACEHOLDER", $ActionFilePath)
-    $baseDecoder = $baseDecoder.Replace("LAYERS_OUTFILE_PLACEHOLDER", $LayersFilePath)
-
-    foreach ($class in $config["classes"].Keys) {
-        $baseDecoder += BuildClassOverride $class $config["classes"][$class]
-    }
-
-    foreach ($behavior in $config["commandlets"].keys) {
-        foreach($commandlet in $config["commandlets"][$behavior].keys) {
-            $cmdletInfo = $config["commandlets"][$behavior][$commandlet]
-            $baseDecoder += BuildCmdletOverride $behavior $commandlet $cmdletInfo
-        }
-    }
-
-    $baseDecoder += [IO.File]::ReadAllText("$decoderPath/manual_overrides.ps1") + "`r`n`r`n"
-    $baseDecoder += BuildEnvVars
-    $baseDecoder += [IO.File]::ReadAllText("$decoderPath/initial_setup.ps1") + "`r`n`r`n"
-
-    return $baseDecoder
-}
-
-# find and remove fully qualified namespace from commandlet and function calls
-# ensures that our overrides are called instead of the real ones
-function ScrubExplicitNamespaces {
-
-    param([string] $Layer)
-
-    $cmdletRegex = "(\w+\.){1,}\w+\\"
-
-    $Layer -match $cmdletRegex > $null
-    return $Layer.Replace($Matches[0], "")
-}
-
-####################################################################################################
-function SplitReplacement {
-
-    param(
-        [String] $Layer
-    )
-
-    if (($Layer -is [String]) -and ($Layer -Like "*.split(*")) {
-
-        $start = $Layer.IndexOf(".split(", [System.StringComparison]::CurrentCultureIgnoreCase)
-        $end = $Layer.IndexOf(")", $start)
-        $split1 = $Layer.Substring($start, $end - $start + 1)
-        $split2 = $split1
-        if (($split1.Length -gt 11) -and (-not ($split1 -Like "*[char[]]*"))) {
-            $start = $split1.IndexOf("(") + 1
-            $end = $split1.IndexOf(")") - 1
-            $chars = $split1.Substring($start, $end - $start + 1).Trim()
-            $split2 = ".Split([char[]]" + $chars + ")"
-        }
-        $Layer = $Layer.Replace($split1, $split2)
-    }    
-
-    return $Layer
-}
-
-# look for environment variables and coerce them to be lowercase
-function EnvReplacement {
-
-    param(
-        [String] $Layer
-    )
-
-    foreach ($var in $config["environment"].keys) {
-        $Layer = $Layer -ireplace [regex]::Escape($var), $var
-    }
-
-    return $Layer -ireplace "pshome", "bshome"
-}
-
-# ensures no file name collision
-function GetTmpFilePath {
-
-    $done = $false
-    $fileName = ""
-
-    while (!$done) {
-        $fileName = [System.IO.Path]::GetTempPath() + [GUID]::NewGuid().ToString() + ".txt";
-        if (!(Test-Path $fileName)) {
-            $done = $true
-        }
-    }
-
-    return $fileName
-}
+$decoderBuilder = Import-Module -Name ./DecoderBuilder.psm1 -AsCustomObject -Scope Local
+$layerInspector = Import-Module -Name ./LayerInspector.psm1 -AsCustomObject -Scope Local
+$utils = Import-Module -Name ./Utils.psm1 -AsCustomObject -Scope Local
 
 $encodedScript = (Get-Content $InFile -ErrorAction Stop | Out-String)
 
@@ -524,27 +131,34 @@ $encodedScript = (Get-Content $InFile -ErrorAction Stop | Out-String)
 $encodedScript.Trim() | ConvertTo-Json | Out-File -Append $OutFile
 ",`"Actions`": [" | Out-File -Append $OutFile
 
-$layersFilePath = GetTmpFilePath
+$layersFilePath = $utils.GetTmpFilePath()
 $layers = New-Object System.Collections.Queue
 $layers.Enqueue($encodedScript)
 $layerCount = 1
-
-$baseDecoder = BuildBaseDecoder $OutFile $layersFilePath
+ 
+$baseDecoder = $decoderBuilder.Build($OutFile, $layersFilePath)
 
 while ($layers.Count -gt 0) {
-
+    
     $layer = $layers.Dequeue()
-    $layer = EnvReplacement $layer
-    $layer = SplitReplacement $layer
-    $layer = SeparateLines $layer
-    $layer = ScrubExplicitNamespaces $layer
+    $layer = $layerInspector.EnvReplacement($layer)
+    $layer = $layerInspector.SplitReplacement($layer)
+    $layer = $utils.SeparateLines($layer)
+    $layer = $layerInspector.HandleNamespaces($layer)
 
     $decoder = $baseDecoder + "`r`n`r`n" + $layer
-    $decoder | Out-File ./decoder.txt
+    $decoder | Out-File ./dbgdecoder/decoder$($layerCount).txt
 
-    $tmpFile = GetTmpFilePath
+    $tmpFile = $utils.GetTmpFilePath()
     $decoder | Out-File -FilePath $tmpFile
-    (timeout 5 pwsh -noni $tmpFile 2> "$ErrorDir/layer$($layerCount)error.txt")
+
+    if ($ErrorDir) {
+        (timeout 5 pwsh -noni $tmpFile 2> "$ErrorDir/layer$($layerCount)error.txt")
+    }
+    else {
+        (timeout 5 pwsh -noni $tmpFile 2> $null)
+    }
+
     Remove-Item -Path $tmpFile
 
     foreach ($newLayer in ReadNewLayers($layersFilePath)) {
@@ -554,8 +168,13 @@ while ($layers.Count -gt 0) {
     }
 
     Remove-Item $layersFilePath -ErrorAction SilentlyContinue
+    $layerCount++
 }
 
 # trim ending comma, add ending braces, prettify JSON, rewrite
 (Get-Content -Raw $OutFile).Trim("`r`n,") + "]}" | ConvertFrom-Json | ConvertTo-Json -Depth 10 | 
     Out-File $OutFile
+
+Remove-Module DecoderBuilder
+Remove-Module LayerInspector
+Remove-Module Utils

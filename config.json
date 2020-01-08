@@ -22,7 +22,7 @@
         "$env:systemroot": "C:\\WINDOWS",
         "$env:temp": "C:\\Users\\victim\\AppData\\Local\\Temp",
         "$env:tmp": "C:\\Users\\victim\\AppData\\Local\\Temp",
-        "$env:userdomain": "fakedomain",
+        "$env:userdomain": "victimdomain",
         "$env:username": "victim",
         "$env:userprofile": "C:\\Users\\victim",
         "$env:windir": "C:\\WINDOWS",
@@ -173,7 +173,7 @@
                     "COMObject": "<arg>.ToLower()"
                 },
                 "ExtraCode": [
-                    "if ($(GetOverridedClasses).Contains($TypeName.ToLower())) {",
+                    "if ($(GetOverridedClasses).Contains($behaviorProps[\"object\"].ToLower())) {",
                     "   return RedirectObjectCreation $TypeName",
                     "}"
                 ],
@@ -203,6 +203,22 @@
                 "UploadString": {
                     "uri": ["address"],
                     "data": ["data"]
+                }
+            }
+        }
+    },
+    "statics": {
+        "file_system": {
+            "WriteAllBytes": {
+                "FullActor": "[System.IO.File]::WriteAllBytes",
+                "BehaviorPropArgs": {
+                    "paths": ["path"]
+                }
+            },
+            "GetFolderPath": {
+                "FullActor": "[System.Environment]::GetFolderPath",
+                "BehaviorPropArgs": {
+                    "paths": ["folder"]
                 }
             }
         }

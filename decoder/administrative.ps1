@@ -14,7 +14,7 @@ class Action <# lawsuit... I'll be here all week #> {
     [String] $Line
     [hashtable] $BehaviorProps
     [hashtable] $Parameters
-    
+
     Action ([String[]] $Behaviors, [String] $FullActor, [hashtable] $BehaviorProps,
         [InvocationInfo] $Invocation) {
 
@@ -74,9 +74,14 @@ class Action <# lawsuit... I'll be here all week #> {
     }
 
     [string] GetShortActor([string] $FullActor) {
+
         # commandlet notation
         if ($FullActor.Contains("\")) {
             return $FullActor.Split("\")[-1]
+        }
+        # static function notation
+        elseif ($FullActor.Contains("::")) {
+            return $FullActor.Split("::")[-1]
         }
         # class member notation
         else {
@@ -121,8 +126,9 @@ function RedirectObjectCreation {
     return Microsoft.PowerShell.Utility\New-Object -TypeName "BoxPS$($TypeName.Split(".")[-1])"
 }
 
+# placeholder will be replaced by box-ps.ps1
 function GetOverridedClasses {
-    $config = Microsoft.PowerShell.Management\Get-Content .\config.json | ConvertFrom-Json -AsHashtable
+    $config = Microsoft.PowerShell.Management\Get-Content "CONFIG_PLACEHOLDER\config.json" | ConvertFrom-Json -AsHashtable
     return $config["classes"].Keys | ForEach-Object { $_.ToLower() }
 }
 
