@@ -14,18 +14,14 @@ TODO
 
     Before open source..
 
-        -add in properties for overrided classes (ex. Headers property for webclient) 
-        (see iranianshit.ps1)
+        -Find a way to preserve script action order when there are IEX. Right now the actions from 
+        that next layer are after the current layer, when in reality they are right in the middle
 
-        -Faking it...
-        -framework for allowing functions to execute under certain circumstances
-        -ex. Get-ChildItem all the time, Invoke-WebRequest in dangerous mode
-        -Have webclient methods return dummy data to keep the script from erroring out?
-        -danger level option...
-            when there's a download being fed into an IEX, actually do the download because it's 
-            another script
+        -always allow for known-safe functions right now. Not making the framework for levels
+        of safety yet
 
         -commenting, style (variable/funciton names), readme, other documentation?
+            - get rid of "Code" at the end of functions in HarnessBuilder
 
         -investigate SplitReplacement and see what it does (hopefully remove it)
 
@@ -50,22 +46,37 @@ TODO
 
     -add type goverernor (or something named like that), so we can add entries in the config file that
     determine which member of an object to use as it's representation in the output file (encoding
-    and process objects)
+    and process objects) (hopefully replacing FlattenProcessObjects)
 
     -add some static deob for scrubbing explicit namespaces?
         - string deob could be really easy... just detect if it's being done (like a bunch of formatting)
           and run powershell on the string (see iranianshit.ps1)
 
+    -Add support for automated building of all constructors of an object, not just the default one
+        -[type].GetConstructors() | ForEach-Object { $_.GetParameters() }
+
     -catch commands run like schtasks.exe
         See if hook is available in powershell to do something every time an executable that is not 
         .Net executes List of aliases to override (pointing straight to linux binaries)
 
-    -Find a way to preserve script action order when there are IEX. Right now the actions from that next
-        layer are after the current layer, when in reality they are right in the middle
-
     -show enum name when it's an argument? 
         -ex. [BoxPSStatics]::GetFolderPath([System.Environment+SpecialFolder]::Desktop) gives
         argument value of 0
+
+    -object properties that we care about tracking? (ex. User-agent strings)
+
+    -get rid of rewriting the JSON file to make it look pretty. For big scripts this is going to kill
+
+    -Faking it...
+        -Have webclient methods return dummy data in safe mode to keep the script from erroring out?
+        -framework for allowing functions to execute under certain circumstances
+            -Invoke-WebRequest in semi-safe mode 
+            -inspect downloaded content to see if it's more powershell and allow it to execute
+
+        -another docker container in tandem that is receiving the web requests box-ps makes, and 
+        sending them through TOR guard
+    
+    -configreader module that ingests the config file into easy to work with objects
 
 ###################################################################################################>
 
@@ -115,12 +126,12 @@ if ($PSBoundParameters.ContainsKey("ErrorDir")) {
 }
 
 # DEBUG
-if (Test-Path ./dbgdecoder) {
-    Remove-Item -Force ./dbgdecoder/*
-    Write-Host "[+] cleared directory dbgdecoder"
+if (Test-Path ./dbgharness) {
+    Remove-Item -Force ./dbgharness/*
+    Write-Host "[+] cleared directory dbgharness"
 }
 
-$decoderBuilder = Import-Module -Name ./DecoderBuilder.psm1 -AsCustomObject -Scope Local
+$harnessBuilder = Import-Module -Name ./HarnessBuilder.psm1 -AsCustomObject -Scope Local
 $layerInspector = Import-Module -Name ./LayerInspector.psm1 -AsCustomObject -Scope Local
 $utils = Import-Module -Name ./Utils.psm1 -AsCustomObject -Scope Local
 
@@ -136,30 +147,34 @@ $layers = New-Object System.Collections.Queue
 $layers.Enqueue($encodedScript)
 $layerCount = 1
  
-$baseDecoder = $decoderBuilder.Build($OutFile, $layersFilePath)
+$baseHarness = $harnessBuilder.Build($OutFile, $layersFilePath)
+$baseHarness | Out-File ./dbgharness/harness.txt
 
 while ($layers.Count -gt 0) {
-    
+
     $layer = $layers.Dequeue()
     $layer = $layerInspector.EnvReplacement($layer)
     $layer = $layerInspector.SplitReplacement($layer)
     $layer = $utils.SeparateLines($layer)
     $layer = $layerInspector.HandleNamespaces($layer)
 
-    $decoder = $baseDecoder + "`r`n`r`n" + $layer
-    $decoder | Out-File ./dbgdecoder/decoder$($layerCount).txt
+    $harness = $baseHarness + "`r`n`r`n" + $layer
+    $layer | Out-File ./dbgharness/layer$($layerCount).txt
 
-    $tmpFile = $utils.GetTmpFilePath()
-    $decoder | Out-File -FilePath $tmpFile
+    $harnessedScriptPath = $utils.GetTmpFilePath()
+    Write-Host $harnessedScriptPath
+    $harness | Out-File -FilePath $harnessedScriptPath
+
+    Read-Host "enter to run layer"
 
     if ($ErrorDir) {
-        (timeout 5 pwsh -noni $tmpFile 2> "$ErrorDir/layer$($layerCount)error.txt")
+        (timeout 5 pwsh -noni $harnessedScriptPath 2> "$ErrorDir/layer$($layerCount)error.txt")
     }
     else {
-        (timeout 5 pwsh -noni $tmpFile 2> $null)
+        (timeout 5 pwsh -noni $harnessedScriptPath 2> $null)
     }
 
-    Remove-Item -Path $tmpFile
+    Remove-Item -Path $harnessedScriptPath
 
     foreach ($newLayer in ReadNewLayers($layersFilePath)) {
         if ($null -ne $newLayer) {
@@ -175,6 +190,6 @@ while ($layers.Count -gt 0) {
 (Get-Content -Raw $OutFile).Trim("`r`n,") + "]}" | ConvertFrom-Json | ConvertTo-Json -Depth 10 | 
     Out-File $OutFile
 
-Remove-Module DecoderBuilder
+Remove-Module HarnessBuilder
 Remove-Module LayerInspector
 Remove-Module Utils

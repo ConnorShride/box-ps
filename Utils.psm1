@@ -14,9 +14,47 @@ function GetTmpFilePath {
     return $fileName
 }
 
+function TabPad {
+    
+    param (
+        [string] $block
+    )
+
+    $newBlock = ""
+
+    foreach ($line in $block.Split("`r`n")) {
+        $newBlock += "`t" + $line + "`r`n"
+    }
+    
+    return $newBlock
+}
+
+function GetUnqualifiedName {
+
+    param(
+        [string] $FullyQualified
+    )
+
+    $unqualified = ""
+
+    if ($FullyQualified.Contains("\")) {
+        $unqualified = $FullyQualified.Split("\")[1]
+    }
+    elseif ($FullyQualified.Contains("::")) {
+        $unqualified = $FullyQualified.Split("::")[1]
+    }
+    else {
+        $unqualified = $FullyQualified
+    }
+
+    return $unqualified
+}
+
 function SeparateLines
 {
-    param([char[]]$Script)
+    param(
+        [char[]]$Script
+    )
 
     $prevChar = ''
     $separated = ''

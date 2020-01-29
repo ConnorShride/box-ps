@@ -99,6 +99,8 @@ function RecordAction {
         [Action] $Action
     )
 
+    Write-Host "Recording action $($Action.FullActor)"
+
     $actionsOutFile = "ACTIONS_OUTFILE_PLACEHOLDER"
 
     $json = $Action | ConvertTo-Json -Depth 10
@@ -128,8 +130,8 @@ function RedirectObjectCreation {
 
 # placeholder will be replaced by box-ps.ps1
 function GetOverridedClasses {
-    $config = Microsoft.PowerShell.Management\Get-Content "CONFIG_PLACEHOLDER\config.json" | ConvertFrom-Json -AsHashtable
-    return $config["classes"].Keys | ForEach-Object { $_.ToLower() }
+    $config = Microsoft.PowerShell.Management\Get-Content "CONFIG_PLACEHOLDER/config.json" | ConvertFrom-Json -AsHashtable
+    return $config["Classes"].Keys | ForEach-Object { $_.ToLower() }
 }
 
 <# 

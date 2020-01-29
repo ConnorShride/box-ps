@@ -1,4 +1,6 @@
 $config = Get-Content $PSScriptRoot\config.json | ConvertFrom-Json -AsHashtable
+$utils = Import-Module -Name ./Utils.psm1 -AsCustomObject -Scope Local
+
 
 function ReplaceStaticNamespaces {
 
@@ -6,12 +8,12 @@ function ReplaceStaticNamespaces {
         [string] $Layer
     )
 
-    $staticsClass = "BoxPSStatics"
+    $boxStaticsClass = "BoxPSStatics"
     $functions = New-Object System.Collections.ArrayList
 
     # get all the static functions names we care about
-    foreach ($behavior in $config["statics"].keys) {
-        foreach ($function in $config["statics"][$behavior].keys) {
+    foreach ($behavior in $config["Statics"].keys) {
+        foreach ($function in $config["Statics"][$behavior].keys) {
             $functions.Add([string]($function)) | Out-Null
         }
     }
@@ -20,7 +22,8 @@ function ReplaceStaticNamespaces {
     # remove the method from the list 
     while ($functions.Count -gt 0) {
 
-        $match = $Layer | Select-String -Pattern $("\[[\w\.]+(?<!$staticsClass)\]::$($functions[0])\(")
+        $shortName = $utils.GetUnqualifiedName($functions[0])
+        $match = $Layer | Select-String -Pattern $("\[[\w\.]+(?<!$boxStaticsClass)\]::$shortName\(")
         $match = $match.Matches
 
         # remove the namespace
@@ -32,7 +35,7 @@ function ReplaceStaticNamespaces {
             $Layer = $Layer.Remove($namespaceStart + 1, $namespaceEnd - $namespaceStart - 1)
             $Layer = $Layer.Insert($namespaceStart + 1, $staticsClass)
         }
-        # don't look for matches on that commandlet anymore
+        # don't look for matches on that cmdlet anymore
         else {
             $functions.Remove($functions[0])
         }
@@ -49,18 +52,19 @@ function ScrubCmdletNamespaces {
 
     $cmdlets = New-Object System.Collections.ArrayList
 
-    # get all the commandlets we care about
-    foreach ($behavior in $config["commandlets"].keys) {
-        foreach ($cmdlet in $config["commandlets"][$behavior].keys) {
+    # get all the cmdlets we care about
+    foreach ($behavior in $config["Cmdlets"].keys) {
+        foreach ($cmdlet in $config["Cmdlets"][$behavior].keys) {
             $cmdlets.Add([string]($cmdlet)) | Out-Null
         }
     }
 
-    # find an instance of commandlet invocation by full namespace
-    # remove the commandlet from the list when there are no matches for it anymore
+    # find an instance of cmdlet invocation by full namespace
+    # remove the cmdlet from the list when there are no matches for it anymore
     while ($cmdlets.Count -gt 0) {
 
-        $match = $Layer | Select-String -Pattern $("([\.\w]+)\\$($cmdlets[0]) ")
+        $pat = [Regex]::Escape($cmdlets[0])
+        $match = $Layer | Select-String -Pattern $("$pat ")
         $match = $match.Matches
 
         # remove the namespace
@@ -69,7 +73,7 @@ function ScrubCmdletNamespaces {
             $namespaceLen = $Layer.IndexOf("\", $match.Index) - $match.Index + 1
             $Layer = $Layer.Remove($match.Index, $namespaceLen)
         }
-        # don't look for matches on that commandlet anymore
+        # don't look for matches on that cmdlet anymore
         else {
             $cmdlets.Remove($cmdlets[0])
         }
@@ -78,7 +82,7 @@ function ScrubCmdletNamespaces {
     return $Layer
 }
 
-# find and remove fully qualified namespace from commandlet and function calls
+# find and remove fully qualified namespace from cmdlet and function calls
 # ensures that our overrides are called instead of the real ones
 function HandleNamespaces {
 
@@ -123,7 +127,7 @@ function EnvReplacement {
         [String] $Layer
     )
 
-    foreach ($var in $config["environment"].keys) {
+    foreach ($var in $config["Environment"].keys) {
         $Layer = $Layer -ireplace [regex]::Escape($var), $var
     }
 

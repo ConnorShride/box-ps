@@ -1,5 +1,5 @@
 {
-    "environment": {
+    "Environment": {
         "$env:allusersprofile": "C:\\ProgramData",
         "$env:appdata": "C:\\Users\\victim\\AppData\\Roaming",
         "$env:commonprogramfiles": "C:\\Program Files\\Common Files",
@@ -30,7 +30,7 @@
         "$bshome1": "C:\\Windows\\System32\\WindowsPowerShell\\v1.0",
         "$MaximumDriveCount": 4096
     },
-    "behaviorProps": {
+    "BehaviorProps": {
         "code_import": ["code"],
         "file_system": ["paths"],
         "script_exec": ["script"],
@@ -40,61 +40,52 @@
         "upload": ["uri", "data"],
         "file_exec": ["files"]
     },
-    "commandlets": {
+    "Cmdlets": {
         "file_system": {
-            "Get-Item": {
-                "FullActor": "Microsoft.PowerShell.Management\\Get-Item",
+            "Microsoft.PowerShell.Management\\Get-Item": {
                 "BehaviorPropArgs": {
                     "paths": ["Path", "LiteralPath"]
                 },
                 "Flags": ["call_parent"]
             },
-            "Set-Content": {
-                "FullActor": "Microsoft.PowerShell.Management\\Set-Content",
+            "Microsoft.PowerShell.Management\\Set-Content": {
                 "BehaviorPropArgs": {
                     "paths": ["Path", "LiteralPath"]
                 }
             },
-            "Set-Location": {
-                "FullActor": "Microsoft.PowerShell.Management\\Set-Location",
+            "Microsoft.PowerShell.Management\\Set-Location": {
                 "BehaviorPropArgs": {
                     "paths": ["Path", "LiteralPath"]
                 }
             },
-            "New-Item": {
-                "FullActor": "Microsoft.PowerShell.Management\\New-Item",
+            "Microsoft.PowerShell.Management\\New-Item": {
                 "BehaviorPropArgs": {
                     "paths": ["Path", "Name"]
                 }
             },
-            "Get-ChildItem": {
-                "FullActor": "Microsoft.PowerShell.Management\\Get-ChildItem",
+            "Microsoft.PowerShell.Management\\Get-ChildItem": {
                 "BehaviorPropArgs": {
                     "paths": ["Path"]
                 }
             },
-            "Test-Path": {
-                "FullActor": "Microsoft.PowerShell.Management\\Test-Path",
+            "Microsoft.PowerShell.Management\\Test-Path": {
                 "BehaviorPropArgs": {
                     "paths": ["Path"]
                 }
             },
-            "Get-Content": {
-                "FullActor": "Microsoft.PowerShell.Management\\Get-Content",
+            "Microsoft.PowerShell.Management\\Get-Content": {
                 "BehaviorPropArgs": {
                     "paths": ["Path", "LiteralPath"]
                 }
             },
-            "Remove-Item": {
-                "FullActor": "Microsoft.PowerShell.Management\\Remove-Item",
+            "Microsoft.PowerShell.Management\\Remove-Item": {
                 "BehaviorPropArgs": {
                     "paths": ["Path", "LiteralPath"]
                 }
             }
         },
         "process": {
-            "Get-Process": {
-                "FullActor": "Microsoft.PowerShell.Management\\Get-Process",
+            "Microsoft.PowerShell.Management\\Get-Process": {
                 "BehaviorPropArgs": {
                     "processes": ["Name", "Id", "InputObject"]
                 },
@@ -102,8 +93,7 @@
                     "InputObject": ["FlattenProcessObjects <arg>"]
                 }
             },
-            "Stop-Process": {
-                "FullActor": "Microsoft.PowerShell.Management\\Stop-Process",
+            "Microsoft.PowerShell.Management\\Stop-Process": {
                 "BehaviorPropArgs": {
                     "processes": ["Name", "Id", "InputObject"]
                 },
@@ -111,24 +101,21 @@
                     "InputObject": ["FlattenProcessObjects <arg>"]
                 }
             },
-            "Start-Sleep": {
-                "FullActor": "Microsoft.PowerShell.Utility\\Start-Sleep",
+            "Microsoft.PowerShell.Utility\\Start-Sleep": {
                 "BehaviorPropArgs": {
                     "processes": "self"
                 }
             }
         },
         "code_import": {
-            "Add-Type": {
-                "FullActor": "Microsoft.PowerShell.Utility\\Add-Type",
+            "Microsoft.PowerShell.Utility\\Add-Type": {
                 "BehaviorPropArgs": {
                     "code": ["TypeDefinition"]
                 }
             }
         },
         "script_exec": {
-            "Invoke-Expression": {
-                "FullActor": "Microsoft.PowerShell.Utility\\Invoke-Expression",
+            "Microsoft.PowerShell.Utility\\Invoke-Expression": {
                 "BehaviorPropArgs": {
                     "script": ["Command"]
                 },
@@ -136,22 +123,19 @@
             }
         },
         "file_exec": {
-            "Start-Process": {
-                "FullActor": "Microsoft.PowerShell.Management\\Start-Process",
+            "Microsoft.PowerShell.Management\\Start-Process": {
                 "BehaviorPropArgs": {
                     "files": ["FilePath"]
                 }
             },
-            "Invoke-Item": {
-                "FullActor": "Microsoft.PowerShell.Management\\Invoke-Item",
+            "Microsoft.PowerShell.Management\\Invoke-Item": {
                 "BehaviorPropArgs": {
                     "files": ["Path", "LiteralPath"]
                 }
             }
         },
         "new_object": {
-            "New-Object": {
-                "FullActor": "Microsoft.PowerShell.Utility\\New-Object",
+            "Microsoft.PowerShell.Utility\\New-Object": {
                 "BehaviorPropArgs": {
                     "object": ["COMObject", "TypeName"]
                 },
@@ -181,44 +165,55 @@
             }
         },
         "other": {
-            "Set-ExecutionPolicy": {
-                "FullActor": "Microsoft.PowerShell.Security\\Set-ExecutionPolicy"
-            }
+            "Microsoft.PowerShell.Security\\Set-ExecutionPolicy": {}
         }
     },
-    "classes": {
+    "Classes": {
         "System.Net.WebClient": {
             "download": {
                 "DownloadFile": {
-                    "uri": ["address"]
+                    "BehaviorPropArgs": {
+                        "uri": ["address"]
+                    }
                 },
                 "DownloadString": {
-                    "uri": ["address"]
+                    "BehaviorPropArgs": {
+                        "uri": ["address"]
+                    }
                 },
                 "DownloadData": {
-                    "uri": ["address"]
+                    "BehaviorPropArgs": {
+                        "uri": ["address"]
+                    }
                 }
             },
             "upload": {
                 "UploadString": {
-                    "uri": ["address"],
-                    "data": ["data"]
+                    "BehaviorPropArgs": {
+                        "uri": ["address"],
+                        "data": ["data"]
+                    }
                 }
             }
         }
     },
-    "statics": {
+    "Statics": {
         "file_system": {
-            "WriteAllBytes": {
-                "FullActor": "[System.IO.File]::WriteAllBytes",
+            "[System.IO.File]::WriteAllBytes": {
                 "BehaviorPropArgs": {
                     "paths": ["path"]
                 }
             },
-            "GetFolderPath": {
-                "FullActor": "[System.Environment]::GetFolderPath",
+            "[System.Environment]::GetFolderPath": {
                 "BehaviorPropArgs": {
                     "paths": ["folder"]
+                }
+            }
+        },
+        "download": {
+            "[System.Net.HttpWebRequest]::Create": {
+                "BehaviorPropArgs": {
+                    "uri": ["requestUriString", "requestUri"]
                 }
             }
         }
