@@ -5,7 +5,7 @@ $utils = Import-Module -Name ./Utils.psm1 -AsCustomObject -Scope Local
 function ReplaceStaticNamespaces {
 
     param(
-        [string] $Layer
+        [string] $Script
     )
 
     $boxStaticsClass = "BoxPSStatics"
@@ -23,17 +23,17 @@ function ReplaceStaticNamespaces {
     while ($functions.Count -gt 0) {
 
         $shortName = $utils.GetUnqualifiedName($functions[0])
-        $match = $Layer | Select-String -Pattern $("\[[\w\.]+(?<!$boxStaticsClass)\]::$shortName\(")
+        $match = $Script | Select-String -Pattern $("\[[\w\.]+(?<!$boxStaticsClass)\]::$shortName\(")
         $match = $match.Matches
 
         # remove the namespace
         if ($match) {
 
-            $namespaceStart = $Layer.LastIndexOf("[", $match.Index)
-            $namespaceEnd = $Layer.IndexOf(']', $namespaceStart)
+            $namespaceStart = $Script.LastIndexOf("[", $match.Index)
+            $namespaceEnd = $Script.IndexOf(']', $namespaceStart)
     
-            $Layer = $Layer.Remove($namespaceStart + 1, $namespaceEnd - $namespaceStart - 1)
-            $Layer = $Layer.Insert($namespaceStart + 1, $staticsClass)
+            $Script = $Script.Remove($namespaceStart + 1, $namespaceEnd - $namespaceStart - 1)
+            $Script = $Script.Insert($namespaceStart + 1, $staticsClass)
         }
         # don't look for matches on that cmdlet anymore
         else {
@@ -41,22 +41,27 @@ function ReplaceStaticNamespaces {
         }
     }
 
-    return $Layer
+    return $Script
 }
 
 function ScrubCmdletNamespaces {
 
     param(
-        [string] $Layer
+        [string] $Script
     )
 
     $cmdlets = New-Object System.Collections.ArrayList
 
-    # get all the cmdlets we care about
+    # get all the auto-override cmdlets we care about
     foreach ($behavior in $config["Cmdlets"].keys) {
         foreach ($cmdlet in $config["Cmdlets"][$behavior].keys) {
             $cmdlets.Add([string]($cmdlet)) | Out-Null
         }
+    }
+
+    # get all the manual-override cmdlets we care about
+    foreach ($cmdlet in $config["Manuals"]["Cmdlets"]) {
+        $cmdlets.Add([string]($cmdlet)) | Out-Null
     }
 
     # find an instance of cmdlet invocation by full namespace
@@ -64,14 +69,14 @@ function ScrubCmdletNamespaces {
     while ($cmdlets.Count -gt 0) {
 
         $pat = [Regex]::Escape($cmdlets[0])
-        $match = $Layer | Select-String -Pattern $("$pat ")
+        $match = $Script | Select-String -Pattern $("$pat ")
         $match = $match.Matches
 
         # remove the namespace
         if ($match) {
 
-            $namespaceLen = $Layer.IndexOf("\", $match.Index) - $match.Index + 1
-            $Layer = $Layer.Remove($match.Index, $namespaceLen)
+            $namespaceLen = $Script.IndexOf("\", $match.Index) - $match.Index + 1
+            $Script = $Script.Remove($match.Index, $namespaceLen)
         }
         # don't look for matches on that cmdlet anymore
         else {
@@ -79,7 +84,7 @@ function ScrubCmdletNamespaces {
         }
     }
 
-    return $Layer
+    return $Script
 }
 
 # find and remove fully qualified namespace from cmdlet and function calls
@@ -87,26 +92,26 @@ function ScrubCmdletNamespaces {
 function HandleNamespaces {
 
     param(
-        [string] $Layer
+        [string] $Script
     )
 
-    $Layer = ReplaceStaticNamespaces $Layer
-    $Layer = ScrubCmdletNamespaces $Layer
+    $Script = ReplaceStaticNamespaces $Script
+    $Script = ScrubCmdletNamespaces $Script
 
-    return $Layer
+    return $Script
 }
 
 function SplitReplacement {
 
     param(
-        [String] $Layer
+        [String] $Script
     )
 
-    if (($Layer -is [String]) -and ($Layer -Like "*.split(*")) {
+    if (($Script -is [String]) -and ($Script -Like "*.split(*")) {
 
-        $start = $Layer.IndexOf(".split(", [System.StringComparison]::CurrentCultureIgnoreCase)
-        $end = $Layer.IndexOf(")", $start)
-        $split1 = $Layer.Substring($start, $end - $start + 1)
+        $start = $Script.IndexOf(".split(", [System.StringComparison]::CurrentCultureIgnoreCase)
+        $end = $Script.IndexOf(")", $start)
+        $split1 = $Script.Substring($start, $end - $start + 1)
         $split2 = $split1
         if (($split1.Length -gt 11) -and (-not ($split1 -Like "*[char[]]*"))) {
             $start = $split1.IndexOf("(") + 1
@@ -114,24 +119,24 @@ function SplitReplacement {
             $chars = $split1.Substring($start, $end - $start + 1).Trim()
             $split2 = ".Split([char[]]" + $chars + ")"
         }
-        $Layer = $Layer.Replace($split1, $split2)
+        $Script = $Script.Replace($split1, $split2)
     }    
 
-    return $Layer
+    return $Script
 }
 
 # look for environment variables and coerce them to be lowercase
 function EnvReplacement {
 
     param(
-        [String] $Layer
+        [String] $Script
     )
 
     foreach ($var in $config["Environment"].keys) {
-        $Layer = $Layer -ireplace [regex]::Escape($var), $var
+        $Script = $Script -ireplace [regex]::Escape($var), $var
     }
 
-    return $Layer -ireplace "pshome", "bshome"
+    return $Script -ireplace "pshome", "bshome"
 }
 
 Export-ModuleMember -Function EnvReplacement

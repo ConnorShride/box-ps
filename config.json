@@ -114,14 +114,6 @@
                 }
             }
         },
-        "script_exec": {
-            "Microsoft.PowerShell.Utility\\Invoke-Expression": {
-                "BehaviorPropArgs": {
-                    "script": ["Command"]
-                },
-                "LayerArg": "Command"
-            }
-        },
         "file_exec": {
             "Microsoft.PowerShell.Management\\Start-Process": {
                 "BehaviorPropArgs": {
@@ -217,5 +209,11 @@
                 }
             }
         }
+    },
+    "Manuals": {
+        "Cmdlets": [
+            "Microsoft.PowerShell.Utility\\Invoke-Expression",
+            "Microsoft.PowerShell.Core\\mkdir"
+        ]
     }
 }

@@ -99,8 +99,6 @@ function RecordAction {
         [Action] $Action
     )
 
-    Write-Host "Recording action $($Action.FullActor)"
-
     $actionsOutFile = "ACTIONS_OUTFILE_PLACEHOLDER"
 
     $json = $Action | ConvertTo-Json -Depth 10

@@ -14,9 +14,6 @@ TODO
 
     Before open source..
 
-        -Find a way to preserve script action order when there are IEX. Right now the actions from 
-        that next layer are after the current layer, when in reality they are right in the middle
-
         -always allow for known-safe functions right now. Not making the framework for levels
         of safety yet
 
@@ -40,6 +37,7 @@ TODO
             [IO.File]::WriteAllBytes
             [Diagnostics.Process]::Start
 
+    - make new-object a manual (make sure we document the config file first tho)
 
     -commandlets that may fit into two behaviors (upload/download) like Invoke-WebRequest or
         Invoke-RestMethod. maybe back off the specificity and just go network behavior
@@ -58,6 +56,7 @@ TODO
     -catch commands run like schtasks.exe
         See if hook is available in powershell to do something every time an executable that is not 
         .Net executes List of aliases to override (pointing straight to linux binaries)
+        - otherwise, probably can just add a function that's named the same?
 
     -show enum name when it's an argument? 
         -ex. [BoxPSStatics]::GetFolderPath([System.Environment+SpecialFolder]::Desktop) gives
@@ -86,8 +85,7 @@ param (
     [parameter(Position=2)][String] $ErrorDir
 )
 
-####################################################################################################
-function ReadNewLayers {
+function OutputLayers {
     param(
         [String]$LayersFilePath
     )
@@ -99,11 +97,13 @@ function ReadNewLayers {
 
         $layers = $layersContent.Split("LAYERDELIM")
 
-        # check for empty entries manually b/c the split option didn't work
-        return $layers | Where-Object { $_.Trim() –ne "" }
-    }
-    else {
-        return $null
+        $layers | Where-Object { $_.Trim() –ne "" } | ForEach-Object {
+
+            $str = "**********************************************`r`n"
+            $str += $_ + "`r`n"
+            $str += "**********************************************"
+            $str | Out-File -Append "debug/layers.ps1"
+        }
     }
 }
 
@@ -112,84 +112,56 @@ if (!(Test-Path $InFile)) {
     exit -1
 }
 
-if ($PSBoundParameters.ContainsKey("ErrorDir")) {
-
-    if (!(Test-Path $ErrorDir)) {
-        New-Item -ItemType "directory" -Path $ErrorDir > $null
-        Write-Host "[+] created directory $ErrorDir"
-    }
-    else {
-        Write-Host "[+] error directory $ErrorDir already exists"
-        Remove-Item -Force $ErrorDir/*
-        Write-Host "[+] cleared contents of directory $ErrorDir"
-    }
-}
 
 # DEBUG
-if (Test-Path ./dbgharness) {
-    Remove-Item -Force ./dbgharness/*
-    Write-Host "[+] cleared directory dbgharness"
+if (Test-Path ./debug) {
+    Remove-Item -Force ./debug/*
+    Write-Host "[+] cleared directory debug"
+}
+else {
+    mkdir ./debug
+    Write-Host "[+] created directory debug"
 }
 
 $harnessBuilder = Import-Module -Name ./HarnessBuilder.psm1 -AsCustomObject -Scope Local
-$layerInspector = Import-Module -Name ./LayerInspector.psm1 -AsCustomObject -Scope Local
+$scriptInspector = Import-Module -Name ./ScriptInspector.psm1 -AsCustomObject -Scope Local
 $utils = Import-Module -Name ./Utils.psm1 -AsCustomObject -Scope Local
 
-$encodedScript = (Get-Content $InFile -ErrorAction Stop | Out-String)
+$script = (Get-Content $InFile -ErrorAction Stop | Out-String)
 
 # record original encoded script, start building JSON for actions
 "{`"Script`": " | Out-File $OutFile
-$encodedScript.Trim() | ConvertTo-Json | Out-File -Append $OutFile
+$script.Trim() | ConvertTo-Json | Out-File -Append $OutFile
 ",`"Actions`": [" | Out-File -Append $OutFile
 
 $layersFilePath = $utils.GetTmpFilePath()
-$layers = New-Object System.Collections.Queue
-$layers.Enqueue($encodedScript)
-$layerCount = 1
- 
 $baseHarness = $harnessBuilder.Build($OutFile, $layersFilePath)
-$baseHarness | Out-File ./dbgharness/harness.txt
 
-while ($layers.Count -gt 0) {
+# DEBUG
+$baseHarness | Out-File ./debug/harness.ps1
 
-    $layer = $layers.Dequeue()
-    $layer = $layerInspector.EnvReplacement($layer)
-    $layer = $layerInspector.SplitReplacement($layer)
-    $layer = $utils.SeparateLines($layer)
-    $layer = $layerInspector.HandleNamespaces($layer)
+$script = $scriptInspector.EnvReplacement($script)
+$script = $scriptInspector.SplitReplacement($script)
+$script = $utils.SeparateLines($script)
+$script = $scriptInspector.HandleNamespaces($script)
 
-    $harness = $baseHarness + "`r`n`r`n" + $layer
-    $layer | Out-File ./dbgharness/layer$($layerCount).txt
+$harness = $baseHarness + "`r`n`r`n" + $script
 
-    $harnessedScriptPath = $utils.GetTmpFilePath()
-    Write-Host $harnessedScriptPath
-    $harness | Out-File -FilePath $harnessedScriptPath
+# DEBUG
+$script | Out-File ./debug/script.ps1
 
-    Read-Host "enter to run layer"
+$harnessedScriptPath = $utils.GetTmpFilePath()
+$harness | Out-File -FilePath $harnessedScriptPath
 
-    if ($ErrorDir) {
-        (timeout 5 pwsh -noni $harnessedScriptPath 2> "$ErrorDir/layer$($layerCount)error.txt")
-    }
-    else {
-        (timeout 5 pwsh -noni $harnessedScriptPath 2> $null)
-    }
+(timeout 5 pwsh -noni $harnessedScriptPath 2> "debug/error.txt")
 
-    Remove-Item -Path $harnessedScriptPath
-
-    foreach ($newLayer in ReadNewLayers($layersFilePath)) {
-        if ($null -ne $newLayer) {
-            $layers.Enqueue($newLayer)
-        }
-    }
-
-    Remove-Item $layersFilePath -ErrorAction SilentlyContinue
-    $layerCount++
-}
+OutputLayers $layersFilePath
 
 # trim ending comma, add ending braces, prettify JSON, rewrite
 (Get-Content -Raw $OutFile).Trim("`r`n,") + "]}" | ConvertFrom-Json | ConvertTo-Json -Depth 10 | 
     Out-File $OutFile
 
+# clean up
 Remove-Module HarnessBuilder
-Remove-Module LayerInspector
+Remove-Module ScriptInspector
 Remove-Module Utils
