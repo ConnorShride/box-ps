@@ -357,45 +357,60 @@ function ClassFunctionOverride {
         $signature = TranslateClassFuncSignature $signature
         $sigAndArgs = [Tuple]::Create($signature, $sigArgs)
 
-        $code += $signature + " {`r`n"
-        $code += $utils.TabPad($(BehaviorPropsCode -ClassFunc -SigAndArgs $sigAndArgs -BehaviorPropArgs $OverrideInfo["BehaviorPropArgs"]))
+        #Write-Host $sigAndArgs[1]
 
-        if ($Static) {
-            $code += "`tRecordAction `$([Action]::new(@(`"$Behavior`"), `"$FuncName`", `$behaviorProps, `$PSBoundParameters, `$MyInvocation.Line))`r`n"
+        # if the signature does not take an argument that we listed in the config file, then we
+        # aren't supporting it
+        $behaviorPropArgs = $OverrideInfo["BehaviorPropArgs"]
+        $supportedArgs = @()
+        foreach ($behaviorProp in $behaviorPropArgs.keys) {
+            $supportedArgs += $behaviorPropArgs[$behaviorProp]
         }
-        else {
-            $code += "`tRecordAction `$([Action]::new(@(`"$Behavior`"), `"$ParentClass`.$FuncName`", `$behaviorProps, `$PSBoundParameters, `$MyInvocation.Line))`r`n"
-        }
 
-        # if the method actually has a return value
-        if (!$signature.Contains("[void]")) {
+        $intersection = $supportedArgs | Microsoft.PowerShell.Core\Where-Object {$sigAndArgs[1] -contains $_} 
 
-            # build a call to the real function to return the actual result from the override
-            if ($OverrideInfo["Flags"] -and $OverrideInfo["Flags"].Contains("call_parent")) {
+        if ($intersection) {
 
-                $code += "`treturn "
-
-                if ($Static) {
-                    $code += "$FuncName("
-                }
-                else {
-                    $code += "([$ParentClass]`$this).$FuncName("
-                }
-
-                # build arguments to the function
-                $args = ""
-                foreach ($arg in $sigArgs) {
-                    $args += "`$$arg, "
-                }
-                $args = $args.TrimEnd(", ")
-                $code += $args + ")`r`n"
+            $code += $signature + " {`r`n"
+            $code += $utils.TabPad($(BehaviorPropsCode -ClassFunc -SigAndArgs $sigAndArgs -BehaviorPropArgs $OverrideInfo["BehaviorPropArgs"]))
+    
+            if ($Static) {
+                $code += "`tRecordAction `$([Action]::new(@(`"$Behavior`"), `"$FuncName`", `$behaviorProps, `$PSBoundParameters, `$MyInvocation.Line))`r`n"
             }
             else {
-                $code += "`treturn `$null`r`n"
+                $code += "`tRecordAction `$([Action]::new(@(`"$Behavior`"), `"$ParentClass`.$FuncName`", `$behaviorProps, `$PSBoundParameters, `$MyInvocation.Line))`r`n"
             }
+    
+            # if the method actually has a return value
+            if (!$signature.Contains("[void]")) {
+    
+                # build a call to the real function to return the actual result from the override
+                if ($OverrideInfo["Flags"] -and $OverrideInfo["Flags"].Contains("call_parent")) {
+    
+                    $code += "`treturn "
+    
+                    if ($Static) {
+                        $code += "$FuncName("
+                    }
+                    else {
+                        $code += "([$ParentClass]`$this).$FuncName("
+                    }
+    
+                    # build arguments to the function
+                    $args = ""
+                    foreach ($arg in $sigArgs) {
+                        $args += "`$$arg, "
+                    }
+                    $args = $args.TrimEnd(", ")
+                    $code += $args + ")`r`n"
+                }
+                else {
+                    $code += "`treturn `$null`r`n"
+                }
+            }
+    
+            $code += "}`r`n"
         }
-
-        $code += "}`r`n"
     }
 
     return $code
@@ -503,10 +518,10 @@ function BuildHarness {
     $harnessPath = "$PSScriptRoot/harness"
     $harness = ""
 
-    $harness += [IO.File]::ReadAllText("$harnessPath/administrative.ps1") + "`n`n"
+    $harness += [IO.File]::ReadAllText("$harnessPath/administrative.ps1") + "`r`n`r`n"
 
     # may need to boxify script layers as they get decoded and executed
-    $harness += "Microsoft.PowerShell.Core\Import-Module -Name ./ScriptInspector.psm1`n"
+    $harness += "Microsoft.PowerShell.Core\Import-Module -Name ./ScriptInspector.psm1`r`n`r`n"
 
     foreach ($class in $config["Classes"].Keys) {
         $harness += ClassOverride $class $config["Classes"][$class]

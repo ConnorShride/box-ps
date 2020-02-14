@@ -139,7 +139,13 @@
             }
         },
         "other": {
-            "Microsoft.PowerShell.Security\\Set-ExecutionPolicy": {}
+            "Microsoft.PowerShell.Security\\Set-ExecutionPolicy": {},
+            "Microsoft.PowerShell.Utility\\Get-Date": {
+                "Flags": ["call_parent"]
+            },
+            "Microsoft.PowerShell.Utility\\Get-Host": {
+                "Flags": ["call_parent"]
+            }
         }
     },
     "Classes": {
@@ -185,6 +191,13 @@
             "[System.Net.HttpWebRequest]::Create": {
                 "BehaviorPropArgs": {
                     "uri": ["requestUriString", "requestUri"]
+                }
+            }
+        },
+        "file_exec": {
+            "[System.Diagnostics.Process]::Start": {
+                "BehaviorPropArgs": {
+                    "files": ["fileName"]
                 }
             }
         }

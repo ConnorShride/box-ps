@@ -1,11 +1,13 @@
 # using namespaces to find the necessary types of the parameters generated for the overrides
 using namespace System.Management.Automation
+using namespace System.Management.Automation.Runspaces
 using namespace System.IO
 using namespace System.Text
 using namespace Microsoft.PowerShell.Commands
 using namespace System.Diagnostics
 using namespace System.Collections
 using namespace Microsoft.PowerShell
+using namespace System
 
 $workingDir = "./working"
 
