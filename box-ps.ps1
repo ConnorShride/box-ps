@@ -117,5 +117,5 @@ else {
     Remove-Module HarnessBuilder -ErrorAction SilentlyContinue
     Remove-Module ScriptInspector -ErrorAction SilentlyContinue
     Remove-Module Utils -ErrorAction SilentlyContinue
-    Remove-Item $workingDir
+    Remove-Item -Recurse $workingDir
 }
