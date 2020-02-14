@@ -37,7 +37,8 @@
         "process": ["processes"],
         "new_object": ["object"],
         "network": ["uri"],
-        "file_exec": ["files"]
+        "file_exec": ["files"],
+        "environment_probe": []
     },
     "Cmdlets": {
         "network": {
@@ -138,12 +139,14 @@
                 }
             }
         },
+        "environment_probe": {
+            "Microsoft.PowerShell.Utility\\Get-Host": {
+                "Flags": ["call_parent"]
+            }
+        },
         "other": {
             "Microsoft.PowerShell.Security\\Set-ExecutionPolicy": {},
             "Microsoft.PowerShell.Utility\\Get-Date": {
-                "Flags": ["call_parent"]
-            },
-            "Microsoft.PowerShell.Utility\\Get-Host": {
                 "Flags": ["call_parent"]
             }
         }
@@ -206,7 +209,8 @@
         "Cmdlets": [
             "Microsoft.PowerShell.Utility\\New-Object",
             "Microsoft.PowerShell.Utility\\Invoke-Expression",
-            "Microsoft.PowerShell.Core\\mkdir"
+            "Microsoft.PowerShell.Core\\mkdir",
+            "Microsoft.PowerShell.Management\\Get-WmiObject"
         ]
     }
 }

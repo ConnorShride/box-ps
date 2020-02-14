@@ -108,3 +108,9 @@ function New-Object {
     
 	return Microsoft.PowerShell.Utility\New-Object @PSBoundParameters
 }
+
+function Get-WmiObject {
+ 
+    RecordAction $([Action]::new(@("environment_probe"), "Microsoft.PowerShell.Management\Get-WmiObject", @{}, $MyInvocation))
+
+}
