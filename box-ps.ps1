@@ -21,6 +21,22 @@ if (!(Test-Path $InFile)) {
     exit -1
 }
 
+# cuts the full path from the file path to leave just the name
+function GetShortFileName {
+    param(
+        [string] $Path
+    )
+
+    if ($Path.Contains("/")) {
+        $shortName = $Path.Substring($Path.LastIndexOf("/")+1)
+    }
+    else {
+        $shortName = $Path
+    }
+
+    return $shortName
+}
+
 # don't run it here, pull down the box-ps docker container and run it in there
 if ($Dockerize) {
 
@@ -54,20 +70,17 @@ if ($Dockerize) {
     $idMatch = $psOutput | Select-String -Pattern "[\w]+_[\w]+"
     $containerId = $idMatch.Matches.Value
 
-    Write-Host "[+] running box-ps"
+    Write-Host "[+] running box-ps in container"
 
-    # get short name of input file
-    if ($InFile.Contains("/")) {
-        $shortName = $InFile.Substring($InFile.LastIndexOf("/")+1)
-    }
-    else {
-        $shortName = $InFile
-    }
+    $shortInName = GetShortFileName $InFile
+    $shortOutName = GetShortFileName $OutFile
 
     # move file into container, run box-ps, move results file out
     docker cp $InFile "$containerId`:/opt/box-ps/"
-    docker exec $containerId pwsh ./box-ps.ps1 -InFile $shortName -OutFile ./out.json
-    docker cp "$containerId`:/opt/box-ps/out.json" $OutFile
+    docker exec $containerId pwsh ./box-ps.ps1 -InFile $shortInName -OutFile $shortOutName
+    docker cp "$containerId`:/opt/box-ps/$shortOutName" $OutFile
+
+    Write-Host "[+] moved sandbox results from container to $OutFile"
 
     # clean up
     docker kill $containerId > $null
@@ -105,13 +118,15 @@ else {
     $harnessedScript = $harness + "`r`n`r`n" + $script
     $harnessedScript | Out-File -FilePath $harnessedScriptPath
     
+    Write-Host "[+] sandboxing script"
+
     # run it
     (timeout 5 pwsh -noni $harnessedScriptPath 2> $stderrPath 1> $stdoutPath)
     
     # output the actions JSON
     $actionsJson = Get-Content -Raw $actionsPath 
     "[" + $actionsJson.TrimEnd(",`r`n") + "]" | Out-File $OutFile
-    Write-Host "[+] Wrote sandbox results to $OutFile"
+    Write-Host "[+] box-ps wrote sandbox results to $OutFile"
     
     # clean up
     Remove-Module HarnessBuilder -ErrorAction SilentlyContinue
