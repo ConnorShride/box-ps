@@ -18,6 +18,7 @@ function mkdir {
 }
 
 function Invoke-Expression {
+
 	param(
 		[Parameter(ValueFromPipeline=$true,Position=0,Mandatory=$true)]
 		[string] $Command
@@ -27,38 +28,83 @@ function Invoke-Expression {
         "script" = @($Command)
     }
 	
-	$parentVars = Get-Variable -Scope 1
-	$localVars = Get-Variable -Scope 0
-    $localVars = $localVars | ForEach-Object { $_.Name }
+	$parentVars = Microsoft.PowerShell.Utility\Get-Variable -Scope 1
+	$localVars = Microsoft.PowerShell.Utility\Get-Variable -Scope 0
+    $localVars = $localVars | Microsoft.PowerShell.Core\ForEach-Object { $_.Name }
     
     # import all the variables from the parent scope so the invoke expression has them to work with
 	foreach ($parentVar in $parentVars) {
 	    if (!($localVars.Contains($parentVar.Name))) {
-	        Set-Variable -Name $parentVar.Name -Value $parentVar.Value
+	        Microsoft.PowerShell.Utility\Set-Variable -Name $parentVar.Name -Value $parentVar.Value
 	    }
     }
     
-    RecordLayer $Command
     RecordAction $([Action]::new(@("script_exec"), "Microsoft.PowerShell.Utility\Invoke-Expression", $behaviorProps, $MyInvocation))
 
-    # ex. $foo = Invoke-Expression "New-Object System.Net.WebClient"
-    $invokeRes = Microsoft.PowerShell.Utility\Invoke-Expression @PSBoundParameters
+    $modifiedCommand = BoxifyScript $Command
 
-    # invoked command may have initialized more variables that are to be used later
-    $localVars = Get-Variable -Scope 0
-    $parentVars = $parentVars | ForEach-Object { $_.Name }
+    # actually run it, assign the result for situations like...
+    # ex. $foo = Invoke-Expression "New-Object System.Net.WebClient"
+    $invokeRes = Microsoft.PowerShell.Utility\Invoke-Expression $modifiedCommand
+
+    # invoked command may have initialized more variables that are to be used later, that are now
+    # defined in this local scope
+    $localVars = Microsoft.PowerShell.Utility\Get-Variable -Scope 0
+    $parentVars = $parentVars | Microsoft.PowerShell.Core\ForEach-Object { $_.Name }
 
     # yes... foreach is indeed a variable
     $thisDeclaredVars = @("Command", "behaviorProps", "parentVars", "localVars", "parentVar", 
         "invokeRes", "localVar", "varName", "foreach", "PSCmdlet")
 
+    # pick out the variables the Invoke-Expression defined, export them to the parent scope
     foreach ($localVar in $localVars) {
         $varName = $localVar.Name
-        # Export the variable only if it came from the Invoke-Expression
         if (!($parentVars.Contains($varName)) -and !($thisDeclaredVars.Contains($varName))) {
-	        Set-Variable -Name $varName -Value $localVar.Value -Scope 1
+	        Microsoft.PowerShell.Utility\Set-Variable -Name $varName -Value $localVar.Value -Scope 1
 	    }
     }
 
 	return $invokeRes
+}
+
+function New-Object {
+	param(
+		[Parameter(ParameterSetName="Net",Position=1)]
+		[Alias("Args")]
+		[Object[]] $ArgumentList,
+		[IDictionary] $Property,
+		[Parameter(ParameterSetName="Com")]
+		[switch] $Strict,
+		[Parameter(ParameterSetName="Net",Position=0,Mandatory=$true)]
+		[string] $TypeName,
+		[string] $COMObject
+    )
+    
+	if ($PSBoundParameters.ContainsKey("TypeName")) {
+		$TypeName = $PSBoundParameters["TypeName"].ToLower()
+		$PSBoundParameters["TypeName"] = $PSBoundParameters["TypeName"].ToLower()
+    }
+    
+	if ($PSBoundParameters.ContainsKey("COMObject")) {
+		$COMObject = $PSBoundParameters["COMObject"].ToLower()
+		$PSBoundParameters["COMObject"] = $PSBoundParameters["COMObject"].ToLower()
+	}
+	
+    $behaviorProps = @{}
+    
+	if ($PSBoundParameters.ContainsKey("COMObject")) {
+		$behaviorProps["object"] = @($COMObject)
+    }
+    
+	elseif ($PSBoundParameters.ContainsKey("TypeName")) {
+		$behaviorProps["object"] = @($TypeName)
+	}
+	
+    RecordAction $([Action]::new(@("new_object"), "Microsoft.PowerShell.Utility\New-Object", $behaviorProps, $MyInvocation))
+    
+	if ($(GetOverridedClasses).Contains($behaviorProps["object"].ToLower())) {
+	   return RedirectObjectCreation $TypeName
+    }
+    
+	return Microsoft.PowerShell.Utility\New-Object @PSBoundParameters
 }

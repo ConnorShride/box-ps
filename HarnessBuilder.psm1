@@ -1,6 +1,6 @@
-$utils = Import-Module -Name ./Utils.psm1 -AsCustomObject -Scope Local
-
-$config = Get-Content $PSScriptRoot\config.json | ConvertFrom-Json -AsHashtable
+$utils = Microsoft.PowerShell.Core\Import-Module -Name ./Utils.psm1 -AsCustomObject -Scope Local
+$config = Microsoft.PowerShell.Management\Get-Content ./config.json | 
+    Microsoft.PowerShell.Utility\ConvertFrom-Json -AsHashtable
 
 
 function StaticParamsCode {
@@ -27,12 +27,13 @@ function CmdletParamsCode {
         [hashtable] $ArgAdditions
     )
 
-    $helpParams = Get-Help -Full $Cmdlet
-    $helpParams = $helpParams.parameters.parameter
+    $helpResults = Microsoft.PowerShell.Core\Get-Help -Full $Cmdlet
+    $helpParams = $helpResults.parameters.parameter
 
     if ($ArgAdditions) {
         foreach ($argAddition in $ArgAdditions.Keys) {
-            $helpParams += $(New-Object PSObject -Property $ArgAdditions[$argAddition])
+            $helpParams += $(Microsoft.PowerShell.Utility\New-Object `
+                                PSObject -Property $ArgAdditions[$argAddition])
         }
     }
 
@@ -40,35 +41,43 @@ function CmdletParamsCode {
 
     foreach ($helpParam in $HelpParams) {
 
-        $advancedArgOps = ""
-
+        # check if it has a non-default parameter set that we need to support
         if ($helpParam.parameterSetName -ne "(All)" -and $helpParam.parameterSetName -ne "Default") {
             $setNames = $helpParam.parameterSetName.Split(",")
-            if ($setNames.Length -gt 1) {
-                foreach ($setName in $setNames) {
-                    $code += "`t[Parameter(ParameterSetName=`"$($setName.Trim())`")]`r`n"
+
+            foreach ($setName in $setNames) {
+
+                $code += "`t[Parameter(ParameterSetName=`"$($setName.Trim())`""
+
+                # parameters are mandatory with respect to the individual sets they're in,
+                # and if a parameter is in multiple sets and mandatory, it's mandatory for all sets
+                if ($helpParam.required -eq "true") {
+                    $code += ",Mandatory=`$true"
                 }
-            }
-            else {
-                $advancedArgOps += "ParameterSetName=`"$($helpParam.parameterSetName)`","
+
+                $code += ")]`r`n"
             }
         }
 
+        $paramOptLine = "`t[Parameter("
+
+        # parameter takes input from the pipeline
         if ($helpParam.pipelineInput.Contains("true")) {
-            $advancedArgOps += "ValueFromPipeline=`$true,"
+            $paramOptLine += "ValueFromPipeline=`$true,"
         }
+
+        # parameter is either explicitely named or has a position
         if ($helpParam.position -ne "Named") {
-            $advancedArgOps += "Position=$($helpParam.position),"
-        }
-        if ($helpParam.required -eq "true") {
-            $advancedArgOps += "Mandatory=`$true,"
-        }
-        $advancedArgOps = $advancedArgOps.TrimEnd(',') 
-
-        if ($advancedArgOps) {
-            $code += "`t[Parameter($advancedArgOps)]`r`n"
+            $paramOptLine += "Position=$($helpParam.position),"
         }
 
+        $paramOptLine = $paramOptLine.TrimEnd(',') 
+
+        if ($paramOptLine -ne "`t[Parameter(") {
+            $code += $paramOptLine + ")]`r`n"
+        }
+
+        # parameter may have aliases
         if ($helpParam.aliases -ne "None") {
             $code += "`t[Alias("
             foreach ($alias in $helpParam.aliases) {
@@ -210,7 +219,7 @@ function ClassConstructor {
         [string] $ParentClass
     )
 
-    $guineaPig = New-Object $ParentClass
+    $guineaPig = Microsoft.PowerShell.Utility\New-Object $ParentClass
     $properties = GetPropertyTypes $ParentClass
     $shortName = $ParentClass.Split(".")[-1]
     $code = "BoxPS$shortName () {`r`n"
@@ -219,12 +228,13 @@ function ClassConstructor {
 
         # get the value of the property we're wanting to create an override for from our guinea pig 
         # object to see how the actual .Net constructor runs
-        Invoke-Expression "`$realProperty = `$guineaPig.$property"
+        Microsoft.PowerShell.Utility\Invoke-Expression "`$realProperty = `$guineaPig.$property"
 
         if ($null -ne $realProperty) {
             
             # get the actual runtime type
-            Invoke-Expression "`$runtimeType = `$realProperty.GetType().FullName"
+            Microsoft.PowerShell.Utility\Invoke-Expression `
+                "`$runtimeType = `$realProperty.GetType().FullName"
             if ($runtimeType.Contains("+")) {
                 $runtimeType = $runtimeType.Split("+")[0]
             }
@@ -233,7 +243,7 @@ function ClassConstructor {
             # powershell may give a type here that isn't actually useful, and in these situations
             # the script will (hopefully, probably) have to reassign the object anyways
             try{
-                Invoke-Expression "[$runtimeType]::new()" > $null
+                Microsoft.PowerShell.Utility\Invoke-Expression "[$runtimeType]::new()" > $null
                 $code += $utils.TabPad("`$this.$($property) = [$runtimeType]::new()")
             }
             catch {}
@@ -249,8 +259,9 @@ function GetPropertyTypes {
         [string] $ObjectType
     )
 
-    $guineaPig = New-Object $ParentClass
-    $properties = Get-Member -InputObject $guineaPig | Where-Object MemberType -eq property
+    $guineaPig = Microsoft.PowerShell.Utility\New-Object $ParentClass
+    $properties = Microsoft.PowerShell.Utility\Get-Member -InputObject $guineaPig | 
+                    Microsoft.PowerShell.Core\Where-Object MemberType -eq property
 
     $res = @{}
     foreach ($property in $properties) {
@@ -274,12 +285,13 @@ function GetFunctionSignatures {
 
 	# get the list of signatures
     if ($Static) {
-		$signatures = $(Invoke-Expression $FuncName).OverloadDefinitions
+		$signatures = $(Microsoft.PowerShell.Utility\Invoke-Expression $FuncName).OverloadDefinitions
 	}
     elseif ($InstanceMember) {
         $guineaPig = Microsoft.PowerShell.Utility\New-Object $ParentClass
-		$signatures = $guineaPig | Get-Member | Where-Object Name -eq $FuncName
-        $signatures = $signatures.Definition.Split("),") | ForEach-Object {
+        $signatures = $guineaPig | Microsoft.PowerShell.Utility\Get-Member | 
+                        Microsoft.PowerShell.Core\Where-Object Name -eq $FuncName
+        $signatures = $signatures.Definition.Split("),") | Microsoft.PowerShell.Core\ForEach-Object {
 			if (!$_.EndsWith(")")) {
 				$_ += ")"
 			}
@@ -293,7 +305,8 @@ function GetFunctionSignatures {
     foreach ($signature in $signatures) {
 
         $signature -match "\((.*)\)" > $null
-        $sigAndArgs[$signature] = @($Matches[1].Split(", ") | ForEach-Object { $_.Split()[1]})
+        $sigAndArgs[$signature] = @($Matches[1].Split(", ") | 
+                                    Microsoft.PowerShell.Core\ForEach-Object { $_.Split()[1]})
     }
     
     return $sigAndArgs
@@ -317,12 +330,14 @@ function ClassPropertiesCode {
 function ClassFunctionOverride {
 
     # if Static, FuncName must be fully qualified name including namespace
+    # and ParentClass is not given
+    # TODO: Make parameter sets for these for clarity
     param(
         [switch] $Static,
         [string] $ParentClass,
         [string] $Behavior,
         [string] $FuncName,
-        [hashtable] $BehaviorPropArgs
+        [hashtable] $OverrideInfo
     )
 
     $signatures = @{}
@@ -343,7 +358,7 @@ function ClassFunctionOverride {
         $sigAndArgs = [Tuple]::Create($signature, $sigArgs)
 
         $code += $signature + " {`r`n"
-        $code += $utils.TabPad($(BehaviorPropsCode -ClassFunc -SigAndArgs $sigAndArgs -BehaviorPropArgs $BehaviorPropArgs))
+        $code += $utils.TabPad($(BehaviorPropsCode -ClassFunc -SigAndArgs $sigAndArgs -BehaviorPropArgs $OverrideInfo["BehaviorPropArgs"]))
 
         if ($Static) {
             $code += "`tRecordAction `$([Action]::new(@(`"$Behavior`"), `"$FuncName`", `$behaviorProps, `$PSBoundParameters, `$MyInvocation.Line))`r`n"
@@ -352,8 +367,32 @@ function ClassFunctionOverride {
             $code += "`tRecordAction `$([Action]::new(@(`"$Behavior`"), `"$ParentClass`.$FuncName`", `$behaviorProps, `$PSBoundParameters, `$MyInvocation.Line))`r`n"
         }
 
+        # if the method actually has a return value
         if (!$signature.Contains("[void]")) {
-            $code += "`treturn `$null`r`n"
+
+            # build a call to the real function to return the actual result from the override
+            if ($OverrideInfo["Flags"] -and $OverrideInfo["Flags"].Contains("call_parent")) {
+
+                $code += "`treturn "
+
+                if ($Static) {
+                    $code += "$FuncName("
+                }
+                else {
+                    $code += "([$ParentClass]`$this).$FuncName("
+                }
+
+                # build arguments to the function
+                $args = ""
+                foreach ($arg in $sigArgs) {
+                    $args += "`$$arg, "
+                }
+                $args = $args.TrimEnd(", ")
+                $code += $args + ")`r`n"
+            }
+            else {
+                $code += "`treturn `$null`r`n"
+            }
         }
 
         $code += "}`r`n"
@@ -370,7 +409,7 @@ function ClassOverride {
     )
 
     $shortName = $FullClassName.Split(".")[-1]
-    $code = "class BoxPS$shortName {`r`n"
+    $code = "class BoxPS$shortName : $FullClassName {`r`n"
 
     $code += $utils.TabPad($(ClassPropertiesCode -ParentClass $FullClassName))
     $code += $utils.TabPad($(ClassConstructor -ParentClass $FullClassName))
@@ -381,9 +420,9 @@ function ClassOverride {
         # iterate over the functions we want to create overrides for
         foreach ($functionName in $Functions[$behavior].Keys) {
 
-            $behaviorPropArgs = $Functions[$behavior][$functionName].BehaviorPropArgs
+            $overrideInfo = $Functions[$behavior][$functionName]
             $code += $utils.TabPad($(ClassFunctionOverride -ParentClass $FullClassName -Behavior $behavior `
-                 -FuncName $functionName -BehaviorPropArgs $behaviorPropArgs))
+                 -FuncName $functionName -OverrideInfo $overrideInfo))
         }
     }
 
@@ -411,7 +450,7 @@ function StaticOverrides {
             $overrideInfo = $config["Statics"][$behavior][$staticFunc]
 
             $code += $utils.TabPad($(ClassFunctionOverride -Static -Behavior $behavior -FuncName `
-                $staticFunc -BehaviorPropArgs $overrideInfo.BehaviorPropArgs))
+                $staticFunc -OverrideInfo $overrideInfo))
         }
     }
 
@@ -431,10 +470,6 @@ function CmdletOverride {
     $code += $utils.TabPad($(CmdletParamsCode $shortName $CmdletInfo["ArgAdditions"]))
     $code += $utils.TabPad($(ArgModificationCode $CmdletInfo["ArgModifications"]))
     $code += $utils.TabPad($(BehaviorPropsCode -Cmdlet -BehaviorPropArgs $CmdletInfo.BehaviorPropArgs))
-
-    if ($CmdletInfo.LayerArg) {
-        $code += "`tRecordLayer(`$$($CmdletInfo.LayerArg))`r`n"
-    }
 
     $code += "`tRecordAction `$([Action]::new(@(`"$Behavior`"), `"$($CmdletName)`", `$behaviorProps, `$MyInvocation))`r`n"
 
@@ -462,40 +497,35 @@ function EnvironmentVars {
     return $code
 }
 
-function Build {
 
-    param(
-        [String] $ActionFilePath,
-        [String] $LayersFilePath
-    )
+function BuildHarness {
 
     $harnessPath = "$PSScriptRoot/harness"
-    $baseHarness = ""
+    $harness = ""
 
-    $baseHarness += [IO.File]::ReadAllText("$harnessPath/administrative.ps1") + "`n`n"
+    $harness += [IO.File]::ReadAllText("$harnessPath/administrative.ps1") + "`n`n"
 
-    $baseHarness = $baseHarness.Replace("ACTIONS_OUTFILE_PLACEHOLDER", $ActionFilePath)
-    $baseHarness = $baseHarness.Replace("LAYERS_OUTFILE_PLACEHOLDER", $LayersFilePath)
-    $baseHarness = $baseHarness.Replace("CONFIG_PLACEHOLDER", $PSScriptRoot)
+    # may need to boxify script layers as they get decoded and executed
+    $harness += "Microsoft.PowerShell.Core\Import-Module -Name ./ScriptInspector.psm1`n"
 
     foreach ($class in $config["Classes"].Keys) {
-        $baseHarness += ClassOverride $class $config["Classes"][$class]
+        $harness += ClassOverride $class $config["Classes"][$class]
     }
 
-    $baseHarness += StaticOverrides
+    $harness += StaticOverrides
 
     foreach ($behavior in $config["Cmdlets"].keys) {
         foreach($cmdlet in $config["Cmdlets"][$behavior].keys) {
             $overrideInfo = $config["Cmdlets"][$behavior][$cmdlet]
-            $baseHarness += CmdletOverride $behavior $cmdlet $overrideInfo
+            $harness += CmdletOverride $behavior $cmdlet $overrideInfo
         }
     }
 
-    $baseHarness += [IO.File]::ReadAllText("$harnessPath/manual_overrides.ps1") + "`r`n`r`n"
-    $baseHarness += EnvironmentVars
-    $baseHarness += [IO.File]::ReadAllText("$harnessPath/initial_setup.ps1") + "`r`n`r`n"
+    $harness += [IO.File]::ReadAllText("$harnessPath/manual_overrides.ps1") + "`r`n`r`n"
+    $harness += EnvironmentVars
+    $harness += [IO.File]::ReadAllText("$harnessPath/initial_setup.ps1") + "`r`n`r`n"
 
-    return $baseHarness
+    return $harness
 }
 
-Export-ModuleMember -Function Build
+Export-ModuleMember -Function BuildHarness

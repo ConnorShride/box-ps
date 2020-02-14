@@ -1,6 +1,6 @@
-$config = Get-Content $PSScriptRoot\config.json | ConvertFrom-Json -AsHashtable
-$utils = Import-Module -Name ./Utils.psm1 -AsCustomObject -Scope Local
-
+$utils = Microsoft.PowerShell.Core\Import-Module -Name ./Utils.psm1 -AsCustomObject -Scope Local
+$config = Microsoft.PowerShell.Management\Get-Content $PSScriptRoot\config.json | 
+    Microsoft.PowerShell.Utility\ConvertFrom-Json -AsHashtable
 
 function ReplaceStaticNamespaces {
 
@@ -9,7 +9,7 @@ function ReplaceStaticNamespaces {
     )
 
     $boxStaticsClass = "BoxPSStatics"
-    $functions = New-Object System.Collections.ArrayList
+    $functions = Microsoft.PowerShell.Utility\New-Object System.Collections.ArrayList
 
     # get all the static functions names we care about
     foreach ($behavior in $config["Statics"].keys) {
@@ -23,7 +23,7 @@ function ReplaceStaticNamespaces {
     while ($functions.Count -gt 0) {
 
         $shortName = $utils.GetUnqualifiedName($functions[0])
-        $match = $Script | Select-String -Pattern $("\[[\w\.]+(?<!$boxStaticsClass)\]::$shortName\(")
+        $match = $Script | Microsoft.Powershell.Utility\Select-String -Pattern $("\[[\w\.]+(?<!$boxStaticsClass)\]::$shortName\(")
         $match = $match.Matches
 
         # remove the namespace
@@ -33,7 +33,7 @@ function ReplaceStaticNamespaces {
             $namespaceEnd = $Script.IndexOf(']', $namespaceStart)
     
             $Script = $Script.Remove($namespaceStart + 1, $namespaceEnd - $namespaceStart - 1)
-            $Script = $Script.Insert($namespaceStart + 1, $staticsClass)
+            $Script = $Script.Insert($namespaceStart + 1, $boxStaticsClass)
         }
         # don't look for matches on that cmdlet anymore
         else {
@@ -50,7 +50,7 @@ function ScrubCmdletNamespaces {
         [string] $Script
     )
 
-    $cmdlets = New-Object System.Collections.ArrayList
+    $cmdlets = Microsoft.Powershell.Utility\New-Object System.Collections.ArrayList
 
     # get all the auto-override cmdlets we care about
     foreach ($behavior in $config["Cmdlets"].keys) {
@@ -69,7 +69,7 @@ function ScrubCmdletNamespaces {
     while ($cmdlets.Count -gt 0) {
 
         $pat = [Regex]::Escape($cmdlets[0])
-        $match = $Script | Select-String -Pattern $("$pat ")
+        $match = $Script | Microsoft.Powershell.Utility\Select-String -Pattern $("$pat ")
         $match = $match.Matches
 
         # remove the namespace
@@ -101,30 +101,6 @@ function HandleNamespaces {
     return $Script
 }
 
-function SplitReplacement {
-
-    param(
-        [String] $Script
-    )
-
-    if (($Script -is [String]) -and ($Script -Like "*.split(*")) {
-
-        $start = $Script.IndexOf(".split(", [System.StringComparison]::CurrentCultureIgnoreCase)
-        $end = $Script.IndexOf(")", $start)
-        $split1 = $Script.Substring($start, $end - $start + 1)
-        $split2 = $split1
-        if (($split1.Length -gt 11) -and (-not ($split1 -Like "*[char[]]*"))) {
-            $start = $split1.IndexOf("(") + 1
-            $end = $split1.IndexOf(")") - 1
-            $chars = $split1.Substring($start, $end - $start + 1).Trim()
-            $split2 = ".Split([char[]]" + $chars + ")"
-        }
-        $Script = $Script.Replace($split1, $split2)
-    }    
-
-    return $Script
-}
-
 # look for environment variables and coerce them to be lowercase
 function EnvReplacement {
 
@@ -139,6 +115,17 @@ function EnvReplacement {
     return $Script -ireplace "pshome", "bshome"
 }
 
-Export-ModuleMember -Function EnvReplacement
-Export-ModuleMember -Function HandleNamespaces
-Export-ModuleMember -Function SplitReplacement
+function BoxifyScript {
+
+    param(
+        [String] $Script
+    )
+    
+    $Script = EnvReplacement($Script)
+    $Script = $utils.SeparateLines($Script)
+    $Script = HandleNamespaces($Script)
+
+    return $Script
+}
+
+Export-ModuleMember -Function BoxifyScript

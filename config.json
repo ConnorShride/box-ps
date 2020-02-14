@@ -36,11 +36,17 @@
         "script_exec": ["script"],
         "process": ["processes"],
         "new_object": ["object"],
-        "download": ["uri"],
-        "upload": ["uri", "data"],
+        "network": ["uri"],
         "file_exec": ["files"]
     },
     "Cmdlets": {
+        "network": {
+            "Microsoft.PowerShell.Utility\\Invoke-WebRequest": {
+                "BehaviorPropArgs": {
+                    "uri": ["Uri"]
+                }
+            }
+        },
         "file_system": {
             "Microsoft.PowerShell.Management\\Get-Item": {
                 "BehaviorPropArgs": {
@@ -66,17 +72,20 @@
             "Microsoft.PowerShell.Management\\Get-ChildItem": {
                 "BehaviorPropArgs": {
                     "paths": ["Path"]
-                }
+                },
+                "Flags": ["call_parent"]
             },
             "Microsoft.PowerShell.Management\\Test-Path": {
                 "BehaviorPropArgs": {
                     "paths": ["Path"]
-                }
+                },
+                "Flags": ["call_parent"]
             },
             "Microsoft.PowerShell.Management\\Get-Content": {
                 "BehaviorPropArgs": {
                     "paths": ["Path", "LiteralPath"]
-                }
+                },
+                "Flags": ["call_parent"]
             },
             "Microsoft.PowerShell.Management\\Remove-Item": {
                 "BehaviorPropArgs": {
@@ -91,7 +100,8 @@
                 },
                 "ArgModifications": {
                     "InputObject": ["FlattenProcessObjects <arg>"]
-                }
+                },
+                "Flags": ["call_parent"]
             },
             "Microsoft.PowerShell.Management\\Stop-Process": {
                 "BehaviorPropArgs": {
@@ -111,7 +121,9 @@
             "Microsoft.PowerShell.Utility\\Add-Type": {
                 "BehaviorPropArgs": {
                     "code": ["TypeDefinition"]
-                }
+                },
+                "LayerArg": "TypeDefinition",
+                "Flags": ["call_parent"]
             }
         },
         "file_exec": {
@@ -126,48 +138,17 @@
                 }
             }
         },
-        "new_object": {
-            "Microsoft.PowerShell.Utility\\New-Object": {
-                "BehaviorPropArgs": {
-                    "object": ["COMObject", "TypeName"]
-                },
-                "ArgAdditions": {
-                    "COMObject": {
-                        "pipelineInput": "false",
-                        "type": {
-                            "name": "string"
-                        },
-                        "aliases": "None",
-                        "name": "COMObject",
-                        "position": "Named",
-                        "parameterSetName": "(All)",
-                        "required": "false"
-                    }
-                },
-                "ArgModifications": {
-                    "TypeName": "<arg>.ToLower()",
-                    "COMObject": "<arg>.ToLower()"
-                },
-                "ExtraCode": [
-                    "if ($(GetOverridedClasses).Contains($behaviorProps[\"object\"].ToLower())) {",
-                    "   return RedirectObjectCreation $TypeName",
-                    "}"
-                ],
-                "Flags": ["call_parent"]
-            }
-        },
         "other": {
             "Microsoft.PowerShell.Security\\Set-ExecutionPolicy": {}
         }
     },
     "Classes": {
         "System.Net.WebClient": {
-            "download": {
+            "network": {
                 "DownloadFile": {
                     "BehaviorPropArgs": {
                         "uri": ["address"]
-                    }
-                },
+                    }                },
                 "DownloadString": {
                     "BehaviorPropArgs": {
                         "uri": ["address"]
@@ -177,14 +158,11 @@
                     "BehaviorPropArgs": {
                         "uri": ["address"]
                     }
-                }
-            },
-            "upload": {
+                },
                 "UploadString": {
                     "BehaviorPropArgs": {
-                        "uri": ["address"],
-                        "data": ["data"]
-                    }
+                        "uri": ["address"]                    
+                    }                
                 }
             }
         }
@@ -199,10 +177,11 @@
             "[System.Environment]::GetFolderPath": {
                 "BehaviorPropArgs": {
                     "paths": ["folder"]
-                }
+                },
+                "Flags": ["call_parent"]
             }
         },
-        "download": {
+        "network": {
             "[System.Net.HttpWebRequest]::Create": {
                 "BehaviorPropArgs": {
                     "uri": ["requestUriString", "requestUri"]
@@ -212,6 +191,7 @@
     },
     "Manuals": {
         "Cmdlets": [
+            "Microsoft.PowerShell.Utility\\New-Object",
             "Microsoft.PowerShell.Utility\\Invoke-Expression",
             "Microsoft.PowerShell.Core\\mkdir"
         ]

@@ -1,19 +1,3 @@
-# ensures no file name collision
-function GetTmpFilePath {
-
-    $done = $false
-    $fileName = ""
-
-    while (!$done) {
-        $fileName = [System.IO.Path]::GetTempPath() + [GUID]::NewGuid().ToString() + ".txt";
-        if (!(Test-Path $fileName)) {
-            $done = $true
-        }
-    }
-
-    return $fileName
-}
-
 function TabPad {
     
     param (

@@ -5,6 +5,9 @@ using namespace System.Text
 using namespace Microsoft.PowerShell.Commands
 using namespace System.Diagnostics
 using namespace System.Collections
+using namespace Microsoft.PowerShell
+
+$workingDir = "./working"
 
 class Action <# lawsuit... I'll be here all week #> {
 
@@ -90,31 +93,14 @@ class Action <# lawsuit... I'll be here all week #> {
     }
 }
 
-
-# Write out JSON representation of the arguments this function is given to the output file
-# ACTIONS_OUTFILE_PLACEHOLDER will be replaced with the real value by box-ps.ps1
 function RecordAction {
 
     param(
         [Action] $Action
     )
 
-    $actionsOutFile = "ACTIONS_OUTFILE_PLACEHOLDER"
-
     $json = $Action | ConvertTo-Json -Depth 10
-    ($json + ",") | Out-File -Append $actionsOutFile
-}
-
-# placeholder will be replaced with the real value by box-ps.ps1
-function RecordLayer {
-    param(
-        [String]$layer
-    )
-
-    $layersOutFile = "LAYERS_OUTFILE_PLACEHOLDER"
-
-    $output = ("LAYERDELIM" + $layer + "LAYERDELIM")
-    $output | Out-File -Append $layersOutFile
+    ($json + ",") | Out-File -Append "$workingDir/actions.json"
 }
 
 function RedirectObjectCreation {
@@ -126,9 +112,8 @@ function RedirectObjectCreation {
     return Microsoft.PowerShell.Utility\New-Object -TypeName "BoxPS$($TypeName.Split(".")[-1])"
 }
 
-# placeholder will be replaced by box-ps.ps1
 function GetOverridedClasses {
-    $config = Microsoft.PowerShell.Management\Get-Content "CONFIG_PLACEHOLDER/config.json" | ConvertFrom-Json -AsHashtable
+    $config = Microsoft.PowerShell.Management\Get-Content "./config.json" | ConvertFrom-Json -AsHashtable
     return $config["Classes"].Keys | ForEach-Object { $_.ToLower() }
 }
 
