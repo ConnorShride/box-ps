@@ -3,7 +3,7 @@
 # pulls down the most recent box-ps docker images and uses it to sandbox the given powershell script
 # in a network-isolated environment
 
-usage="docker-ps.sh <poweshell script path> <output JSON file path>"
+usage="docker-box-ps.sh <poweshell script path> <output JSON file path>"
 
 # argument validation
 if [ "$#" -ne 2 ]
