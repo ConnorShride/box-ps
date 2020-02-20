@@ -112,14 +112,11 @@ function New-Object {
 function powershell.exe {
 
     param(
-        [Alias("e")]
         [string] $EncodedCommand,
         [string] $File,
         [switch] $NoLogo,
-        [Alias("nop")]
         [switch] $NoProfile,
         [switch] $NonInteractive,
-        [Alias("w")]
         [string] $WindowStyle
     )
 
