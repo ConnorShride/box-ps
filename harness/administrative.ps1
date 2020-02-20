@@ -38,9 +38,9 @@ class Action <# lawsuit... I'll be here all week #> {
     }
 
     # for class members
+    # e.g. System.Net.WebClient.DownloadFile
     #   These are guaranteed not to have switches, and the MyInvocation variable does not
     #   contain boundparameters, so callers need to be able to pass the PSBoundParameters variable
-    # e.g. System.Net.WebClient.DownloadFile
     Action ([String[]] $Behaviors, [String] $FullActor, [hashtable] $BehaviorProps, 
         [hashtable] $BoundParams, [String] $Line) {
 

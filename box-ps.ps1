@@ -40,10 +40,14 @@ function GetShortFileName {
 # remove imported modules and clean up non-output file system artifacts
 function CleanUp {
 
+    param(
+        [string] $WorkingDir
+    )
+
     Remove-Module HarnessBuilder -ErrorAction SilentlyContinue
     Remove-Module ScriptInspector -ErrorAction SilentlyContinue
     Remove-Module Utils -ErrorAction SilentlyContinue
-    #Remove-Item -Recurse $workingDir
+    Remove-Item -Recurse $WorkingDir
 }
 
 # don't run it here, pull down the box-ps docker container and run it in there
@@ -135,7 +139,7 @@ else {
     # a lot of times actions.json will not be present if things go wrong
     if (!(Test-Path $actionsPath)) {
         Write-Host "[-] sandboxing failed with an internal error. please post an issue on GitHub with the failing powershell"
-        CleanUp
+        CleanUp $workingDir
         Exit(-1)
     }
 
@@ -144,5 +148,5 @@ else {
     "[" + $actionsJson.TrimEnd(",`r`n") + "]" | Out-File $OutFile
     Write-Host "[+] box-ps wrote sandbox results to $OutFile"
     
-    CleanUp
+    CleanUp $workingDir
 }

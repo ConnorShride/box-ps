@@ -109,8 +109,31 @@ function New-Object {
 	return Microsoft.PowerShell.Utility\New-Object @PSBoundParameters
 }
 
-function Get-WmiObject {
- 
-    RecordAction $([Action]::new(@("environment_probe"), "Microsoft.PowerShell.Management\Get-WmiObject", @{}, $MyInvocation))
+function powershell.exe {
 
+    param(
+        [Alias("e")]
+        [string] $EncodedCommand,
+        [string] $File,
+        [switch] $NoLogo,
+        [Alias("nop")]
+        [switch] $NoProfile,
+        [switch] $NonInteractive,
+        [Alias("w")]
+        [string] $WindowStyle
+    )
+
+    $behaviorProps = @{}
+
+    if ($PSBoundParameters.ContainsKey("EncodedCommand")) {
+        $decodedCommand = [System.Text.Encoding]::Unicode.GetString([System.Convert]::FromBase64String($EncodedCommand))
+        $behaviorProps["script"] = $decodedCommand
+    }
+    elseif ($PSBoundParameters.ContainsKey("File")) {
+        $behaviorProps["script"] = $File
+    }
+
+    RecordAction $([Action]::new(@("script_exec"), "powershell.exe", $behaviorProps, $MyInvocation))
+
+    Microsoft.PowerShell.Utility\Invoke-Expression $decodedCommand
 }

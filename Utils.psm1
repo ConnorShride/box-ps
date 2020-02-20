@@ -1,3 +1,5 @@
+using namespace System.Collections
+
 function TabPad {
     
     param (
@@ -79,6 +81,16 @@ function SeparateLines
     }
 
     return $separated
+}
+
+function ListIntersection {
+    
+    param(
+        [ArrayList] $list1,
+        [ArrayList] $list2
+    )
+
+    return $list1 | Microsoft.PowerShell.Core\Where-object { $list2 -contains $_ }
 }
 
 Export-ModuleMember -Function *

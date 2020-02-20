@@ -357,8 +357,6 @@ function ClassFunctionOverride {
         $signature = TranslateClassFuncSignature $signature
         $sigAndArgs = [Tuple]::Create($signature, $sigArgs)
 
-        #Write-Host $sigAndArgs[1]
-
         # if the signature does not take an argument that we listed in the config file, then we
         # aren't supporting it
         $behaviorPropArgs = $OverrideInfo["BehaviorPropArgs"]
@@ -367,7 +365,7 @@ function ClassFunctionOverride {
             $supportedArgs += $behaviorPropArgs[$behaviorProp]
         }
 
-        $intersection = $supportedArgs | Microsoft.PowerShell.Core\Where-Object {$sigAndArgs[1] -contains $_} 
+        $intersection = $utils.ListIntersection($sigAndArgs[1], $supportedArgs)
 
         if ($intersection) {
 
