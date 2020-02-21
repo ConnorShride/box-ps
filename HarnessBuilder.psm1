@@ -110,20 +110,22 @@ function BehaviorPropsCode {
 
         foreach ($behaviorProp in $BehaviorPropArgs.Keys) {
 
+            $behaviorPropArgValues = $BehaviorPropArgs[$behaviorProp]
+
             # behavior property value is a hard-coded string, not a function argument
-            if ($BehaviorPropArgs[$behaviorProp].GetType() -eq [string]) {
-                $code += "`$behaviorProps[`"$behaviorProp`"] = @(`"$($BehaviorPropArgs[$behaviorProp])`")`r`n"
+            if ($behaviorPropArgValues.GetType() -eq [string]) {
+                $code += "`$behaviorProps[`"$behaviorProp`"] = @(`"$($behaviorPropArgValues)`")`r`n"
             }
             else {
 
-                if ($BehaviorPropArgs[$behaviorProp].Count -eq 1) {
-                    $code += "`$behaviorProps[`"$behaviorProp`"] = `@(`$$($BehaviorPropArgs[$behaviorProp][0]))`r`n"
+                if ($behaviorPropArgValues.Count -eq 1) {
+                    $code += "`$behaviorProps[`"$behaviorProp`"] = `@(`$$($behaviorPropArgValues[0]))`r`n"
                 }
                 # for commandlets, we have to find the argument that's present at script run-time
                 elseif ($Cmdlet) {
 
                     $first = $true
-                    foreach ($arg in $BehaviorPropArgs[$behaviorProp]) {
+                    foreach ($arg in $behaviorPropArgValues) {
 
                         $block = "if (`$PSBoundParameters.ContainsKey(`"$arg`")) {`r`n"
                         $block += "`t`$behaviorProps[`"$behaviorProp`"] = @(`$$arg)`r`n"
@@ -139,10 +141,28 @@ function BehaviorPropsCode {
                 }
                 # for class functions, find the argument that it must be from the function signature
                 elseif ($ClassFunc) {
-                    foreach ($arg in $BehaviorPropArgs[$behaviorProp]) {
-                        if ($SigAndArgs.Item2.Contains($arg)) {
-                            $code += "`$behaviorProps[`"$behaviorProp`"] = @(`$$arg)`r`n"
+
+                    $sigArgsNames = $SigAndArgs.Item2
+
+                    foreach ($arg in $behaviorPropArgValues) {
+                        if ($arg.GetType() -eq [string]) {
+                            if ($sigArgsNames.Contains($arg)) {
+                                $code += "`$behaviorProps[`"$behaviorProp`"] = @(`$$arg)`r`n"
+                            }
                         }
+                        # it's a hashtable
+                        # behavior property value may be a property of an argument that is an object
+                        else {
+
+                            # name of the object-arg in the signature and the property of the object
+                            $objectArgName = $($arg.Keys[0]).ToString()
+                            $objectProp = $arg[$objectArgName]
+
+                            if ($sigArgsNames.Contains($objectArgName)) {
+                                $code += "`$behaviorProps[`"$behaviorProp`"] = @(`$$objectArgName.$objectProp)`r`n"
+                            }
+                        }
+
                     }
                 }
             }
@@ -327,7 +347,7 @@ function ClassPropertiesCode {
     return $code
 }
 
-function ClassFunctionOverride {
+function ClassFunctionOverrides {
 
     # if Static, FuncName must be fully qualified name including namespace
     # and ParentClass is not given
@@ -337,11 +357,13 @@ function ClassFunctionOverride {
         [string] $ParentClass,
         [string] $Behavior,
         [string] $FuncName,
-        [hashtable] $OverrideInfo
+        [hashtable] $OverrideInfo,
+        [string[]] $Exclude
     )
 
     $signatures = @{}
 
+    # get all the function signatures
     if ($Static) {
         $signatures = GetFunctionSignatures -Static -FuncName $FuncName
     }
@@ -355,59 +377,76 @@ function ClassFunctionOverride {
 
         $sigArgs = $signatures[$signature]
         $signature = TranslateClassFuncSignature $signature
-        $sigAndArgs = [Tuple]::Create($signature, $sigArgs)
 
-        # if the signature does not take an argument that we listed in the config file, then we
-        # aren't supporting it
-        $behaviorPropArgs = $OverrideInfo["BehaviorPropArgs"]
-        $supportedArgs = @()
-        foreach ($behaviorProp in $behaviorPropArgs.keys) {
-            $supportedArgs += $behaviorPropArgs[$behaviorProp]
-        }
+        # don't create overrides for the signatures in the set to exclude
+        if (!$Exclude.Contains($signature)) {
 
-        $intersection = $utils.ListIntersection($sigAndArgs[1], $supportedArgs)
-
-        if ($intersection) {
-
-            $code += $signature + " {`r`n"
-            $code += $utils.TabPad($(BehaviorPropsCode -ClassFunc -SigAndArgs $sigAndArgs -BehaviorPropArgs $OverrideInfo["BehaviorPropArgs"]))
+            $sigAndArgs = [Tuple]::Create($signature, $sigArgs)
     
-            if ($Static) {
-                $code += "`tRecordAction `$([Action]::new(@(`"$Behavior`"), `"$FuncName`", `$behaviorProps, `$PSBoundParameters, `$MyInvocation.Line))`r`n"
-            }
-            else {
-                $code += "`tRecordAction `$([Action]::new(@(`"$Behavior`"), `"$ParentClass`.$FuncName`", `$behaviorProps, `$PSBoundParameters, `$MyInvocation.Line))`r`n"
-            }
+            # if the signature does not take an argument that we listed in the config file, then we
+            # aren't supporting it
+            $behaviorPropArgs = $OverrideInfo["BehaviorPropArgs"]
+            $supportedArgs = @()
+            foreach ($behaviorProp in $behaviorPropArgs.keys) {
+                $behaviorPropValues = $behaviorPropArgs[$behaviorProp]
     
-            # if the method actually has a return value
-            if (!$signature.Contains("[void]")) {
-    
-                # build a call to the real function to return the actual result from the override
-                if ($OverrideInfo["Flags"] -and $OverrideInfo["Flags"].Contains("call_parent")) {
-    
-                    $code += "`treturn "
-    
-                    if ($Static) {
-                        $code += "$FuncName("
+                # if the behaviorprop value is an object, then the value is a property of the function 
+                # argument which is an object e.g. ProcessStartInfo.FileName is the "File" value for 
+                # behavior file_exec in the function [Diagnostics.Process]::Start(ProcessStartInfo)
+                foreach ($behaviorPropValue in $behaviorPropValues) {
+                    if ($behaviorPropValue.GetType() -eq [Hashtable]) {
+                        $supportedArgs += $behaviorPropValue.Keys[0]
                     }
                     else {
-                        $code += "([$ParentClass]`$this).$FuncName("
+                        $supportedArgs += $behaviorPropValue
                     }
-    
-                    # build arguments to the function
-                    $args = ""
-                    foreach ($arg in $sigArgs) {
-                        $args += "`$$arg, "
-                    }
-                    $args = $args.TrimEnd(", ")
-                    $code += $args + ")`r`n"
-                }
-                else {
-                    $code += "`treturn `$null`r`n"
                 }
             }
     
-            $code += "}`r`n"
+            $intersection = $utils.ListIntersection($sigAndArgs[1], $supportedArgs)
+    
+            if ($intersection) {
+    
+                $code += $signature + " {`r`n"
+                $code += $utils.TabPad($(BehaviorPropsCode -ClassFunc -SigAndArgs $sigAndArgs -BehaviorPropArgs $OverrideInfo["BehaviorPropArgs"]))
+        
+                if ($Static) {
+                    $code += "`tRecordAction `$([Action]::new(@(`"$Behavior`"), `"$FuncName`", `$behaviorProps, `$PSBoundParameters, `$MyInvocation.Line))`r`n"
+                }
+                else {
+                    $code += "`tRecordAction `$([Action]::new(@(`"$Behavior`"), `"$ParentClass`.$FuncName`", `$behaviorProps, `$PSBoundParameters, `$MyInvocation.Line))`r`n"
+                }
+        
+                # if the method actually has a return value
+                if (!$signature.Contains("[void]")) {
+        
+                    # build a call to the real function to return the actual result from the override
+                    if ($OverrideInfo["Flags"] -and $OverrideInfo["Flags"].Contains("call_parent")) {
+        
+                        $code += "`treturn "
+        
+                        if ($Static) {
+                            $code += "$FuncName("
+                        }
+                        else {
+                            $code += "([$ParentClass]`$this).$FuncName("
+                        }
+        
+                        # build arguments to the function
+                        $args = ""
+                        foreach ($arg in $sigArgs) {
+                            $args += "`$$arg, "
+                        }
+                        $args = $args.TrimEnd(", ")
+                        $code += $args + ")`r`n"
+                    }
+                    else {
+                        $code += "`treturn `$null`r`n"
+                    }
+                }
+        
+                $code += "}`r`n"
+            }
         }
     }
 
@@ -420,6 +459,9 @@ function ClassOverride {
         [string] $FullClassName,
         [hashtable] $Functions
     )
+
+    # get the class member functions that we're overriding manually
+    $excludes = $config["Manuals"]["ClassMembers"]
 
     $shortName = $FullClassName.Split(".")[-1]
     $code = "class BoxPS$shortName : $FullClassName {`r`n"
@@ -434,8 +476,8 @@ function ClassOverride {
         foreach ($functionName in $Functions[$behavior].Keys) {
 
             $overrideInfo = $Functions[$behavior][$functionName]
-            $code += $utils.TabPad($(ClassFunctionOverride -ParentClass $FullClassName -Behavior $behavior `
-                 -FuncName $functionName -OverrideInfo $overrideInfo))
+            $code += $utils.TabPad($(ClassFunctionOverrides -ParentClass $FullClassName -Behavior $behavior `
+                 -FuncName $functionName -OverrideInfo $overrideInfo -Exclude $excludes))
         }
     }
 
@@ -457,15 +499,21 @@ function StaticOverrides {
 
     $code = "class BoxPSStatics {`r`n"
 
+    # get the statics that we're overriding manually
+    $excludes = $config["Manuals"]["Statics"]
+
     foreach ($behavior in $config["Statics"].keys) {
         foreach ($staticFunc in $config["Statics"][$behavior].keys) {
 
             $overrideInfo = $config["Statics"][$behavior][$staticFunc]
 
-            $code += $utils.TabPad($(ClassFunctionOverride -Static -Behavior $behavior -FuncName `
-                $staticFunc -OverrideInfo $overrideInfo))
+            $code += $utils.TabPad($(ClassFunctionOverrides -Static -Behavior $behavior -FuncName `
+                $staticFunc -OverrideInfo $overrideInfo -Exclude $excludes))
         }
     }
+
+    # tack on the manual overrides
+    $code += $utils.TabPad($(Microsoft.PowerShell.Management\Get-Content -Raw ./harness/manual_statics.ps1))
 
     return $code + "}`r`n"
 }
@@ -534,7 +582,7 @@ function BuildHarness {
         }
     }
 
-    $harness += [IO.File]::ReadAllText("$harnessPath/manual_overrides.ps1") + "`r`n`r`n"
+    $harness += [IO.File]::ReadAllText("$harnessPath/manual_cmdlets.ps1") + "`r`n`r`n"
     $harness += EnvironmentVars
     $harness += [IO.File]::ReadAllText("$harnessPath/initial_setup.ps1") + "`r`n`r`n"
 

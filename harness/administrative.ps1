@@ -7,6 +7,7 @@ using namespace Microsoft.PowerShell.Commands
 using namespace System.Diagnostics
 using namespace System.Collections
 using namespace Microsoft.PowerShell
+using namespace NewtonSoft.Json
 using namespace System
 
 $workingDir = "./working"
@@ -100,7 +101,7 @@ function RecordAction {
     param(
         [Action] $Action
     )
-
+    
     $json = $Action | ConvertTo-Json -Depth 10
     ($json + ",") | Out-File -Append "$workingDir/actions.json"
 }

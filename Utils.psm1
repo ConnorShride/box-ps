@@ -8,8 +8,8 @@ function TabPad {
 
     $newBlock = ""
 
-    foreach ($line in $block.Split("`r`n")) {
-        $newBlock += "`t" + $line + "`r`n"
+    foreach ($line in $block.Split("`n")) {
+        $newBlock += "`t" + $line + "`n"
     }
     
     return $newBlock
