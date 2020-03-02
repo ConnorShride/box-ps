@@ -599,4 +599,4 @@ function BuildHarness {
     return $harness
 }
 
-Export-ModuleMember -Function BuildHarnessq
+Export-ModuleMember -Function BuildHarness
