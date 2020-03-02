@@ -136,9 +136,9 @@ function powershell.exe {
     Microsoft.PowerShell.Utility\Invoke-Expression $boxifiedScript
 }
 
-# not for sandboxing, I need this to compensate for a bug in this function
-# does not convert ProcessStartInfo objects to Json without erroring out
-# ...pls fix... 
+# not for sandboxing. I need this to compensate for a bug in this function which
+# does not convert ProcessStartInfo objects to Json without erroring out.
+# ...pls fix... (https://github.com/PowerShell/PowerShell/issues/11915)
 function ConvertTo-Json {
 	param(
 		[switch] $AsArray,

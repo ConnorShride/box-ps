@@ -43,60 +43,60 @@
     "Cmdlets": {
         "network": {
             "Microsoft.PowerShell.Utility\\Invoke-WebRequest": {
-                "BehaviorPropArgs": {
+                "BehaviorPropInfo": {
                     "uri": ["Uri"]
                 }
             }
         },
         "file_system": {
             "Microsoft.PowerShell.Management\\Get-Item": {
-                "BehaviorPropArgs": {
+                "BehaviorPropInfo": {
                     "paths": ["Path", "LiteralPath"]
                 },
                 "Flags": ["call_parent"]
             },
             "Microsoft.PowerShell.Management\\Set-Content": {
-                "BehaviorPropArgs": {
+                "BehaviorPropInfo": {
                     "paths": ["Path", "LiteralPath"]
                 }
             },
             "Microsoft.PowerShell.Management\\Set-Location": {
-                "BehaviorPropArgs": {
+                "BehaviorPropInfo": {
                     "paths": ["Path", "LiteralPath"]
                 }
             },
             "Microsoft.PowerShell.Management\\New-Item": {
-                "BehaviorPropArgs": {
+                "BehaviorPropInfo": {
                     "paths": ["Path", "Name"]
                 }
             },
             "Microsoft.PowerShell.Management\\Get-ChildItem": {
-                "BehaviorPropArgs": {
+                "BehaviorPropInfo": {
                     "paths": ["Path"]
                 },
                 "Flags": ["call_parent"]
             },
             "Microsoft.PowerShell.Management\\Test-Path": {
-                "BehaviorPropArgs": {
+                "BehaviorPropInfo": {
                     "paths": ["Path"]
                 },
                 "Flags": ["call_parent"]
             },
             "Microsoft.PowerShell.Management\\Get-Content": {
-                "BehaviorPropArgs": {
+                "BehaviorPropInfo": {
                     "paths": ["Path", "LiteralPath"]
                 },
                 "Flags": ["call_parent"]
             },
             "Microsoft.PowerShell.Management\\Remove-Item": {
-                "BehaviorPropArgs": {
+                "BehaviorPropInfo": {
                     "paths": ["Path", "LiteralPath"]
                 }
             }
         },
         "process": {
             "Microsoft.PowerShell.Management\\Get-Process": {
-                "BehaviorPropArgs": {
+                "BehaviorPropInfo": {
                     "processes": ["Name", "Id", "InputObject"]
                 },
                 "ArgModifications": {
@@ -105,7 +105,7 @@
                 "Flags": ["call_parent"]
             },
             "Microsoft.PowerShell.Management\\Stop-Process": {
-                "BehaviorPropArgs": {
+                "BehaviorPropInfo": {
                     "processes": ["Name", "Id", "InputObject"]
                 },
                 "ArgModifications": {
@@ -113,14 +113,14 @@
                 }
             },
             "Microsoft.PowerShell.Utility\\Start-Sleep": {
-                "BehaviorPropArgs": {
+                "BehaviorPropInfo": {
                     "processes": "self"
                 }
             }
         },
         "code_import": {
             "Microsoft.PowerShell.Utility\\Add-Type": {
-                "BehaviorPropArgs": {
+                "BehaviorPropInfo": {
                     "code": ["TypeDefinition"]
                 },
                 "LayerArg": "TypeDefinition",
@@ -129,12 +129,12 @@
         },
         "file_exec": {
             "Microsoft.PowerShell.Management\\Start-Process": {
-                "BehaviorPropArgs": {
+                "BehaviorPropInfo": {
                     "files": ["FilePath"]
                 }
             },
             "Microsoft.PowerShell.Management\\Invoke-Item": {
-                "BehaviorPropArgs": {
+                "BehaviorPropInfo": {
                     "files": ["Path", "LiteralPath"]
                 }
             }
@@ -155,21 +155,21 @@
         "System.Net.WebClient": {
             "network": {
                 "DownloadFile": {
-                    "BehaviorPropArgs": {
+                    "BehaviorPropInfo": {
                         "uri": ["address"]
                     }                },
                 "DownloadString": {
-                    "BehaviorPropArgs": {
+                    "BehaviorPropInfo": {
                         "uri": ["address"]
                     }
                 },
                 "DownloadData": {
-                    "BehaviorPropArgs": {
+                    "BehaviorPropInfo": {
                         "uri": ["address"]
                     }
                 },
                 "UploadString": {
-                    "BehaviorPropArgs": {
+                    "BehaviorPropInfo": {
                         "uri": ["address"]                    
                     }                
                 }
@@ -179,12 +179,12 @@
     "Statics": {
         "file_system": {
             "[System.IO.File]::WriteAllBytes": {
-                "BehaviorPropArgs": {
+                "BehaviorPropInfo": {
                     "paths": ["path"]
                 }
             },
             "[System.Environment]::GetFolderPath": {
-                "BehaviorPropArgs": {
+                "BehaviorPropInfo": {
                     "paths": ["folder"]
                 },
                 "Flags": ["call_parent"]
@@ -192,14 +192,14 @@
         },
         "network": {
             "[System.Net.HttpWebRequest]::Create": {
-                "BehaviorPropArgs": {
+                "BehaviorPropInfo": {
                     "uri": ["requestUriString", "requestUri"]
                 }
             }
         },
         "file_exec": {
             "[System.Diagnostics.Process]::Start": {
-                "BehaviorPropArgs": {
+                "BehaviorPropInfo": {
                     "files": ["fileName"]
                 }
             }

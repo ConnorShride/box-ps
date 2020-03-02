@@ -2,7 +2,6 @@ $utils = Microsoft.PowerShell.Core\Import-Module -Name ./Utils.psm1 -AsCustomObj
 $config = Microsoft.PowerShell.Management\Get-Content ./config.json | 
     Microsoft.PowerShell.Utility\ConvertFrom-Json -AsHashtable
 
-
 function StaticParamsCode {
 
     param(
@@ -97,7 +96,7 @@ function CmdletParamsCode {
 function BehaviorPropsCode {
 
     param(
-        [hashtable] $BehaviorPropArgs,
+        [hashtable] $BehaviorPropInfo,
         [switch] $ClassFunc,
         [Tuple[string, string[]]] $SigAndArgs,
         [switch] $Cmdlet
@@ -106,26 +105,26 @@ function BehaviorPropsCode {
     $code = "`$behaviorProps = @{}`r`n"
 
     # functions belonging to the "other" behavior will not have defined behavior properties
-    if ($BehaviorPropArgs) {
+    if ($BehaviorPropInfo) {
 
-        foreach ($behaviorProp in $BehaviorPropArgs.Keys) {
+        foreach ($behaviorProp in $BehaviorPropInfo.Keys) {
 
-            $behaviorPropArgValues = $BehaviorPropArgs[$behaviorProp]
+            $behaviorPropArgs = $BehaviorPropInfo[$behaviorProp]
 
             # behavior property value is a hard-coded string, not a function argument
-            if ($behaviorPropArgValues.GetType() -eq [string]) {
-                $code += "`$behaviorProps[`"$behaviorProp`"] = @(`"$($behaviorPropArgValues)`")`r`n"
+            if ($behaviorPropArgs.GetType() -eq [string]) {
+                $code += "`$behaviorProps[`"$behaviorProp`"] = @(`"$($behaviorPropArgs)`")`r`n"
             }
             else {
 
-                if ($behaviorPropArgValues.Count -eq 1) {
-                    $code += "`$behaviorProps[`"$behaviorProp`"] = `@(`$$($behaviorPropArgValues[0]))`r`n"
+                if ($behaviorPropArgs.Count -eq 1) {
+                    $code += "`$behaviorProps[`"$behaviorProp`"] = `@(`$$($behaviorPropArgs[0]))`r`n"
                 }
                 # for commandlets, we have to find the argument that's present at script run-time
                 elseif ($Cmdlet) {
 
                     $first = $true
-                    foreach ($arg in $behaviorPropArgValues) {
+                    foreach ($arg in $behaviorPropArgs) {
 
                         $block = "if (`$PSBoundParameters.ContainsKey(`"$arg`")) {`r`n"
                         $block += "`t`$behaviorProps[`"$behaviorProp`"] = @(`$$arg)`r`n"
@@ -376,7 +375,7 @@ function ClassFunctionOverrides {
     foreach ($signature in $signatures.keys) {
 
         $sigArgs = $signatures[$signature]
-        $signature = TranslateClassFuncSignature $signature
+        $signature = TranslateClassFuncSignature -Signature $signature
 
         # don't create overrides for the signatures in the set to exclude
         if (!$Exclude.Contains($signature)) {
@@ -385,30 +384,31 @@ function ClassFunctionOverrides {
     
             # if the signature does not take an argument that we listed in the config file, then we
             # aren't supporting it
-            $behaviorPropArgs = $OverrideInfo["BehaviorPropArgs"]
+            $BehaviorPropInfo = $OverrideInfo["BehaviorPropInfo"]
             $supportedArgs = @()
-            foreach ($behaviorProp in $behaviorPropArgs.keys) {
-                $behaviorPropValues = $behaviorPropArgs[$behaviorProp]
-    
+            foreach ($behaviorProp in $BehaviorPropInfo.keys) {
+
+                $behaviorPropArgs = $BehaviorPropInfo[$behaviorProp]
+
                 # if the behaviorprop value is an object, then the value is a property of the function 
                 # argument which is an object e.g. ProcessStartInfo.FileName is the "File" value for 
                 # behavior file_exec in the function [Diagnostics.Process]::Start(ProcessStartInfo)
-                foreach ($behaviorPropValue in $behaviorPropValues) {
-                    if ($behaviorPropValue.GetType() -eq [Hashtable]) {
-                        $supportedArgs += $behaviorPropValue.Keys[0]
+                foreach ($behaviorPropArg in $behaviorPropArgs) {
+                    if ($behaviorPropArg.GetType() -eq [Hashtable]) {
+                        $supportedArgs += $behaviorPropArg.Keys[0]
                     }
                     else {
-                        $supportedArgs += $behaviorPropValue
+                        $supportedArgs += $behaviorPropArg
                     }
                 }
             }
-    
+
             $intersection = $utils.ListIntersection($sigAndArgs[1], $supportedArgs)
     
             if ($intersection) {
     
                 $code += $signature + " {`r`n"
-                $code += $utils.TabPad($(BehaviorPropsCode -ClassFunc -SigAndArgs $sigAndArgs -BehaviorPropArgs $OverrideInfo["BehaviorPropArgs"]))
+                $code += $utils.TabPad($(BehaviorPropsCode -ClassFunc -SigAndArgs $sigAndArgs -BehaviorPropInfo $OverrideInfo["BehaviorPropInfo"]))
         
                 if ($Static) {
                     $code += "`tRecordAction `$([Action]::new(@(`"$Behavior`"), `"$FuncName`", `$behaviorProps, `$PSBoundParameters, `$MyInvocation.Line))`r`n"
@@ -497,6 +497,7 @@ function ClassOverrides {
 
 function StaticOverrides {
 
+    $commentSep = "################################################################################"
     $code = "class BoxPSStatics {`r`n"
 
     # get the statics that we're overriding manually
@@ -513,6 +514,7 @@ function StaticOverrides {
     }
 
     # tack on the manual overrides
+    $code += $utils.TabPad($commentSep + "`r`n#MANUAL STATICS`r`n" + $commentSep + "`r`n")
     $code += $utils.TabPad($(Microsoft.PowerShell.Management\Get-Content -Raw ./harness/manual_statics.ps1))
 
     return $code + "}`r`n"
@@ -530,7 +532,7 @@ function CmdletOverride {
     $code = "function $shortName {`r`n"
     $code += $utils.TabPad($(CmdletParamsCode $shortName $CmdletInfo["ArgAdditions"]))
     $code += $utils.TabPad($(ArgModificationCode $CmdletInfo["ArgModifications"]))
-    $code += $utils.TabPad($(BehaviorPropsCode -Cmdlet -BehaviorPropArgs $CmdletInfo.BehaviorPropArgs))
+    $code += $utils.TabPad($(BehaviorPropsCode -Cmdlet -BehaviorPropInfo $CmdletInfo.BehaviorPropInfo))
 
     $code += "`tRecordAction `$([Action]::new(@(`"$Behavior`"), `"$($CmdletName)`", `$behaviorProps, `$MyInvocation))`r`n"
 
@@ -563,18 +565,23 @@ function BuildHarness {
 
     $harnessPath = "$PSScriptRoot/harness"
     $harness = ""
+    $commentSep = "################################################################################"
 
+    # code containing namespace imports, class definition for Actions
     $harness += [IO.File]::ReadAllText("$harnessPath/administrative.ps1") + "`r`n`r`n"
 
     # may need to boxify script layers as they get decoded and executed
     $harness += "Microsoft.PowerShell.Core\Import-Module -Name ./ScriptInspector.psm1`r`n`r`n"
 
+    $harness += $commentSep + "`r`n#CLASSES`r`n" + $commentSep + "`r`n"
     foreach ($class in $config["Classes"].Keys) {
         $harness += ClassOverride $class $config["Classes"][$class]
     }
 
+    $harness += $commentSep + "`r`n#STATIC FUNCTIONS`r`n" + $commentSep + "`r`n"
     $harness += StaticOverrides
 
+    $harness += $commentSep + "`r`n#COMMANDLETS`r`n" + $commentSep + "`r`n"
     foreach ($behavior in $config["Cmdlets"].keys) {
         foreach($cmdlet in $config["Cmdlets"][$behavior].keys) {
             $overrideInfo = $config["Cmdlets"][$behavior][$cmdlet]
@@ -582,11 +589,14 @@ function BuildHarness {
         }
     }
 
+    $harness += $commentSep + "`r`n#MANUAL COMMANDLETS`r`n" + $commentSep + "`r`n"
     $harness += [IO.File]::ReadAllText("$harnessPath/manual_cmdlets.ps1") + "`r`n`r`n"
-    $harness += EnvironmentVars
-    $harness += [IO.File]::ReadAllText("$harnessPath/initial_setup.ps1") + "`r`n`r`n"
+    $harness += $commentSep + "`r`n#ENVIRONMENT`r`n" + $commentSep + "`r`n"
+    $harness += EnvironmentVars + "`r`n"
+    $harness += $commentSep + "`r`n#OTHER SETUP`r`n" + $commentSep + "`r`n"
+    $harness += [IO.File]::ReadAllText("$harnessPath/other_setup.ps1") + "`r`n`r`n"
 
     return $harness
 }
 
-Export-ModuleMember -Function BuildHarness
+Export-ModuleMember -Function BuildHarnessq
