@@ -2,6 +2,8 @@ $utils = Microsoft.PowerShell.Core\Import-Module -Name ./Utils.psm1 -AsCustomObj
 $config = Microsoft.PowerShell.Management\Get-Content $PSScriptRoot\config.json | 
     Microsoft.PowerShell.Utility\ConvertFrom-Json -AsHashtable
 
+$WORK_DIR = "./working"
+
 function ReplaceStaticNamespaces {
 
     param(
@@ -128,4 +130,23 @@ function BoxifyScript {
     return $Script
 }
 
+function ScrapeUrls {
+
+    param(
+        [String] $Script
+    )
+
+	$urls = @()
+
+    $regex = "(http[s]?:(?:(?://)|(?:\\\\?))(([a-zA-Z0-9_\-]+\.[a-zA-Z0-9_\-\.]+(:[0-9]+)?)+([/\\]([/\\\?&\~=a-zA-Z0-9_\-\.](?!http))+)?))"
+    $matchRes = $Script | Microsoft.Powershell.Utility\Select-String -Pattern $regex -AllMatches
+
+    # make sure return is array of strings (Value property is string)
+    if ($matchRes) {
+        $matchRes.Matches | Microsoft.PowerShell.Core\ForEach-Object { $urls += $_.Value}
+        $urls | Out-File -Append "$WORK_DIR/scraped_urls.txt"
+	}
+}
+
 Export-ModuleMember -Function BoxifyScript
+Export-ModuleMember -Function ScrapeUrls

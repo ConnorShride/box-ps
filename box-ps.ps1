@@ -15,11 +15,25 @@ param (
     [parameter(Position=1, Mandatory=$true)][String] $OutFile
 )
 
+$WORK_DIR = "./working"
+
 # arg validation
 if (!(Test-Path $InFile)) {
     Write-Host "[-] input file does not exist. exiting."
     exit -1
 }
+
+class Report {
+
+    [object[]] $Actions
+    [string[]] $PotentialIndicators
+
+    Report([object[]] $actions, [string[]] $potentialIndicators) {
+        $this.Actions = $Actions
+        $this.PotentialIndicators = $potentialIndicators
+    }
+}
+
 
 # cuts the full path from the file path to leave just the name
 function GetShortFileName {
@@ -37,17 +51,29 @@ function GetShortFileName {
     return $shortName
 }
 
+# ingest and dedup all urls that were scraped from the script layers
+function IngestScrapedUrls {
+    
+    $urls = Get-Content $WORK_DIR/scraped_urls.txt -ErrorAction SilentlyContinue
+    $urlSet = New-Object System.Collections.Generic.HashSet[string]
+
+    if ($urls) {
+        $urls | ForEach-Object { $urlSet.Add($_) > $null }
+    }
+
+    $urls = [string[]]::new($urlSet.Count)
+    $urlSet.CopyTo($urls)
+
+    return $urls
+}
+
 # remove imported modules and clean up non-output file system artifacts
 function CleanUp {
-
-    param(
-        [string] $WorkingDir
-    )
 
     Remove-Module HarnessBuilder -ErrorAction SilentlyContinue
     Remove-Module ScriptInspector -ErrorAction SilentlyContinue
     Remove-Module Utils -ErrorAction SilentlyContinue
-    Remove-Item -Recurse $WorkingDir
+    Remove-Item -Recurse $WORK_DIR
 }
 
 # don't run it here, pull down the box-ps docker container and run it in there
@@ -74,12 +100,13 @@ if ($Dockerize) {
     }
 
     Write-Host "[+] pulling latest docker image"
-    docker pull connorshride/box-ps:latest > $null
+    docker pull connorshride/box-ps:testing > $null
     Write-Host "[+] starting docker container"
-    docker run -td --network none connorshride/box-ps:latest > $null
+    docker run -td --network none connorshride/box-ps:testing > $null
+
 
     # get the ID of the container we just started
-    $psOutput = docker ps -f status=running -f ancestor=connorshride/box-ps -l
+    $psOutput = docker ps -f status=running -l
     $idMatch = $psOutput | Select-String -Pattern "[\w]+_[\w]+"
     $containerId = $idMatch.Matches.Value
 
@@ -100,19 +127,18 @@ if ($Dockerize) {
 }
 else {
 
-    $workingDir = "./working"
-    $stderrPath = "$workingDir/stderr.txt"
-    $stdoutPath = "$workingDir/stdout.txt"
-    $actionsPath = "$workingDir/actions.json"
-    $harnessPath = "$workingDir/harness.ps1"
-    $harnessedScriptPath = "$workingDir/harnessedscript.ps1"
+    $stderrPath = "$WORK_DIR/stderr.txt"
+    $stdoutPath = "$WORK_DIR/stdout.txt"
+    $actionsPath = "$WORK_DIR/actions.json"
+    $harnessPath = "$WORK_DIR/harness.ps1"
+    $harnessedScriptPath = "$WORK_DIR/harnessed_script.ps1"
     
     # create working directory to store 
-    if (Test-Path $workingDir) {
-        Remove-Item -Force $workingDir/*
+    if (Test-Path $WORK_DIR) {
+        Remove-Item -Force $WORK_DIR/*
     }
     else {
-        mkdir $workingDir
+        mkdir $WORK_DIR
     }
     
     Import-Module -Name ./HarnessBuilder.psm1
@@ -126,7 +152,8 @@ else {
     
     # modify the script to integrate it with the harness
     $script = BoxifyScript $script
-    
+    ScrapeUrls $script
+
     # attach the harness to the script
     $harnessedScript = $harness + "`r`n`r`n" + $script
     $harnessedScript | Out-File -FilePath $harnessedScriptPath
@@ -139,14 +166,20 @@ else {
     # a lot of times actions.json will not be present if things go wrong
     if (!(Test-Path $actionsPath)) {
         Write-Host "[-] sandboxing failed with an internal error. please post an issue on GitHub with the failing powershell"
-        CleanUp $workingDir
+        CleanUp
         Exit(-1)
     }
 
-    # output the actions JSON
+    # ingest the actions recorded
     $actionsJson = Get-Content -Raw $actionsPath 
-    "[" + $actionsJson.TrimEnd(",`r`n") + "]" | Out-File $OutFile
+    $actions = "[" + $actionsJson.TrimEnd(",`r`n") + "]" | ConvertFrom-Json
+
+    # ingest and URLs scraped from script layers
+    $urls = IngestScrapedUrls
+
+    # output report JSON
+    [Report]::new($actions, $urls) | ConvertTo-Json -Depth 10 | Out-File $OutFile
     Write-Host "[+] box-ps wrote sandbox results to $OutFile"
     
-    CleanUp $workingDir
+    CleanUp
 }

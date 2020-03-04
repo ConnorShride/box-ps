@@ -121,7 +121,7 @@
         "code_import": {
             "Microsoft.PowerShell.Utility\\Add-Type": {
                 "BehaviorPropInfo": {
-                    "code": ["TypeDefinition"]
+                    "code": ["TypeDefinition", "MemberDefinition"]
                 },
                 "LayerArg": "TypeDefinition",
                 "Flags": ["call_parent"]

@@ -21,8 +21,6 @@ static [System.Diagnostics.Process] Start([System.Diagnostics.ProcessStartInfo] 
     
     $behaviorProps = @{}
 
-    $startInfo | Out-File ./debug.txt
-
     # if powershell, treat this now as a script_exec rather than file_exec
     if ($startInfo.FileName.ToLower().Contains("powershell") -and $startInfo.Arguments) {
 

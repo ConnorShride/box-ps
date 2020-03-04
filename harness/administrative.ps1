@@ -16,17 +16,15 @@ class Action <# lawsuit... I'll be here all week #> {
 
     [String[]] $Behaviors
     [String] $Actor
-    [String] $FullActor
     [String] $Line
     [hashtable] $BehaviorProps
     [hashtable] $Parameters
 
-    Action ([String[]] $Behaviors, [String] $FullActor, [hashtable] $BehaviorProps,
+    Action ([String[]] $Behaviors, [String] $Actor, [hashtable] $BehaviorProps,
         [InvocationInfo] $Invocation) {
 
         $this.Behaviors = $Behaviors
-        $this.FullActor = $FullActor
-        $this.Actor = $this.GetShortActor($FullActor)
+        $this.Actor = $Actor
         $this.BehaviorProps = $BehaviorProps
         $this.Line = $Invocation.Line.Trim()
 
@@ -42,12 +40,11 @@ class Action <# lawsuit... I'll be here all week #> {
     # e.g. System.Net.WebClient.DownloadFile
     #   These are guaranteed not to have switches, and the MyInvocation variable does not
     #   contain boundparameters, so callers need to be able to pass the PSBoundParameters variable
-    Action ([String[]] $Behaviors, [String] $FullActor, [hashtable] $BehaviorProps, 
+    Action ([String[]] $Behaviors, [String] $Actor, [hashtable] $BehaviorProps, 
         [hashtable] $BoundParams, [String] $Line) {
 
         $this.Behaviors = $Behaviors
-        $this.FullActor = $FullActor
-        $this.Actor = $this.GetShortActor($FullActor)
+        $this.Actor = $Actor
         $this.BehaviorProps = $BehaviorProps
         $this.Parameters = $BoundParams
         $this.Line = $Line.Trim()

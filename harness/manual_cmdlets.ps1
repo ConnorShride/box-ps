@@ -23,7 +23,7 @@ function Invoke-Expression {
 		[Parameter(ValueFromPipeline=$true,Position=0,Mandatory=$true)]
 		[string] $Command
 	)
-	
+    
 	$behaviorProps = @{
         "script" = @($Command)
     }
@@ -42,6 +42,7 @@ function Invoke-Expression {
     RecordAction $([Action]::new(@("script_exec"), "Microsoft.PowerShell.Utility\Invoke-Expression", $behaviorProps, $MyInvocation))
 
     $modifiedCommand = BoxifyScript $Command
+    ScrapeUrls $modifiedCommand
 
     # actually run it, assign the result for situations like...
     # ex. $foo = Invoke-Expression "New-Object System.Net.WebClient"
@@ -112,28 +113,45 @@ function New-Object {
 function powershell.exe {
 
     param(
+		[Parameter(Position=0, ValueFromRemainingArguments=$true)]
+		$Command,
         [string] $EncodedCommand,
-        [string] $File,
+		[string] $File,
+		[string] $WindowStyle,
         [switch] $NoLogo,
         [switch] $NoProfile,
-        [switch] $NonInteractive,
-        [string] $WindowStyle
-    )
+        [switch] $NonInteractive
+	)
 
     $behaviorProps = @{}
 
+    if ($PSBoundParameters.ContainsKey("Command")) {
+		# command was given arg list style like "powershell Write-Host foo"
+		# join the list into a single string
+		if ($Command.Count -gt 1) {
+			foreach ($token in $Command) {
+				$behaviorProps["script"] += $token + " "
+			}
+		}
+		else {
+			$behaviorProps["script"] = $Command[0].ToString()
+		}
+    }
     if ($PSBoundParameters.ContainsKey("EncodedCommand")) {
         $decodedScript = [System.Text.Encoding]::Unicode.GetString([System.Convert]::FromBase64String($EncodedCommand))
         $behaviorProps["script"] = $decodedScript
     }
+    # read the script and execute?
     elseif ($PSBoundParameters.ContainsKey("File")) {
         $behaviorProps["script"] = $File
     }
 
     RecordAction $([Action]::new(@("script_exec"), "powershell.exe", $behaviorProps, $MyInvocation))
 
-    $boxifiedScript = BoxifyScript $decodedScript
-    Microsoft.PowerShell.Utility\Invoke-Expression $boxifiedScript
+    $boxifiedScript = BoxifyScript $behaviorProps["script"]
+    ScrapeUrls $boxifiedScript
+
+	Microsoft.PowerShell.Utility\Invoke-Expression $boxifiedScript
 }
 
 # not for sandboxing. I need this to compensate for a bug in this function which
