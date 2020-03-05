@@ -148,5 +148,23 @@ function ScrapeUrls {
 	}
 }
 
-Export-ModuleMember -Function BoxifyScript
-Export-ModuleMember -Function ScrapeUrls
+# code modifications to integrate it with the overrides
+# recording layer for output
+# scrape potential IOCs
+function PreProcessScript {
+
+    param(
+        [string] $Script
+    )
+
+    $Script = BoxifyScript $Script
+    ScrapeUrls $Script
+
+    $separator = ("*" * 100 + "`r`n")
+    $layerOut = $separator + $Script + "`r`n" + $separator
+    $layerOut | Microsoft.PowerShell.Utility\Out-File -Append -Path $WORK_DIR/layers.ps1
+    
+    return $Script
+}
+
+Export-ModuleMember -Function PreProcessScript

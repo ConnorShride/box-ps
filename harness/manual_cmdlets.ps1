@@ -41,8 +41,7 @@ function Invoke-Expression {
     
     RecordAction $([Action]::new(@("script_exec"), "Microsoft.PowerShell.Utility\Invoke-Expression", $behaviorProps, $MyInvocation))
 
-    $modifiedCommand = BoxifyScript $Command
-    ScrapeUrls $modifiedCommand
+    $modifiedCommand = PreProcessScript $Command
 
     # actually run it, assign the result for situations like...
     # ex. $foo = Invoke-Expression "New-Object System.Net.WebClient"
@@ -148,8 +147,7 @@ function powershell.exe {
 
     RecordAction $([Action]::new(@("script_exec"), "powershell.exe", $behaviorProps, $MyInvocation))
 
-    $boxifiedScript = BoxifyScript $behaviorProps["script"]
-    ScrapeUrls $boxifiedScript
+    $boxifiedScript = PreProcessScript $behaviorProps["script"]
 
 	Microsoft.PowerShell.Utility\Invoke-Expression $boxifiedScript
 }

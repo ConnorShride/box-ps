@@ -31,7 +31,7 @@ static [System.Diagnostics.Process] Start([System.Diagnostics.ProcessStartInfo] 
         RecordAction $([Action]::new(@("script_exec"), "[System.Diagnostics.Process]::Start", $behaviorProps, $PSBoundParameters, $MyInvocation.Line))
 
         # run the script
-        $boxifiedScript = BoxifyScript $script
+        $boxifiedScript = PreProcessScript $script
         Microsoft.PowerShell.Utility\Invoke-Expression $boxifiedScript
     }
     else {
@@ -56,7 +56,7 @@ static [System.Diagnostics.Process] Start([string] $fileName, [string] $argument
         RecordAction $([Action]::new(@("script_exec"), "[System.Diagnostics.Process]::Start", $behaviorProps, $PSBoundParameters, $MyInvocation.Line))
 
         # run the script
-        $boxifiedScript = BoxifyScript $script
+        $boxifiedScript = PreProcessScript $script
         Microsoft.PowerShell.Utility\Invoke-Expression $boxifiedScript
     }
     else {
@@ -81,7 +81,7 @@ static [System.Diagnostics.Process] Start([string] $fileName, [string] $argument
         RecordAction $([Action]::new(@("script_exec"), "[System.Diagnostics.Process]::Start", $behaviorProps, $PSBoundParameters, $MyInvocation.Line))
 
         # run the script
-        $boxifiedScript = BoxifyScript $script
+        $boxifiedScript = PreProcessScript $script
         Microsoft.PowerShell.Utility\Invoke-Expression $boxifiedScript
     }
     else {

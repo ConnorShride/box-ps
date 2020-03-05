@@ -10,17 +10,29 @@
 #>
 
 param (
-    [switch] $Dockerize,
-    [parameter(Position=0, Mandatory=$true)][String] $InFile,
-    [parameter(Position=1, Mandatory=$true)][String] $OutFile
+    [switch] $Docker,
+    [parameter(ParameterSetName="ReportOnly", Mandatory=$true)]
+    [switch] $ReportOnly,
+    [parameter(Position=0, Mandatory=$true)]
+    [String] $InFile,
+    [parameter(ParameterSetName="ReportOnly", Mandatory=$true)]
+    [parameter(ParameterSetName="IncludeArtifacts")]
+    [parameter(Position=1)]
+    [String] $OutFile,
+    [parameter(ParameterSetName="IncludeArtifacts")]
+    [string] $OutDir
 )
-
-$WORK_DIR = "./working"
 
 # arg validation
 if (!(Test-Path $InFile)) {
     Write-Host "[-] input file does not exist. exiting."
     exit -1
+}
+
+# give OutDir a default value if the user hasn't specified they don't want artifacts 
+if (!$ReportOnly -and !$OutDir) {
+    # by default named <script>.boxed in the current working directory
+    $OutDir = "./$($InFile.Substring($InFile.LastIndexOf("/") + 1)).boxed"
 }
 
 class Report {
@@ -33,7 +45,6 @@ class Report {
         $this.PotentialIndicators = $potentialIndicators
     }
 }
-
 
 # cuts the full path from the file path to leave just the name
 function GetShortFileName {
@@ -76,8 +87,10 @@ function CleanUp {
     Remove-Item -Recurse $WORK_DIR
 }
 
+$WORK_DIR = "./working"
+
 # don't run it here, pull down the box-ps docker container and run it in there
-if ($Dockerize) {
+if ($Docker) {
 
     # test to see if docker is installed. EXIT IF NOT
     try {
@@ -100,27 +113,46 @@ if ($Dockerize) {
     }
 
     Write-Host "[+] pulling latest docker image"
-    docker pull connorshride/box-ps:testing > $null
+    docker pull connorshride/box-ps:latest > $null
     Write-Host "[+] starting docker container"
-    docker run -td --network none connorshride/box-ps:testing > $null
-
+    docker run -td --network none connorshride/box-ps:latest > $null
 
     # get the ID of the container we just started
-    $psOutput = docker ps -f status=running -l
+    $psOutput = docker ps -f status=running -f ancestor=connorshride/box-ps -l
     $idMatch = $psOutput | Select-String -Pattern "[\w]+_[\w]+"
     $containerId = $idMatch.Matches.Value
 
+    # modify args for running in the container
+    # just keep all the input/output files in the box-ps dir in the container
+    $PSBoundParameters.Remove("Docker") > $null
+    $PSBoundParameters["InFile"] = GetShortFileName $InFile
+
+    if ($OutFile) {
+        $PSBoundParameters["OutFile"] = "./out.json"
+    }
+
+    if ($OutDir) {
+        $PSBoundParameters["OutDir"] = "./outdir"
+    }
+
     Write-Host "[+] running box-ps in container"
-
-    $shortInName = GetShortFileName $InFile
-    $shortOutName = GetShortFileName $OutFile
-
-    # move file into container, run box-ps, move results file out
     docker cp $InFile "$containerId`:/opt/box-ps/"
-    docker exec $containerId pwsh ./box-ps.ps1 -InFile $shortInName -OutFile $shortOutName
-    docker cp "$containerId`:/opt/box-ps/$shortOutName" $OutFile
+    docker exec $containerId pwsh ./box-ps.ps1 @PSBoundParameters > $null
 
-    Write-Host "[+] moved sandbox results from container to $OutFile"
+    if ($OutFile) {
+        docker cp "$containerId`:/opt/box-ps/out.json" $OutFile
+        Write-Host "[+] moved JSON report from container to $OutFile"
+    }
+
+    if ($OutDir) {
+
+        if (Test-Path $OutDir) {
+            Remove-Item -Recurse $OutDir
+        }
+
+        docker cp "$containerId`:/opt/box-ps/outdir" $OutDir
+        Write-Host "[+] moved results from container to $OutDir"
+    }
 
     # clean up
     docker kill $containerId > $null
@@ -130,7 +162,6 @@ else {
     $stderrPath = "$WORK_DIR/stderr.txt"
     $stdoutPath = "$WORK_DIR/stdout.txt"
     $actionsPath = "$WORK_DIR/actions.json"
-    $harnessPath = "$WORK_DIR/harness.ps1"
     $harnessedScriptPath = "$WORK_DIR/harnessed_script.ps1"
     
     # create working directory to store 
@@ -138,7 +169,7 @@ else {
         Remove-Item -Force $WORK_DIR/*
     }
     else {
-        mkdir $WORK_DIR
+        New-Item $WORK_DIR -ItemType Directory > $null
     }
     
     Import-Module -Name ./HarnessBuilder.psm1
@@ -146,13 +177,8 @@ else {
     
     $script = (Get-Content $InFile -ErrorAction Stop | Out-String)
     
-    # build the harness
-    $harness = BuildHarness 
-    $harness | Out-File $harnessPath
-    
-    # modify the script to integrate it with the harness
-    $script = BoxifyScript $script
-    ScrapeUrls $script
+    $harness = BuildHarness
+    $script = PreProcessScript $script
 
     # attach the harness to the script
     $harnessedScript = $harness + "`r`n`r`n" + $script
@@ -170,16 +196,41 @@ else {
         Exit(-1)
     }
 
-    # ingest the actions recorded
+    # ingest the actions, potential IOCs, create report
     $actionsJson = Get-Content -Raw $actionsPath 
     $actions = "[" + $actionsJson.TrimEnd(",`r`n") + "]" | ConvertFrom-Json
-
-    # ingest and URLs scraped from script layers
     $urls = IngestScrapedUrls
+    $report = [Report]::new($actions, $urls)
+    $reportJson = $report | ConvertTo-Json -Depth 10
 
-    # output report JSON
-    [Report]::new($actions, $urls) | ConvertTo-Json -Depth 10 | Out-File $OutFile
-    Write-Host "[+] box-ps wrote sandbox results to $OutFile"
-    
+    # output the JSON report where the user wants it
+    if ($OutFile) {
+        $reportJson | Out-File $OutFile
+        Write-Host "[+] wrote JSON report to $OutFile"
+    }
+
+    # user wants more detailed artifacts as well as the report
+    if ($OutDir) {
+
+        # overwrite output dir if it already exists
+        if (Test-Path $OutDir) {
+            Remove-Item $OutDir/*
+        }
+        else {
+            New-Item $OutDir -ItemType Directory > $null
+        }
+
+        # move some stuff from working directory here
+        Move-Item $WORK_DIR/stdout.txt $OutDir/
+        Move-Item $WORK_DIR/stderr.txt $OutDir/
+        Move-Item $WORK_DIR/layers.ps1 $OutDir/
+
+        if (!$OutFile) {
+            $reportJson | Out-File $OutDir/report.json
+        }
+
+        Write-Host "[+] moved analysis results to $OutDir"
+    }
+
     CleanUp
 }
