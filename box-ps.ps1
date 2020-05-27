@@ -224,10 +224,7 @@ else {
         Move-Item $WORK_DIR/stdout.txt $OutDir/
         Move-Item $WORK_DIR/stderr.txt $OutDir/
         Move-Item $WORK_DIR/layers.ps1 $OutDir/
-
-        if (!$OutFile) {
-            $reportJson | Out-File $OutDir/report.json
-        }
+        $reportJson | Out-File $OutDir/report.json
 
         Write-Host "[+] moved analysis results to $OutDir"
     }
