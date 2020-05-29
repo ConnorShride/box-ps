@@ -137,7 +137,7 @@ if ($Docker) {
 
     Write-Host "[+] running box-ps in container"
     docker cp $InFile "$containerId`:/opt/box-ps/"
-    docker exec $containerId pwsh $PSScriptRoot/box-ps.ps1 @PSBoundParameters > $null
+    docker exec $containerId pwsh /opt/box-ps/box-ps.ps1 @PSBoundParameters > $null
 
     if ($OutFile) {
         docker cp "$containerId`:/opt/box-ps/out.json" $OutFile
@@ -191,8 +191,9 @@ else {
     
     # a lot of times actions.json will not be present if things go wrong
     if (!(Test-Path $actionsPath)) {
-        Write-Host "[-] sandboxing failed with an internal error. please post an issue on GitHub with the failing powershell"
-        CleanUp
+        $message = "sandboxing failed with an internal error. please post an issue on GitHub with the failing powershell"
+        Write-Error -Message $message -Category NotSpecified
+        #CleanUp
         Exit(-1)
     }
 
