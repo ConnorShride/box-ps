@@ -137,7 +137,7 @@ if ($Docker) {
 
     Write-Host "[+] running box-ps in container"
     docker cp $InFile "$containerId`:/opt/box-ps/"
-    docker exec $containerId pwsh ./box-ps.ps1 @PSBoundParameters > $null
+    docker exec $containerId pwsh $PSScriptRoot/box-ps.ps1 @PSBoundParameters > $null
 
     if ($OutFile) {
         docker cp "$containerId`:/opt/box-ps/out.json" $OutFile
@@ -172,8 +172,8 @@ else {
         New-Item $WORK_DIR -ItemType Directory > $null
     }
     
-    Import-Module -Name ./HarnessBuilder.psm1
-    Import-Module -Name ./ScriptInspector.psm1
+    Import-Module -Name $PSScriptRoot/HarnessBuilder.psm1
+    Import-Module -Name $PSScriptRoot/ScriptInspector.psm1
     
     $script = (Get-Content $InFile -ErrorAction Stop | Out-String)
     

@@ -11,6 +11,7 @@ using namespace NewtonSoft.Json
 using namespace System
 
 $workingDir = "./working"
+$codeDir = "<CODE_DIR>"
 
 class Action <# lawsuit... I'll be here all week #> {
 
@@ -113,7 +114,7 @@ function RedirectObjectCreation {
 }
 
 function GetOverridedClasses {
-    $config = Microsoft.PowerShell.Management\Get-Content "./config.json" | ConvertFrom-Json -AsHashtable
+    $config = Microsoft.PowerShell.Management\Get-Content "$codeDir/config.json" | ConvertFrom-Json -AsHashtable
     return $config["Classes"].Keys | ForEach-Object { $_.ToLower() }
 }
 

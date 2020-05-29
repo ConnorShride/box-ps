@@ -1,5 +1,5 @@
-$utils = Microsoft.PowerShell.Core\Import-Module -Name ./Utils.psm1 -AsCustomObject -Scope Local
-$config = Microsoft.PowerShell.Management\Get-Content $PSScriptRoot\config.json | 
+$utils = Microsoft.PowerShell.Core\Import-Module -Name $PSScriptRoot/Utils.psm1 -AsCustomObject -Scope Local
+$config = Microsoft.PowerShell.Management\Get-Content $PSScriptRoot/config.json | 
     Microsoft.PowerShell.Utility\ConvertFrom-Json -AsHashtable
 
 $WORK_DIR = "./working"

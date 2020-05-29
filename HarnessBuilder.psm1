@@ -1,5 +1,5 @@
-$utils = Microsoft.PowerShell.Core\Import-Module -Name ./Utils.psm1 -AsCustomObject -Scope Local
-$config = Microsoft.PowerShell.Management\Get-Content ./config.json | 
+$utils = Microsoft.PowerShell.Core\Import-Module -Name $PSScriptRoot/Utils.psm1 -AsCustomObject -Scope Local
+$config = Microsoft.PowerShell.Management\Get-Content $PSScriptRoot/config.json | 
     Microsoft.PowerShell.Utility\ConvertFrom-Json -AsHashtable
 
 function StaticParamsCode {
@@ -515,7 +515,7 @@ function StaticOverrides {
 
     # tack on the manual overrides
     $code += $utils.TabPad($commentSep + "`r`n#MANUAL STATICS`r`n" + $commentSep + "`r`n")
-    $code += $utils.TabPad($(Microsoft.PowerShell.Management\Get-Content -Raw ./harness/manual_statics.ps1))
+    $code += $utils.TabPad($(Microsoft.PowerShell.Management\Get-Content -Raw $PSScriptRoot/harness/manual_statics.ps1))
 
     return $code + "}`r`n"
 }
@@ -568,10 +568,10 @@ function BuildHarness {
     $commentSep = "################################################################################"
 
     # code containing namespace imports, class definition for Actions
-    $harness += [IO.File]::ReadAllText("$harnessPath/administrative.ps1") + "`r`n`r`n"
+    $harness += [IO.File]::ReadAllText("$harnessPath/administrative.ps1").Replace("<CODE_DIR>", $PSScriptRoot) + "`r`n`r`n"
 
     # may need to boxify script layers as they get decoded and executed
-    $harness += "Microsoft.PowerShell.Core\Import-Module -Name ./ScriptInspector.psm1`r`n`r`n"
+    $harness += "Microsoft.PowerShell.Core\Import-Module -Name `$codeDir/ScriptInspector.psm1`r`n`r`n"
 
     $harness += $commentSep + "`r`n#CLASSES`r`n" + $commentSep + "`r`n"
     foreach ($class in $config["Classes"].Keys) {
