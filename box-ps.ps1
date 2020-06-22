@@ -80,8 +80,9 @@ function IngestScrapedUrls {
 
 # removes, if present, the invocation to Powershell that comes up front. It may be written to
 # be interpreted with a cmd.exe shell and therefore does not play well with our PowerShell
-# interpreted powershell.exe override.
-function ScrubNewShell {
+# interpreted powershell.exe override. Also records the initial action as a script execution of
+# the code we come up with here (decoded if it was b64 encoded).
+function GetInitialScript {
 
     param(
         [string] $OrigScript
@@ -97,6 +98,18 @@ function ScrubNewShell {
     if ($encoded) {
         $scrubbed = [System.Text.Encoding]::Unicode.GetString([System.Convert]::FromBase64String($scrubbed.Trim()))
     }
+
+    # record the script
+    [hashtable] $action = @{
+        "Behaviors" = @("script_exec")
+        "Actor" = "powershell.exe"
+        "BehaviorProps" = @{
+            "script" = @($scrubbed)
+        }
+    }
+
+    $json = $action | ConvertTo-Json -Depth 10
+    ($json + ",") | Out-File -Append "$WORK_DIR/actions.json"
 
     return $scrubbed
 }
@@ -200,7 +213,7 @@ else {
     Import-Module -Name $PSScriptRoot/ScriptInspector.psm1
     
     $script = (Get-Content $InFile -ErrorAction Stop | Out-String)
-    $script = ScrubNewShell $script
+    $script = GetInitialScript $script
 
     # build harness and integrate script with it
     $harness = BuildHarness
@@ -224,7 +237,7 @@ else {
     }
 
     # ingest the actions, potential IOCs, create report
-    $actionsJson = Get-Content -Raw $actionsPath 
+    $actionsJson = Get-Content -Raw $actionsPath
     $actions = "[" + $actionsJson.TrimEnd(",`r`n") + "]" | ConvertFrom-Json
     $urls = IngestScrapedUrls
     $report = [Report]::new($actions, $urls)
