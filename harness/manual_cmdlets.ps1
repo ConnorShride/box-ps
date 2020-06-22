@@ -120,8 +120,8 @@ function powershell.exe {
         [switch] $NoLogo,
         [switch] $NoProfile,
         [switch] $NonInteractive
-	)
-
+    )
+    
     $behaviorProps = @{}
 
     if ($PSBoundParameters.ContainsKey("Command")) {

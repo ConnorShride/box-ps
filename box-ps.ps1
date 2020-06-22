@@ -78,6 +78,29 @@ function IngestScrapedUrls {
     return $urls
 }
 
+# removes, if present, the invocation to Powershell that comes up front. It may be written to
+# be interpreted with a cmd.exe shell and therefore does not play well with our PowerShell
+# interpreted powershell.exe override.
+function ScrubNewShell {
+
+    param(
+        [string] $OrigScript
+    )
+
+    # if the invocation uses an encoded command, we need to decode that
+    if ($OrigScript.Contains("-e")) {
+        $encoded = $true
+    }
+
+    $scrubbed = $OrigScript -replace "^[Pp][Oo][Ww][Ee][Rr][Ss][Hh][Ee][Ll][Ll](.exe)? ((-\w+ (\w+ )?)?)*"
+
+    if ($encoded) {
+        $scrubbed = [System.Text.Encoding]::Unicode.GetString([System.Convert]::FromBase64String($scrubbed.Trim()))
+    }
+
+    return $scrubbed
+}
+
 # remove imported modules and clean up non-output file system artifacts
 function CleanUp {
 
@@ -157,6 +180,7 @@ if ($Docker) {
     # clean up
     docker kill $containerId > $null
 }
+# sandbox outside of container
 else {
 
     $stderrPath = "$WORK_DIR/stderr.txt"
@@ -176,7 +200,9 @@ else {
     Import-Module -Name $PSScriptRoot/ScriptInspector.psm1
     
     $script = (Get-Content $InFile -ErrorAction Stop | Out-String)
-    
+    $script = ScrubNewShell $script
+
+    # build harness and integrate script with it
     $harness = BuildHarness
     $script = PreProcessScript $script
 
@@ -193,7 +219,7 @@ else {
     if (!(Test-Path $actionsPath)) {
         $message = "sandboxing failed with an internal error. please post an issue on GitHub with the failing powershell"
         Write-Error -Message $message -Category NotSpecified
-        #CleanUp
+        CleanUp
         Exit(-1)
     }
 
