@@ -89,7 +89,7 @@ function GetInitialScript {
     )
 
     # if the invocation uses an encoded command, we need to decode that
-    if ($OrigScript.Contains("-e")) {
+    if ($OrigScript -match ".*\-[Ee][Nn].*") {
         $encoded = $true
     }
 
