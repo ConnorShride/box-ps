@@ -79,9 +79,9 @@ function IngestScrapedUrls {
 }
 
 # removes, if present, the invocation to Powershell that comes up front. It may be written to
-# be interpreted with a cmd.exe shell and therefore does not play well with our PowerShell
-# interpreted powershell.exe override. Also records the initial action as a script execution of
-# the code we come up with here (decoded if it was b64 encoded).
+# be interpreted with a cmd.exe shell, having cmd.exe obfuscation, and therefore does not play well 
+# with our PowerShell interpreted powershell.exe override. Also records the initial action as a 
+# script execution of the code we come up with here (decoded if it was b64 encoded).
 function GetInitialScript {
 
     param(
@@ -89,7 +89,7 @@ function GetInitialScript {
     )
 
     # if the invocation uses an encoded command, we need to decode that
-    if ($OrigScript -match ".*\-[Ee][Nn].*") {
+    if ($OrigScript -match ".*\-[Ee][Nn]?.*") {
         $encoded = $true
     }
 
