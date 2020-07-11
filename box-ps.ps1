@@ -89,14 +89,23 @@ function GetInitialScript {
     )
 
     # if the invocation uses an encoded command, we need to decode that
+    # is encoded if there's an "-e" or "-en" and there's a base64 string in the invocation
     if ($OrigScript -match ".*\-[Ee][Nn]?.*") {
-        $encoded = $true
+
+        $match = [Regex]::Match($OrigScript, ".*?([A-Za-z0-9+/=]{40,}).*").captures
+        if ($match -ne $null) {
+            $encoded = $match.groups[1]
+            $is_encoded = $true
+        }
     }
 
-    $scrubbed = $OrigScript -replace "^[Pp][Oo][Ww][Ee][Rr][Ss][Hh][Ee][Ll][Ll](.exe)? ((-\w+ (\w+ )?)?)*"
+    $scrubbed = $OrigScript -replace "^[Pp][Oo][Ww][Ee][Rr][Ss][Hh][Ee][Ll][Ll](.exe)? ((-[\w``]+ ([\w``]+ )?)?)*"
 
-    if ($encoded) {
-        $scrubbed = [System.Text.Encoding]::Unicode.GetString([System.Convert]::FromBase64String($scrubbed.Trim()))
+    if ($is_encoded) {
+        $decoded = [System.Text.Encoding]::Unicode.GetString([System.Convert]::FromBase64String($encoded))
+    }
+    else {
+        $decoded = $scrubbed
     }
 
     # record the script
@@ -104,14 +113,14 @@ function GetInitialScript {
         "Behaviors" = @("script_exec")
         "Actor" = "powershell.exe"
         "BehaviorProps" = @{
-            "script" = @($scrubbed)
+            "script" = @($decoded)
         }
     }
 
     $json = $action | ConvertTo-Json -Depth 10
     ($json + ",") | Out-File -Append "$WORK_DIR/actions.json"
 
-    return $scrubbed
+    return $decoded
 }
 
 # remove imported modules and clean up non-output file system artifacts
