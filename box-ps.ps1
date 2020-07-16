@@ -38,9 +38,9 @@ if (!$ReportOnly -and !$OutDir) {
 class Report {
 
     [object[]] $Actions
-    [string[]] $PotentialIndicators
+    [object] $PotentialIndicators
 
-    Report([object[]] $actions, [string[]] $potentialIndicators) {
+    Report([object[]] $actions, [object] $potentialIndicators) {
         $this.Actions = $Actions
         $this.PotentialIndicators = $potentialIndicators
     }
@@ -60,22 +60,6 @@ function GetShortFileName {
     }
 
     return $shortName
-}
-
-# ingest and dedup all urls that were scraped from the script layers
-function IngestScrapedUrls {
-    
-    $urls = Get-Content $WORK_DIR/scraped_urls.txt -ErrorAction SilentlyContinue
-    $urlSet = New-Object System.Collections.Generic.HashSet[string]
-
-    if ($urls) {
-        $urls | ForEach-Object { $urlSet.Add($_) > $null }
-    }
-
-    $urls = [string[]]::new($urlSet.Count)
-    $urlSet.CopyTo($urls)
-
-    return $urls
 }
 
 # removes, if present, the invocation to Powershell that comes up front. It may be written to
@@ -121,6 +105,44 @@ function GetInitialScript {
     ($json + ",") | Out-File -Append "$WORK_DIR/actions.json"
 
     return $decoded
+}
+
+function WranglePotentialIOCs {
+
+    param(
+        [object[]] $Actions
+    )
+
+    $pathsSet = New-Object System.Collections.Generic.HashSet[string]
+    $urlsSet = New-Object System.Collections.Generic.HashSet[string]
+
+    # gather all file paths
+    $Actions | Where-Object -Property Behaviors -contains "file_system" | ForEach-Object {
+        $($_.BehaviorProps.paths | ForEach-Object { $pathsSet.Add($_) > $null })
+    }
+
+    # gather all network urls
+    $Actions | Where-Object -Property Behaviors -contains "network" | ForEach-Object {
+        $($_.BehaviorProps.uri | ForEach-Object { $urlsSet.Add($_) > $null })
+    }
+
+    # ingest the scraped urls the script inspector gathered
+    $scraped_urls = Get-Content $WORK_DIR/scraped_urls.txt -ErrorAction SilentlyContinue
+    if ($scraped_urls) {
+        $scraped_urls | ForEach-Object { $urlsSet.Add($_) > $null }
+    }
+
+    $paths = [string[]]::new($pathsSet.Count)
+    $urls = [string[]]::new($urlsSet.Count)
+    $urlsSet.CopyTo($urls)
+    $pathsSet.CopyTo($paths)
+
+    $potentialIndicators = @{
+        "network" = $urls;
+        "file_system" = $paths
+    }
+
+    return $potentialIndicators
 }
 
 # remove imported modules and clean up non-output file system artifacts
@@ -248,8 +270,9 @@ else {
     # ingest the actions, potential IOCs, create report
     $actionsJson = Get-Content -Raw $actionsPath
     $actions = "[" + $actionsJson.TrimEnd(",`r`n") + "]" | ConvertFrom-Json
-    $urls = IngestScrapedUrls
-    $report = [Report]::new($actions, $urls)
+
+    $potentialIndicators = $(WranglePotentialIOCs $actions)
+    $report = [Report]::new($actions, $potentialIndicators)
     $reportJson = $report | ConvertTo-Json -Depth 10
 
     # output the JSON report where the user wants it
