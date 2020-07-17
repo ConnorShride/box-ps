@@ -143,7 +143,7 @@ function ScrapeUrls {
 
     # make sure return is array of strings (Value property is string)
     if ($matchRes) {
-        $matchRes.Matches | Microsoft.PowerShell.Core\ForEach-Object { $urls += $_.Value}
+        $matchRes.Matches | Microsoft.PowerShell.Core\ForEach-Object { $urls += $_.Value }
         $urls | Out-File -Append "$WORK_DIR/scraped_urls.txt"
 	}
 }

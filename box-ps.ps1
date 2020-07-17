@@ -1,4 +1,4 @@
-<# known issues 
+<# known issues
     Overrides do not support wildcard arguments, so if the malicious powershell uses wildcards and the
     override goes ahead and executes the function because it's safe, it may error out (which is fine)
 
@@ -105,6 +105,28 @@ function GetInitialScript {
     ($json + ",") | Out-File -Append "$WORK_DIR/actions.json"
 
     return $decoded
+}
+
+# For some reason, some piece of the powershell codebase behind the scenes is calling my Test-Path
+# override and that invocation is showing up in the actions. Haven't been able to track it down.
+function StripBugActions {
+
+    param(
+        [object[]] $Actions
+    )
+
+    $actions = $Actions | ForEach-Object {
+        if ($_.Actor -eq "Microsoft.PowerShell.Management\Test-Path") {
+            if ($_.BehaviorProps.paths -ne @("env:__SuppressAnsiEscapeSequences")) {
+                $_
+            }
+        }
+        else {
+            $_
+        }
+    }
+
+    return $actions
 }
 
 function WranglePotentialIOCs {
@@ -270,7 +292,7 @@ else {
     # ingest the actions, potential IOCs, create report
     $actionsJson = Get-Content -Raw $actionsPath
     $actions = "[" + $actionsJson.TrimEnd(",`r`n") + "]" | ConvertFrom-Json
-
+    $actions = $(StripBugActions $actions)
     $potentialIndicators = $(WranglePotentialIOCs $actions)
     $report = [Report]::new($actions, $potentialIndicators)
     $reportJson = $report | ConvertTo-Json -Depth 10
