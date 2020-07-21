@@ -93,6 +93,18 @@ function CmdletParamsCode {
     return $code
 }
 
+# build the code to initialize an array of strings given the strings
+function BuildStringArrayCode {
+    
+    param (
+        [string[]] $Strings
+    )
+
+    $array = "@("
+    $Strings | ForEach-Object { $array += "`"" + $_ + "`"," } 
+    return $array.Trim(",") + ")"
+}
+
 function BehaviorPropsCode {
 
     param(
@@ -354,7 +366,6 @@ function ClassFunctionOverrides {
     param(
         [switch] $Static,
         [string] $ParentClass,
-        [string] $Behavior,
         [string] $FuncName,
         [hashtable] $OverrideInfo,
         [string[]] $Exclude
@@ -409,12 +420,13 @@ function ClassFunctionOverrides {
     
                 $code += $signature + " {`r`n"
                 $code += $utils.TabPad($(BehaviorPropsCode -ClassFunc -SigAndArgs $sigAndArgs -BehaviorPropInfo $OverrideInfo["BehaviorPropInfo"]))
-        
+                $behaviorsListCode = $(BuildStringArrayCode $OverrideInfo["Behaviors"])
+
                 if ($Static) {
-                    $code += "`tRecordAction `$([Action]::new(@(`"$Behavior`"), `"$FuncName`", `$behaviorProps, `$PSBoundParameters, `$MyInvocation.Line))`r`n"
+                    $code += "`tRecordAction `$([Action]::new($behaviorsListCode, `"$FuncName`", `$behaviorProps, `$PSBoundParameters, `$MyInvocation.Line))`r`n"
                 }
                 else {
-                    $code += "`tRecordAction `$([Action]::new(@(`"$Behavior`"), `"$ParentClass`.$FuncName`", `$behaviorProps, `$PSBoundParameters, `$MyInvocation.Line))`r`n"
+                    $code += "`tRecordAction `$([Action]::new($behaviorsListCode, `"$ParentClass`.$FuncName`", `$behaviorProps, `$PSBoundParameters, `$MyInvocation.Line))`r`n"
                 }
         
                 # if the method actually has a return value
@@ -469,16 +481,11 @@ function ClassOverride {
     $code += $utils.TabPad($(ClassPropertiesCode -ParentClass $FullClassName))
     $code += $utils.TabPad($(ClassConstructor -ParentClass $FullClassName))
 
-    # iterate over the behaviors
-    foreach ($behavior in $Functions.Keys) {
+    foreach ($functionName in $Functions.Keys) {
 
-        # iterate over the functions we want to create overrides for
-        foreach ($functionName in $Functions[$behavior].Keys) {
-
-            $overrideInfo = $Functions[$behavior][$functionName]
-            $code += $utils.TabPad($(ClassFunctionOverrides -ParentClass $FullClassName -Behavior $behavior `
-                 -FuncName $functionName -OverrideInfo $overrideInfo -Exclude $excludes))
-        }
+        $overrideInfo = $Functions[$functionName]
+        $code += $utils.TabPad($(ClassFunctionOverrides -ParentClass $FullClassName `
+                -FuncName $functionName -OverrideInfo $overrideInfo -Exclude $excludes))
     }
 
     return $code + "}`r`n"
@@ -503,14 +510,12 @@ function StaticOverrides {
     # get the statics that we're overriding manually
     $excludes = $config["Manuals"]["Statics"]
 
-    foreach ($behavior in $config["Statics"].keys) {
-        foreach ($staticFunc in $config["Statics"][$behavior].keys) {
+    foreach ($staticFunc in $config["Statics"].keys) {
 
-            $overrideInfo = $config["Statics"][$behavior][$staticFunc]
+        $overrideInfo = $config["Statics"][$staticFunc]
 
-            $code += $utils.TabPad($(ClassFunctionOverrides -Static -Behavior $behavior -FuncName `
-                $staticFunc -OverrideInfo $overrideInfo -Exclude $excludes))
-        }
+        $code += $utils.TabPad($(ClassFunctionOverrides -Static -FuncName `
+            $staticFunc -OverrideInfo $overrideInfo -Exclude $excludes))
     }
 
     # tack on the manual overrides
@@ -523,18 +528,19 @@ function StaticOverrides {
 function CmdletOverride {
     
     param (
-        [string] $Behavior,
         [string] $CmdletName,
         [hashtable] $CmdletInfo
     )
 
     $shortName = $utils.GetUnqualifiedName($CmdletName)
+    $behaviorsListCode = $(BuildStringArrayCode $CmdletInfo["Behaviors"])
+    
     $code = "function $shortName {`r`n"
     $code += $utils.TabPad($(CmdletParamsCode $shortName $CmdletInfo["ArgAdditions"]))
     $code += $utils.TabPad($(ArgModificationCode $CmdletInfo["ArgModifications"]))
     $code += $utils.TabPad($(BehaviorPropsCode -Cmdlet -BehaviorPropInfo $CmdletInfo.BehaviorPropInfo))
 
-    $code += "`tRecordAction `$([Action]::new(@(`"$Behavior`"), `"$($CmdletName)`", `$behaviorProps, `$MyInvocation))`r`n"
+    $code += "`tRecordAction `$([Action]::new($behaviorsListCode, `"$($CmdletName)`", `$behaviorProps, `$MyInvocation))`r`n"
 
     if ($CmdletInfo.ExtraCode) {
         foreach ($line in $CmdletInfo.ExtraCode) {
@@ -582,11 +588,9 @@ function BuildHarness {
     $harness += StaticOverrides
 
     $harness += $commentSep + "`r`n#COMMANDLETS`r`n" + $commentSep + "`r`n"
-    foreach ($behavior in $config["Cmdlets"].keys) {
-        foreach($cmdlet in $config["Cmdlets"][$behavior].keys) {
-            $overrideInfo = $config["Cmdlets"][$behavior][$cmdlet]
-            $harness += CmdletOverride $behavior $cmdlet $overrideInfo
-        }
+    foreach ($cmdlet in $config["Cmdlets"].keys) {
+        $overrideInfo = $config["Cmdlets"][$cmdlet]
+        $harness += CmdletOverride $cmdlet $overrideInfo
     }
 
     $harness += $commentSep + "`r`n#MANUAL COMMANDLETS`r`n" + $commentSep + "`r`n"

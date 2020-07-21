@@ -55,10 +55,8 @@ function ScrubCmdletNamespaces {
     $cmdlets = Microsoft.Powershell.Utility\New-Object System.Collections.ArrayList
 
     # get all the auto-override cmdlets we care about
-    foreach ($behavior in $config["Cmdlets"].keys) {
-        foreach ($cmdlet in $config["Cmdlets"][$behavior].keys) {
-            $cmdlets.Add([string]($cmdlet)) | Out-Null
-        }
+    foreach ($cmdlet in $config["Cmdlets"].keys) {
+        $cmdlets.Add([string]($cmdlet)) | Out-Null
     }
 
     # get all the manual-override cmdlets we care about
