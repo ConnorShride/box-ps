@@ -105,6 +105,12 @@ function BuildStringArrayCode {
     return $array.Trim(",") + ")"
 }
 
+function InMemoryIOCsCode {
+    $code += "`$scrapeIOCsCode = Microsoft.PowerShell.Management\Get-Content -Raw `$CODE_DIR/harness/find_in_mem_iocs.ps1`r`n"
+    $code += "Microsoft.PowerShell.Utility\Invoke-Expression `$scrapeIOCsCode`r`n"
+    return $code
+}
+
 function BehaviorPropsCode {
 
     param(
@@ -537,6 +543,7 @@ function CmdletOverride {
     
     $code = "function $shortName {`r`n"
     $code += $utils.TabPad($(CmdletParamsCode $shortName $CmdletInfo["ArgAdditions"]))
+    $code += $utils.TabPad($(InMemoryIOCsCode))
     $code += $utils.TabPad($(ArgModificationCode $CmdletInfo["ArgModifications"]))
     $code += $utils.TabPad($(BehaviorPropsCode -Cmdlet -BehaviorPropInfo $CmdletInfo.BehaviorPropInfo))
 
@@ -566,7 +573,6 @@ function EnvironmentVars {
     return $code
 }
 
-
 function BuildHarness {
 
     $harnessPath = "$PSScriptRoot/harness"
@@ -577,7 +583,7 @@ function BuildHarness {
     $harness += [IO.File]::ReadAllText("$harnessPath/administrative.ps1").Replace("<CODE_DIR>", $PSScriptRoot) + "`r`n`r`n"
 
     # may need to boxify script layers as they get decoded and executed
-    $harness += "Microsoft.PowerShell.Core\Import-Module -Name `$codeDir/ScriptInspector.psm1`r`n`r`n"
+    $harness += "Microsoft.PowerShell.Core\Import-Module -Name `$CODE_DIR/ScriptInspector.psm1`r`n`r`n"
 
     $harness += $commentSep + "`r`n#CLASSES`r`n" + $commentSep + "`r`n"
     foreach ($class in $config["Classes"].Keys) {

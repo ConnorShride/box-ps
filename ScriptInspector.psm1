@@ -128,22 +128,34 @@ function BoxifyScript {
     return $Script
 }
 
-function ScrapeUrls {
+# TODO stub
+function ScrapeFilePaths {
 
     param(
         [String] $Script
     )
 
+    $paths = @()
+    return $paths
+}
+
+function ScrapeUrls {
+
+    param(
+        [String] $str
+    )
+
 	$urls = @()
 
     $regex = "(http[s]?:(?:(?://)|(?:\\\\?))(([a-zA-Z0-9_\-]+\.[a-zA-Z0-9_\-\.]+(:[0-9]+)?)+([/\\]([/\\\?&\~=a-zA-Z0-9_\-\.](?!http))+)?))"
-    $matchRes = $Script | Microsoft.Powershell.Utility\Select-String -Pattern $regex -AllMatches
+    $matchRes = $str | Microsoft.Powershell.Utility\Select-String -Pattern $regex -AllMatches
 
     # make sure return is array of strings (Value property is string)
     if ($matchRes) {
         $matchRes.Matches | Microsoft.PowerShell.Core\ForEach-Object { $urls += $_.Value }
-        $urls | Out-File -Append "$WORK_DIR/scraped_urls.txt"
-	}
+    }
+
+    return $urls
 }
 
 # code modifications to integrate it with the overrides
@@ -156,7 +168,7 @@ function PreProcessScript {
     )
 
     $Script = BoxifyScript $Script
-    ScrapeUrls $Script
+    ScrapeUrls $Script | Microsoft.PowerShell.Utility\Out-File -Append "$WORK_DIR/scraped_urls.txt" 
 
     $separator = ("*" * 100 + "`r`n")
     $layerOut = $separator + $Script + "`r`n" + $separator
@@ -166,3 +178,5 @@ function PreProcessScript {
 }
 
 Export-ModuleMember -Function PreProcessScript
+Export-ModuleMember -Function ScrapeUrls
+Export-ModuleMember -Function ScrapeFilePaths

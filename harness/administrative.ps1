@@ -10,8 +10,8 @@ using namespace Microsoft.PowerShell
 using namespace NewtonSoft.Json
 using namespace System
 
-$workingDir = "./working"
-$codeDir = "<CODE_DIR>"
+$WORK_DIR = "./working"
+$CODE_DIR = "<CODE_DIR>"
 
 class Action <# lawsuit... I'll be here all week #> {
 
@@ -101,7 +101,7 @@ function RecordAction {
     )
     
     $json = $Action | ConvertTo-Json -Depth 10
-    ($json + ",") | Out-File -Append "$workingDir/actions.json"
+    ($json + ",") | Out-File -Append "$WORK_DIR/actions.json"
 }
 
 function RedirectObjectCreation {
@@ -114,7 +114,7 @@ function RedirectObjectCreation {
 }
 
 function GetOverridedClasses {
-    $config = Microsoft.PowerShell.Management\Get-Content "$codeDir/config.json" | ConvertFrom-Json -AsHashtable
+    $config = Microsoft.PowerShell.Management\Get-Content "$CODE_DIR/config.json" | ConvertFrom-Json -AsHashtable
     return $config["Classes"].Keys | ForEach-Object { $_.ToLower() }
 }
 

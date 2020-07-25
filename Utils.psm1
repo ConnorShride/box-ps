@@ -93,4 +93,14 @@ function ListIntersection {
     return $list1 | Microsoft.PowerShell.Core\Where-object { $list2 -contains $_ }
 }
 
+function ListDifference {
+    
+    param(
+        [ArrayList] $list1,
+        [ArrayList] $list2
+    )
+
+    return $list1 | Microsoft.PowerShell.Core\Where-object { $list2 -notcontains $_ }
+}
+
 Export-ModuleMember -Function *

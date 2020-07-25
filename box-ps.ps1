@@ -62,6 +62,7 @@ function GetShortFileName {
     return $shortName
 }
 
+
 # removes, if present, the invocation to Powershell that comes up front. It may be written to
 # be interpreted with a cmd.exe shell, having cmd.exe obfuscation, and therefore does not play well 
 # with our PowerShell interpreted powershell.exe override. Also records the initial action as a 
