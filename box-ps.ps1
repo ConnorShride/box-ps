@@ -155,6 +155,12 @@ function WranglePotentialIOCs {
         $scraped_urls | ForEach-Object { $urlsSet.Add($_) > $null }
     }
 
+    # ingest the file paths the script inspector gathered
+    $scraped_paths = Get-Content $WORK_DIR/scraped_paths.txt -ErrorAction SilentlyContinue
+    if ($scraped_paths) {
+        $scraped_paths | ForEach-Object { $pathsSet.Add($_) > $null }
+    }
+
     $paths = [string[]]::new($pathsSet.Count)
     $urls = [string[]]::new($urlsSet.Count)
     $urlsSet.CopyTo($urls)
