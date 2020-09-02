@@ -247,8 +247,7 @@ function ScrapeLanguageProbes {
 		# the language string in isolation anyways
 		if ($Variable) {
 			$regex = $baseRegex
-		}      "https://192.168.1.109:8081/index.asp"
-
+		}
 
 		$matchRes = $Script | Microsoft.Powershell.Utility\Select-String -Pattern $regex -AllMatches
 		if ($matchRes) {

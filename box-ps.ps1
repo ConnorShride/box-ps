@@ -320,18 +320,18 @@ else {
     $stdoutPath = "$WORK_DIR/stdout.txt"
     $actionsPath = "$WORK_DIR/actions.json"
     $harnessedScriptPath = "$WORK_DIR/harnessed_script.ps1"
-    
-    # create working directory to store 
+
+    # create working directory to store
     if (Test-Path $WORK_DIR) {
         Remove-Item -Force $WORK_DIR/*
     }
     else {
         New-Item $WORK_DIR -ItemType Directory > $null
     }
-    
+
     Import-Module -Name $PSScriptRoot/HarnessBuilder.psm1
     Import-Module -Name $PSScriptRoot/ScriptInspector.psm1
-    
+
     $script = (Get-Content $InFile -ErrorAction Stop | Out-String)
     $script = GetInitialScript $script
 
@@ -342,12 +342,12 @@ else {
     # attach the harness to the script
     $harnessedScript = $harness + "`r`n`r`n" + $script
     $harnessedScript | Out-File -FilePath $harnessedScriptPath
-    
+
     Write-Host "[+] sandboxing script"
 
     # run it
     (timeout 5 pwsh -noni $harnessedScriptPath 2> $stderrPath 1> $stdoutPath)
-    
+
     # a lot of times actions.json will not be present if things go wrong
     if (!(Test-Path $actionsPath)) {
         $message = "sandboxing failed with an internal error. please post an issue on GitHub with the failing powershell"
