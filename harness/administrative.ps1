@@ -20,14 +20,16 @@ class Action <# lawsuit... I'll be here all week #> {
     [String] $Line
     [hashtable] $BehaviorProps
     [hashtable] $Parameters
+    [string] $ExtraInfo
 
     Action ([String[]] $Behaviors, [String] $Actor, [hashtable] $BehaviorProps,
-        [InvocationInfo] $Invocation) {
+        [InvocationInfo] $Invocation, [string] $ExtraInfo) {
 
         $this.Behaviors = $Behaviors
         $this.Actor = $Actor
         $this.BehaviorProps = $BehaviorProps
         $this.Line = $Invocation.Line.Trim()
+        $this.ExtraInfo = $ExtraInfo
 
         $paramsSplit = $this.SplitParams($Invocation)
         $this.Parameters = $paramsSplit["bound"]
@@ -42,13 +44,14 @@ class Action <# lawsuit... I'll be here all week #> {
     #   These are guaranteed not to have switches, and the MyInvocation variable does not
     #   contain boundparameters, so callers need to be able to pass the PSBoundParameters variable
     Action ([String[]] $Behaviors, [String] $Actor, [hashtable] $BehaviorProps, 
-        [hashtable] $BoundParams, [String] $Line) {
+        [hashtable] $BoundParams, [String] $Line, [String] $ExtraInfo) {
 
         $this.Behaviors = $Behaviors
         $this.Actor = $Actor
         $this.BehaviorProps = $BehaviorProps
         $this.Parameters = $BoundParams
         $this.Line = $Line.Trim()
+        $this.ExtraInfo = $ExtraInfo
     }
 
     # linear walk through all parameters rebuilding bound params and switches

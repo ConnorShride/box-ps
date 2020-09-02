@@ -29,6 +29,9 @@ function CmdletParamsCode {
     $helpResults = Microsoft.PowerShell.Core\Get-Help -Full $Cmdlet
     $helpParams = $helpResults.parameters.parameter
 
+    # get the default parameter set
+    $defaultParamSet = (Microsoft.Powershell.Core\Get-Command $Cmdlet).DefaultParameterSet
+
     if ($ArgAdditions) {
         foreach ($argAddition in $ArgAdditions.Keys) {
             $helpParams += $(Microsoft.PowerShell.Utility\New-Object `
@@ -36,7 +39,12 @@ function CmdletParamsCode {
         }
     }
 
-    $code = "param(`r`n"
+    $code = ""
+    if ($defaultParamSet) {
+        $code += "[cmdletbinding(DefaultParameterSetName=`"$defaultParamSet`")]`r`n"
+    }
+
+    $code += "param(`r`n"
 
     foreach ($helpParam in $HelpParams) {
 
@@ -108,6 +116,25 @@ function BuildStringArrayCode {
 function InMemoryIOCsCode {
     $code += "`$scrapeIOCsCode = Microsoft.PowerShell.Management\Get-Content -Raw `$CODE_DIR/harness/find_in_mem_iocs.ps1`r`n"
     $code += "Microsoft.PowerShell.Utility\Invoke-Expression `$scrapeIOCsCode`r`n"
+    return $code
+}
+
+function RoutineCode {
+
+    param(
+        [string] $Routine
+    )
+
+    # read in the code from the snipped stored in the harness directory and IEX it
+    $code += "`$routineCode = Microsoft.PowerShell.Management\Get-Content -Raw `$CODE_DIR/harness/$Routine.ps1`r`n"
+    $code += "Microsoft.PowerShell.Utility\Invoke-Expression `$routineCode`r`n"
+
+    # ExtraInfo should be set to the result of it in "$routineReturn", which will be set in the
+    # routine and persist in the override due to Invoke-Expression madness
+    $code += "if (`$routineReturn) {`r`n"
+    $code += "`t`$extraInfo = `$routineReturn`r`n"
+    $code += "}"
+
     return $code
 }
 
@@ -428,11 +455,19 @@ function ClassFunctionOverrides {
                 $code += $utils.TabPad($(BehaviorPropsCode -ClassFunc -SigAndArgs $sigAndArgs -BehaviorPropInfo $OverrideInfo["BehaviorPropInfo"]))
                 $behaviorsListCode = $(BuildStringArrayCode $OverrideInfo["Behaviors"])
 
+                $code += "`t`$extraInfo = `"`"`r`n"
+                if ($OverrideInfo["Routine"]) {
+                    $code += $utils.TabPad($(RoutineCode $CmdletInfo["Routine"]))
+                }
+                elseif ($OverrideInfo["ExtraInfo"]) {
+                    $code += "`t`$extraInfo = `"$($CmdletInfo["ExtraInfo"])`"`r`n"
+                }
+
                 if ($Static) {
-                    $code += "`tRecordAction `$([Action]::new($behaviorsListCode, `"$FuncName`", `$behaviorProps, `$PSBoundParameters, `$MyInvocation.Line))`r`n"
+                    $code += "`tRecordAction `$([Action]::new($behaviorsListCode, `"$FuncName`", `$behaviorProps, `$PSBoundParameters, `$MyInvocation.Line, `$extraInfo))`r`n"
                 }
                 else {
-                    $code += "`tRecordAction `$([Action]::new($behaviorsListCode, `"$ParentClass`.$FuncName`", `$behaviorProps, `$PSBoundParameters, `$MyInvocation.Line))`r`n"
+                    $code += "`tRecordAction `$([Action]::new($behaviorsListCode, `"$ParentClass`.$FuncName`", `$behaviorProps, `$PSBoundParameters, `$MyInvocation.Line, `$extraInfo))`r`n"
                 }
         
                 # if the method actually has a return value
@@ -546,14 +581,19 @@ function CmdletOverride {
     $code += $utils.TabPad($(InMemoryIOCsCode))
     $code += $utils.TabPad($(ArgModificationCode $CmdletInfo["ArgModifications"]))
     $code += $utils.TabPad($(BehaviorPropsCode -Cmdlet -BehaviorPropInfo $CmdletInfo.BehaviorPropInfo))
+    $code += "`t`$extraInfo = `"`"`r`n"
 
-    $code += "`tRecordAction `$([Action]::new($behaviorsListCode, `"$($CmdletName)`", `$behaviorProps, `$MyInvocation))`r`n"
-
-    if ($CmdletInfo.ExtraCode) {
-        foreach ($line in $CmdletInfo.ExtraCode) {
-            $code += "`t" + $line + "`r`n"
-        }
+    # extra routine to run before the action is recorded, sourced from the harness directory and ran
+    # via Invoke-Expression
+    if ($CmdletInfo["Routine"]) {
+        $code += $utils.TabPad($(RoutineCode $CmdletInfo["Routine"]))
     }
+    # there may be a hardcoded value for ExtraInfo in the config file
+    elseif ($CmdletInfo["ExtraInfo"]) {
+        $code += "`t`$extraInfo = `"$($CmdletInfo["ExtraInfo"])`"`r`n"
+    }
+
+    $code += "`tRecordAction `$([Action]::new($behaviorsListCode, `"$($CmdletName)`", `$behaviorProps, `$MyInvocation, `$extraInfo))`r`n"
 
     if ($CmdletInfo.Flags) {
         if ($CmdletInfo.Flags -contains "call_parent") {

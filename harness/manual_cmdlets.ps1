@@ -14,7 +14,7 @@ function mkdir {
         "paths" = $Path
     }
 
-    RecordAction $([Action]::new(@("file_system"), "Microsoft.PowerShell.Core\mkdir", $behaviorProps, $MyInvocation))
+    RecordAction $([Action]::new(@("file_system"), "Microsoft.PowerShell.Core\mkdir", $behaviorProps, $MyInvocation, ""))
 }
 
 function Invoke-Expression {
@@ -39,7 +39,7 @@ function Invoke-Expression {
 	    }
     }
     
-    RecordAction $([Action]::new(@("script_exec"), "Microsoft.PowerShell.Utility\Invoke-Expression", $behaviorProps, $MyInvocation))
+    RecordAction $([Action]::new(@("script_exec"), "Microsoft.PowerShell.Utility\Invoke-Expression", $behaviorProps, $MyInvocation, ""))
 
     $modifiedCommand = PreProcessScript $Command
 
@@ -100,7 +100,7 @@ function New-Object {
 		$behaviorProps["object"] = @($TypeName)
 	}
 	
-    RecordAction $([Action]::new(@("new_object"), "Microsoft.PowerShell.Utility\New-Object", $behaviorProps, $MyInvocation))
+    RecordAction $([Action]::new(@("new_object"), "Microsoft.PowerShell.Utility\New-Object", $behaviorProps, $MyInvocation, ""))
     
 	if ($(GetOverridedClasses).Contains($behaviorProps["object"].ToLower())) {
 	   return RedirectObjectCreation $TypeName
@@ -145,7 +145,7 @@ function powershell.exe {
         $behaviorProps["script"] = $File
     }
 
-    RecordAction $([Action]::new(@("script_exec"), "powershell.exe", $behaviorProps, $MyInvocation))
+    RecordAction $([Action]::new(@("script_exec"), "powershell.exe", $behaviorProps, $MyInvocation, ""))
 
     $boxifiedScript = PreProcessScript $behaviorProps["script"]
 

@@ -3,6 +3,7 @@ if ($MyInvocation.InvocationName -ne "Test-Path") {
 
     $networkIOCs = @()
     $fileSystemIOCs = @()
+    $environmentProbes = @()
     
     # get the variables present in the scope of the script
     $parentVars = Microsoft.PowerShell.Utility\Get-Variable -Scope 1
@@ -21,15 +22,17 @@ if ($MyInvocation.InvocationName -ne "Test-Path") {
     
     $declaredVars | ForEach-Object {
         $_.Value | Out-String -Stream | ForEach-Object { 
-            $scraped = ScrapeUrls $_
-            $networkIOCs = $networkIOCs + $scraped
+            $networkIOCs += ScrapeUrls $_
         }
         $_.Value | Out-String -Stream | ForEach-Object { 
-            $scraped = ScrapeFilePaths $_
-            $fileSystemIOCs = $fileSystemIOCs + $scraped
+            $fileSystemIOCs += ScrapeFilePaths $_
+        }
+        $_.Value | Out-String -Stream | ForEach-Object {
+            $environmentProbes += ScrapeEnvironmentProbes -Variable $_
         }
     }
 
     $networkIOCs | Microsoft.PowerShell.Utility\Out-File -Append "$WORK_DIR/scraped_urls.txt"
     $fileSystemIOCs | Microsoft.PowerShell.Utility\Out-File -Append "$WORK_DIR/scraped_paths.txt"
+    $environmentProbes | Microsoft.PowerShell.Utility\Out-File -Append "$WORK_DIR/scraped_probes.txt"
 }

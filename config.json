@@ -146,14 +146,26 @@
         },
         "Microsoft.PowerShell.Utility\\Get-Host": {
             "Behaviors": ["environment_probe"],
-            "Flags": ["call_parent"]
+            "Flags": ["call_parent"],
+            "ExtraInfo": "host_probe"
+        },
+        "Microsoft.Powershell.Utility\\Get-Culture": {
+            "Behaviors": ["environment_probe"],
+            "Flags": ["call_parent"],
+            "ExtraInfo": "language_probe"
+        },
+        "Microsoft.Powershell.Utility\\Get-UICulture": {
+            "Behaviors": ["environment_probe"],
+            "Flags": ["call_parent"],
+            "ExtraInfo": "language_probe"
+        },
+        "Microsoft.PowerShell.Utility\\Get-Date": {
+            "Behaviors": ["environment_probe"],
+            "Flags": ["call_parent"],
+            "ExtraInfo": "date_probe"
         },
         "Microsoft.PowerShell.Security\\Set-ExecutionPolicy": {
             "Behaviors": ["other"]
-        },
-        "Microsoft.PowerShell.Utility\\Get-Date": {
-            "Behaviors": ["other"],
-            "Flags": ["call_parent"]
         }
     },
     "Classes": {

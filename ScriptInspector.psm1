@@ -136,8 +136,6 @@ function ScrapeFilePaths {
 
 	$paths = @()
 
-    # rest of directory path ([^\*``"\?]+(\\)+)*
-
     $regex = "((file:(\\)+)|(\\\\smb\\)|([a-zA-Z]:(\\)+)|(\.(\.)?(\\)+))([^\*```"`'\?]+((\\)+)?)*"
     $matchRes = $str | Microsoft.Powershell.Utility\Select-String -Pattern $regex -AllMatches
 
@@ -166,6 +164,108 @@ function ScrapeUrls {
     return $urls
 }
 
+# scrape out checks against known values representing truths about the environent
+# Return a csv with one or more of the values "Language", "Date", "Host" followed by the value
+# being checked against followed by the logical operation on the check or NULL if not found
+function ScrapeEnvironmentProbes {
+
+	param(
+        [string] $Script,
+        [switch] $Variable
+	)
+
+    $environmentProbes = @()
+    if ($Variable) {
+        $environmentProbes += ScrapeLanguageProbes -Variable $Script
+    }
+    else {
+        $environmentProbes += ScrapeLanguageProbes $Script
+    }
+	return $environmentProbes
+}
+
+# scrapes the script for logical checks against known language strings indicating a gating against
+# the language of the environment. Returns a list of key/value pairs mapping the display name of the
+# language being checked against to the operation "eq" or "ne"
+function ScrapeLanguageProbes {
+
+	param(
+		[string] $Script,
+		[switch] $Variable
+    )
+
+	# look for a subset of possible languages. This routine is too slow for all of them
+	$knownLanguages = @{
+		"English (United States)" = @("en-US", "1033");
+		"English (South Africa)" = @("en-ZA", "7177");
+		"English (Netherlands)" = @("en-NL", "4096");
+		"English (Germany)" = @("en-DE", "4096");
+		"English" = @("en", "9");
+		"German (Germany)" = @("de-DE", "1031");
+		"Afrikaans (South Africa)" = @("af-ZA", "1078");
+		"Zulu (South Africa)" = @("zu-ZA", "1077");
+		"Chinese (Traditional)" = @("zh-Hant", "31748");
+		"Chinese (Simplified)" = @("zh-Hans", "4");
+		"Chinese" = @("zh", "30724");
+		"Yiddish" = @("yi", "61");
+		"Vietnamese" = @("vi", "42");
+		"Ukrainian" = @("uk", "34");
+		"Turkish" = @("tr", "31");
+		"Thai (Thailand)" = @("th-TH", "1054");
+		"Thai" = @("th", "30");
+		"Swedish (Sweden)" = @("sv-SE", "1053");
+		"Russian (Russia)" = @("ru-RU", "1049");
+		"Portuguese" = @("pt", "22");
+		"Dutch (Netherlands)" = @("nl-NL", "1043");
+		"Italian (Italy)" = @("it-IT", "1040");
+		"Italian" = @("it", "16");
+		"Hindi" = @("hi", "57");
+		"Hebrew (Israel)" = @("he-IL", "1037");
+		"French (France)" = @("fr-FR", "1036");
+		"Finnish (Finland)" = @("fi-FI", "1035");
+		"Spanish (Spain)" = @("es-ES", "3082");
+	}
+
+	$probes = @()
+	foreach ($languageName in $knownLanguages.Keys) {
+
+		# for now just use display name and string code, because the integer id is not going to be a
+		# unreliable indicator scraping the entire script
+		$name = [Regex]::Escape($languageName)
+		$code = [Regex]::Escape($knownLanguages[$languageName][0])
+		$baseRegex = ""
+
+		# check for the language code if it's a two part code (less false positives)
+		if ($code.Contains("-")) {
+			$baseRegex = "($name)|($code)"
+		}
+		else {
+			$baseRegex = "($name)"
+		}
+
+		# be way less stingy with the contents of variables. They're probably only going to contain
+		# the language string in isolation anyways
+		if ($Variable) {
+			$regex = $baseRegex
+		}      "https://192.168.1.109:8081/index.asp"
+
+
+		$matchRes = $Script | Microsoft.Powershell.Utility\Select-String -Pattern $regex -AllMatches
+		if ($matchRes) {
+			foreach ($match in $matchRes.Matches) {
+				$operator = "NULL"
+				if ($match.Groups["operator"].Success) {
+					$operator = $match.Groups["operator"].Value.Replace("-", "")
+                }
+				$probes += "language,$([Regex]::Unescape($name)),$operator"
+			}
+		}
+	}
+
+    # each probe is a csv formatted string
+	return $probes
+}
+
 # code modifications to integrate it with the overrides
 # recording layer for output
 # scrape potential IOCs
@@ -177,7 +277,8 @@ function PreProcessScript {
 
     $Script = BoxifyScript $Script
     ScrapeUrls $Script | Microsoft.PowerShell.Utility\Out-File -Append "$WORK_DIR/scraped_urls.txt" 
-    ScrapeFilePaths $Script | Microsoft.PowerShell.Utility\Out-File -Append "$WORK_DIR/scraped_paths.txt" 
+    ScrapeFilePaths $Script | Microsoft.PowerShell.Utility\Out-File -Append "$WORK_DIR/scraped_paths.txt"
+    ScrapeEnvironmentProbes $Script | Microsoft.PowerShell.Utility\Out-File -Append "$WORK_DIR/scraped_probes.txt"
 
     $separator = ("*" * 100 + "`r`n")
     $layerOut = $separator + $Script + "`r`n" + $separator
@@ -189,3 +290,4 @@ function PreProcessScript {
 Export-ModuleMember -Function PreProcessScript
 Export-ModuleMember -Function ScrapeUrls
 Export-ModuleMember -Function ScrapeFilePaths
+Export-ModuleMember -Function ScrapeEnvironmentProbes

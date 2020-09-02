@@ -1,12 +1,6 @@
 <# known issues
     Overrides do not support wildcard arguments, so if the malicious powershell uses wildcards and the
     override goes ahead and executes the function because it's safe, it may error out (which is fine)
-
-    liable to have AmbiguousParameterSet errors...
-        - Get-Help doesn't say whether or not the param is required differently accross parameter sets,
-            so if it's required in one but not the other, we may get this error
-        -Maybe just on New-Object so far? There were weird discrepancies between the linux Get-Help 
-        and the windows one
 #>
 
 param (
@@ -39,10 +33,119 @@ class Report {
 
     [object[]] $Actions
     [object] $PotentialIndicators
+    [object] $EnvironmentProbes
 
-    Report([object[]] $actions, [object] $potentialIndicators) {
-        $this.Actions = $Actions
-        $this.PotentialIndicators = $potentialIndicators
+    Report([object[]] $actions, [string[]] $scrapedUrls, [string[]] $scrapedPaths, 
+            [string[]] $scrapedEnvProbes) {
+        $this.Actions = $actions
+        $this.PotentialIndicators = $this.CombineScrapedIOCs($scrapedUrls, $scrapedPaths)
+        $this.EnvironmentProbes = $this.GenerateEnvProbeReport($scrapedEnvProbes)
+    }
+
+    [hashtable] GenerateEnvProbeReport([string[]] $scrapedEnvProbes) {
+
+        function AddListItem {
+            param(
+                [hashtable] $table,
+                [string] $key1,
+                [string] $key2,
+                [object] $obj
+            )
+
+            if (!$table.ContainsKey($key1)) {
+                $table[$key1] = @{}
+            }
+            if (!$table[$key1].ContainsKey($key2)) {
+                $table[$key1][$key2] = @()
+            }
+            $table[$key1][$key2] += $obj
+        }
+
+        $envReport = @{}
+        $operatorMap = @{
+            "NULL" = "unknown";
+            "eq" = "equals";
+            "ne" = "not equals"
+        }
+
+        $probesSet = New-Object System.Collections.Generic.HashSet[string]
+
+        # first wrangle all the environment_probe actions we caught and split them by their goal
+        $this.Actions | ForEach-Object {
+            if ($_.Behaviors.Contains("environment_probe")) {
+                if ($_.ExtraInfo -eq "language_probe") {
+                    AddListItem $envReport "Language" "Actors" $_.Actor
+                }
+                elseif ($_.ExtraInfo -eq "host_probe") {
+                    AddListItem $envReport "Host" "Actors" $_.Actor
+                }
+                elseif ($_.ExtraInfo -eq "date_probe") {
+                    AddListItem $envReport "Date" "Actors" $_.Actor
+                }
+            }
+        }
+
+        # ingest the scraped environment probes and dedupe
+        foreach ($probe in $scrapedEnvProbes) {
+            $probesSet.Add($probe)
+        }
+
+        # split the probes out by goal and map to user-friendly representation of operator observed
+        foreach ($probeStr in $probesSet) {
+            Write-Host $probeStr
+            $split = $probeStr.Split(",")
+            $probe = @{
+                "Value" = $split[1];
+                "Operator" = $operatorMap[$split[2]]
+            }
+            if ($split[0] -eq "language") {
+                AddListItem $envReport "Language" "Checks" $probe
+            }
+            elseif ($split[0] -eq "host") {
+                AddListItem $envReport "Host" "Checks" $probe
+            }
+            elseif ($split[0] -eq "date") {
+                AddListItem $envReport "Date" "Checks" $probe
+            }
+        }
+
+        return $envReport
+    }
+
+    [hashtable] CombineScrapedIOCs([string[]] $scrapedPaths, [string[]] $scrapedUrls) {
+
+        $pathsSet = New-Object System.Collections.Generic.HashSet[string]
+        $urlsSet = New-Object System.Collections.Generic.HashSet[string]
+
+        # gather all file paths from actions
+        $this.Actions | Where-Object -Property Behaviors -contains "file_system" | ForEach-Object {
+            $($_.BehaviorProps.paths | ForEach-Object { $pathsSet.Add($_) > $null })
+        }
+
+        # gather all network urls from actions 
+        $this.Actions | Where-Object -Property Behaviors -contains "network" | ForEach-Object {
+            $($_.BehaviorProps.uri | ForEach-Object { $urlsSet.Add($_) > $null })
+        }
+
+        # add scraped paths and urls
+        if ($scrapedUrls) {
+            $scrapedUrls | ForEach-Object { $urlsSet.Add($_) > $null }
+        }
+        if ($scrapedPaths) {
+            $scrapedPaths | ForEach-Object { $pathsSet.Add($_) > $null }
+        }
+
+        $paths = [string[]]::new($pathsSet.Count)
+        $urls = [string[]]::new($urlsSet.Count)
+        $urlsSet.CopyTo($urls)
+        $pathsSet.CopyTo($paths)
+
+        $result = @{
+            "network" = $urls;
+            "file_system" = $paths
+        }
+
+        return $result
     }
 }
 
@@ -130,49 +233,6 @@ function StripBugActions {
     return $actions
 }
 
-function WranglePotentialIOCs {
-
-    param(
-        [object[]] $Actions
-    )
-
-    $pathsSet = New-Object System.Collections.Generic.HashSet[string]
-    $urlsSet = New-Object System.Collections.Generic.HashSet[string]
-
-    # gather all file paths
-    $Actions | Where-Object -Property Behaviors -contains "file_system" | ForEach-Object {
-        $($_.BehaviorProps.paths | ForEach-Object { $pathsSet.Add($_) > $null })
-    }
-
-    # gather all network urls
-    $Actions | Where-Object -Property Behaviors -contains "network" | ForEach-Object {
-        $($_.BehaviorProps.uri | ForEach-Object { $urlsSet.Add($_) > $null })
-    }
-
-    # ingest the scraped urls the script inspector gathered
-    $scraped_urls = Get-Content $WORK_DIR/scraped_urls.txt -ErrorAction SilentlyContinue
-    if ($scraped_urls) {
-        $scraped_urls | ForEach-Object { $urlsSet.Add($_) > $null }
-    }
-
-    # ingest the file paths the script inspector gathered
-    $scraped_paths = Get-Content $WORK_DIR/scraped_paths.txt -ErrorAction SilentlyContinue
-    if ($scraped_paths) {
-        $scraped_paths | ForEach-Object { $pathsSet.Add($_) > $null }
-    }
-
-    $paths = [string[]]::new($pathsSet.Count)
-    $urls = [string[]]::new($urlsSet.Count)
-    $urlsSet.CopyTo($urls)
-    $pathsSet.CopyTo($paths)
-
-    $potentialIndicators = @{
-        "network" = $urls;
-        "file_system" = $paths
-    }
-
-    return $potentialIndicators
-}
 
 # remove imported modules and clean up non-output file system artifacts
 function CleanUp {
@@ -300,8 +360,14 @@ else {
     $actionsJson = Get-Content -Raw $actionsPath
     $actions = "[" + $actionsJson.TrimEnd(",`r`n") + "]" | ConvertFrom-Json
     $actions = $(StripBugActions $actions)
-    $potentialIndicators = $(WranglePotentialIOCs $actions)
-    $report = [Report]::new($actions, $potentialIndicators)
+
+    # go gather the IOCs we may have scraped
+    $scrapedUrls = Get-Content $WORK_DIR/scraped_urls.txt -ErrorAction SilentlyContinue
+    $scrapedPaths = Get-Content $WORK_DIR/scraped_paths.txt -ErrorAction SilentlyContinue
+    $scrapedEnvProbes = Get-Content $WORK_DIR/scraped_probes.txt -ErrorAction SilentlyContinue
+
+    # create the report and convert to JSON
+    $report = [Report]::new($actions, $scrapedUrls, $scrapedPaths, $scrapedEnvProbes)
     $reportJson = $report | ConvertTo-Json -Depth 10
 
     # output the JSON report where the user wants it
