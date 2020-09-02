@@ -247,7 +247,10 @@ function ScrapeLanguageProbes {
 		# the language string in isolation anyways
 		if ($Variable) {
 			$regex = $baseRegex
-		}
+        }
+        else {
+            $regex = "(?<operator>-eq|-ne)?\s+(`'|`")($baseRegex)(`'|`")"
+        }
 
 		$matchRes = $Script | Microsoft.Powershell.Utility\Select-String -Pattern $regex -AllMatches
 		if ($matchRes) {
