@@ -9,6 +9,10 @@ param (
     [switch] $ReportOnly,
     [parameter(Position=0, Mandatory=$true)]
     [String] $InFile,
+    [parameter(ParameterSetName="EnvironmentVar", Mandatory=$true)]
+    [String] $EnvVar,
+    [parameter(ParameterSetName="EnvironmentFile", Mandatory=$true)]
+    [String] $EnvFile,
     [parameter(ParameterSetName="ReportOnly", Mandatory=$true)]
     [parameter(ParameterSetName="IncludeArtifacts")]
     [parameter(Position=1)]
@@ -92,7 +96,6 @@ class Report {
 
         # split the probes out by goal and map to user-friendly representation of operator observed
         foreach ($probeStr in $probesSet) {
-            Write-Host $probeStr
             $split = $probeStr.Split(",")
             $probe = @{
                 "Value" = $split[1];
@@ -268,6 +271,15 @@ if ($Docker) {
         Write-Host $msg
     }
 
+    # validate that the input environment variable file exists if given
+    if ($EnvFile) {
+
+        if (!(Test-Path $EnvFile)) {
+            Write-Host "[-] input environment variable file doesn't exist. exiting."
+            return
+        }
+    }
+
     Write-Host "[+] pulling latest docker image"
     docker pull connorshride/box-ps:latest > $null
     Write-Host "[+] starting docker container"
@@ -282,6 +294,7 @@ if ($Docker) {
     # just keep all the input/output files in the box-ps dir in the container
     $PSBoundParameters.Remove("Docker") > $null
     $PSBoundParameters["InFile"] = GetShortFileName $InFile
+    docker cp $InFile "$containerId`:/opt/box-ps/"
 
     if ($OutFile) {
         $PSBoundParameters["OutFile"] = "./out.json"
@@ -291,8 +304,12 @@ if ($Docker) {
         $PSBoundParameters["OutDir"] = "./outdir"
     }
 
+    if ($EnvFIle) {
+        $PSBoundParameters["EnvFile"] = "./input_env.json"
+        docker cp $EnvFile "$containerId`:/opt/box-ps/input_env.json"
+    }
+
     Write-Host "[+] running box-ps in container"
-    docker cp $InFile "$containerId`:/opt/box-ps/"
     docker exec $containerId pwsh /opt/box-ps/box-ps.ps1 @PSBoundParameters > $null
 
     if ($OutFile) {
@@ -334,6 +351,47 @@ else {
 
     $script = (Get-Content $InFile -ErrorAction Stop | Out-String)
     $script = GetInitialScript $script
+
+    # write out string environment variable to JSON for harness builder
+    if ($EnvVar) {
+
+        # validate that it's in the right form <var_name>=<var_value>
+        if (!$EnvVar.Contains("=")) {
+            Write-Host "[-] given environment variable in incorrect format"
+            Write-Host "[-] USAGE <var_name>=<value>"
+            return
+        }
+
+        $name = $EnvVar[0..($EnvVar.IndexOf("="))] -join ''
+        $value = $EnvVar[($EnvVar.IndexOf("=")+1)..($EnvVar.Length-1)] -join ''
+        $varObj = @{
+            $name = $value
+        }
+        $varObj | ConvertTo-Json | Out-File $WORK_DIR/input_env.json
+    }
+    # copy the given json file where the harness builder expects it
+    elseif ($EnvFile) {
+
+        # validate the file exists
+        if (!(Test-Path $EnvFile)) {
+            Write-Host "[-] input environment variable file doesn't exist. exiting."
+            return
+        }
+        else {
+
+            # validate it's in valid JSON
+            $envFileContent = Get-Content $EnvFile -Raw
+            try {
+                $envFileContent | ConvertFrom-Json | Out-Null
+            }
+            catch {
+                Write-Host "[-] input environment variable file is not formatted in valid JSON. exiting"
+                return
+            }
+
+            $envFileContent | Out-File $WORK_DIR/input_env.json
+        }
+    }
 
     # build harness and integrate script with it
     $harness = BuildHarness

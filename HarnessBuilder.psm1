@@ -2,6 +2,9 @@ $utils = Microsoft.PowerShell.Core\Import-Module -Name $PSScriptRoot/Utils.psm1 
 $config = Microsoft.PowerShell.Management\Get-Content $PSScriptRoot/config.json | 
     Microsoft.PowerShell.Utility\ConvertFrom-Json -AsHashtable
 
+$WORK_DIR = "./working"
+
+
 function StaticParamsCode {
 
     param(
@@ -606,10 +609,22 @@ function CmdletOverride {
 
 function EnvironmentVars {
 
+    $inputEnvFile = "$WORK_DIR/input_env.json"
     $code = ""
+
+    # place the variables we've got in config
     foreach ($var in $config["Environment"].keys) {
         $code += "$var = `"$($config["Environment"][$var])`"`r`n"
     }
+
+    # place whatever user-supplied variables that may or may have not been given
+    if (Microsoft.PowerShell.Management\Test-Path $inputEnvFile) {
+        $envVars = Microsoft.PowerShell.Management\Get-Content -Raw $inputEnvFile | ConvertFrom-Json -AsHashTable
+        foreach ($envVar in $envVars.Keys) {
+            $code += "`${env:$envVar} = `"$($envVars[$envVar])`"`r`n"
+        }
+    }
+
     return $code
 }
 
