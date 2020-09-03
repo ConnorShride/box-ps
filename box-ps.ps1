@@ -19,10 +19,6 @@ param (
     [string] $OutDir
 )
 
-$PSCmdlet.ParameterSetName
-Write-Host "STARTING PARAMETERS"
-Write-Host $PSBoundParameters
-
 # arg validation
 if (!(Test-Path $InFile)) {
     Write-Host "[-] input file does not exist. exiting."
@@ -38,6 +34,7 @@ if (!$ReportOnly -and !$OutDir) {
 # can't give both options
 if ($EnvVar -and $EnvFile) {
     Write-Host "[-] can't give both a string and a file for environment variable input"
+    return
 }
 
 class Report {
@@ -318,12 +315,10 @@ if ($Docker) {
     }
 
     Write-Host "[+] running box-ps in container"
-    Write-Host $PSBoundParameters
-    docker exec $containerId pwsh /opt/box-ps/box-ps.ps1 @PSBoundParameters > $null
+    docker exec $containerId pwsh /opt/box-ps/box-ps.ps1 @PSBoundParameters
 
     if ($OutFile) {
         docker cp "$containerId`:/opt/box-ps/out.json" $OutFile
-        Write-Host "[+] moved JSON report from container to $OutFile"
     }
 
     if ($OutDir) {
@@ -338,9 +333,6 @@ if ($Docker) {
         if ($output.Contains("Error") -and $output.Contains("No such container:path")) {
             Write-Host "[-] no output directory produced in container"
         }
-        else {
-            Write-Host "[+] moved results from container to $OutDir"
-        }        
     }
 
     # clean up
@@ -373,7 +365,7 @@ else {
 
         # validate that it's in the right form <var_name>=<var_value>
         if (!$EnvVar.Contains("=")) {
-            Write-Host "[-] given environment variable in incorrect format"
+            Write-Host "[-] no equals sign in environment variable string"
             Write-Host "[-] USAGE <var_name>=<value>"
             return
         }
@@ -447,7 +439,6 @@ else {
     # output the JSON report where the user wants it
     if ($OutFile) {
         $reportJson | Out-File $OutFile
-        Write-Host "[+] wrote JSON report to $OutFile"
     }
 
     # user wants more detailed artifacts as well as the report
@@ -466,9 +457,8 @@ else {
         Move-Item $WORK_DIR/stderr.txt $OutDir/
         Move-Item $WORK_DIR/layers.ps1 $OutDir/
         $reportJson | Out-File $OutDir/report.json
-
-        Write-Host "[+] moved analysis results to $OutDir"
     }
 
+    Write-Host "[+] done sandboxing"
     CleanUp
 }
