@@ -9,9 +9,7 @@ param (
     [switch] $ReportOnly,
     [parameter(Position=0, Mandatory=$true)]
     [String] $InFile,
-    [parameter(ParameterSetName="EnvironmentVar", Mandatory=$true)]
     [String] $EnvVar,
-    [parameter(ParameterSetName="EnvironmentFile", Mandatory=$true)]
     [String] $EnvFile,
     [parameter(ParameterSetName="ReportOnly", Mandatory=$true)]
     [parameter(ParameterSetName="IncludeArtifacts")]
@@ -21,16 +19,25 @@ param (
     [string] $OutDir
 )
 
+$PSCmdlet.ParameterSetName
+Write-Host "STARTING PARAMETERS"
+Write-Host $PSBoundParameters
+
 # arg validation
 if (!(Test-Path $InFile)) {
     Write-Host "[-] input file does not exist. exiting."
-    exit -1
+    return
 }
 
 # give OutDir a default value if the user hasn't specified they don't want artifacts 
 if (!$ReportOnly -and !$OutDir) {
     # by default named <script>.boxed in the current working directory
     $OutDir = "./$($InFile.Substring($InFile.LastIndexOf("/") + 1)).boxed"
+}
+
+# can't give both options
+if ($EnvVar -and $EnvFile) {
+    Write-Host "[-] can't give both a string and a file for environment variable input"
 }
 
 class Report {
@@ -281,12 +288,13 @@ if ($Docker) {
     }
 
     Write-Host "[+] pulling latest docker image"
-    docker pull connorshride/box-ps:latest > $null
+    docker pull connorshride/box-ps:develop > $null
     Write-Host "[+] starting docker container"
-    docker run -td --network none connorshride/box-ps:latest > $null
+    docker run -td --network none connorshride/box-ps:develop > $null
 
     # get the ID of the container we just started
-    $psOutput = docker ps -f status=running -f ancestor=connorshride/box-ps -l
+    #$psOutput = docker ps -f status=running -f ancestor=connorshride/box-ps -l
+    $psOutput = docker ps -f status=running -l
     $idMatch = $psOutput | Select-String -Pattern "[\w]+_[\w]+"
     $containerId = $idMatch.Matches.Value
 
@@ -310,6 +318,7 @@ if ($Docker) {
     }
 
     Write-Host "[+] running box-ps in container"
+    Write-Host $PSBoundParameters
     docker exec $containerId pwsh /opt/box-ps/box-ps.ps1 @PSBoundParameters > $null
 
     if ($OutFile) {
@@ -323,8 +332,15 @@ if ($Docker) {
             Remove-Item -Recurse $OutDir
         }
 
-        docker cp "$containerId`:/opt/box-ps/outdir" $OutDir
-        Write-Host "[+] moved results from container to $OutDir"
+        # attempt to copy the output dir in the container back out to the host
+        $output = docker cp "$containerId`:/opt/box-ps/outdir" $OutDir 2>&1
+        $output = $output | Out-String
+        if ($output.Contains("Error") -and $output.Contains("No such container:path")) {
+            Write-Host "[-] no output directory produced in container"
+        }
+        else {
+            Write-Host "[+] moved results from container to $OutDir"
+        }        
     }
 
     # clean up
