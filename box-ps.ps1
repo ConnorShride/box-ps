@@ -285,13 +285,12 @@ if ($Docker) {
     }
 
     Write-Host "[+] pulling latest docker image"
-    docker pull connorshride/box-ps:develop > $null
+    docker pull connorshride/box-ps:latest > $null
     Write-Host "[+] starting docker container"
-    docker run -td --network none connorshride/box-ps:develop > $null
+    docker run -td --network none connorshride/box-ps:latest > $null
 
     # get the ID of the container we just started
-    #$psOutput = docker ps -f status=running -f ancestor=connorshride/box-ps -l
-    $psOutput = docker ps -f status=running -l
+    $psOutput = docker ps -f status=running -f ancestor=connorshride/box-ps -l
     $idMatch = $psOutput | Select-String -Pattern "[\w]+_[\w]+"
     $containerId = $idMatch.Matches.Value
 
