@@ -119,7 +119,7 @@ class Report {
         return $envReport
     }
 
-    [hashtable] CombineScrapedIOCs([string[]] $scrapedPaths, [string[]] $scrapedUrls) {
+    [hashtable] CombineScrapedIOCs([string[]] $scrapedUrls, [string[]] $scrapedPaths) {
 
         $pathsSet = New-Object System.Collections.Generic.HashSet[string]
         $urlsSet = New-Object System.Collections.Generic.HashSet[string]
