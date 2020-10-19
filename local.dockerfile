@@ -31,12 +31,7 @@ RUN curl https://packages.microsoft.com/keys/microsoft.asc | apt-key add - \
     && locale-gen $LANG && update-locale 
 
 # install box-ps
-COPY ./harness /opt/box-ps/harness
-COPY ./box-ps.ps1 /opt/box-ps
-COPY ./config.json /opt/box-ps
-COPY ./HarnessBuilder.psm1 /opt/box-ps
-COPY ./ScriptInspector.psm1 /opt/box-ps
-COPY ./Utils.psm1 /opt/box-ps
+COPY . /opt/box-ps
 
 WORKDIR /opt/box-ps
 
