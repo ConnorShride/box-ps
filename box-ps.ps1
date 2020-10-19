@@ -25,16 +25,16 @@ if (!(Test-Path $InFile)) {
     return
 }
 
-# give OutDir a default value if the user hasn't specified they don't want artifacts 
-if (!$ReportOnly -and !$OutDir) {
-    # by default named <script>.boxed in the current working directory
-    $OutDir = "./$($InFile.Substring($InFile.LastIndexOf("/") + 1)).boxed"
-}
-
 # can't give both options
 if ($EnvVar -and $EnvFile) {
     Write-Host "[-] can't give both a string and a file for environment variable input"
     return
+}
+
+# give OutDir a default value if the user hasn't specified they don't want artifacts 
+if (!$ReportOnly -and !$OutDir) {
+    # by default named <script>.boxed in the current working directory
+    $OutDir = "./$($InFile.Substring($InFile.LastIndexOf("/") + 1)).boxed"
 }
 
 class Report {
@@ -185,7 +185,7 @@ function GetInitialScript {
 
     # if the invocation uses an encoded command, we need to decode that
     # is encoded if there's an "-e" or "-en" and there's a base64 string in the invocation
-    if ($OrigScript -match ".*\-[Ee][Nn]?.*") {
+    if ($OrigScript -match ".*\-[Ee][Nn]?[^qQn].*") { # excludes instances of "-eq"
 
         $match = [Regex]::Match($OrigScript, ".*?([A-Za-z0-9+/=]{40,}).*").captures
         if ($match -ne $null) {

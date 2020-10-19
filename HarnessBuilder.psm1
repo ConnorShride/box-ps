@@ -396,15 +396,14 @@ function ClassPropertiesCode {
 
 function ClassFunctionOverrides {
 
-    # if Static, FuncName must be fully qualified name including namespace
-    # and ParentClass is not given
+    # if Static, FuncName must be fully qualified name including namespace and ParentClass is not given
     # TODO: Make parameter sets for these for clarity
     param(
         [switch] $Static,
         [string] $ParentClass,
         [string] $FuncName,
         [hashtable] $OverrideInfo,
-        [string[]] $Exclude
+        [object] $Exclude  # hashtable if Static, list if not
     )
 
     $signatures = @{}
@@ -412,6 +411,18 @@ function ClassFunctionOverrides {
     # get all the function signatures
     if ($Static) {
         $signatures = GetFunctionSignatures -Static -FuncName $FuncName
+
+        # build static function signatures we're excluding from the info in config
+        $excludeSignatures = @()
+        foreach ($namespaceAndName in $Exclude.Keys) { 
+            $functionName = $utils.GetUnqualifiedName($namespaceAndName)
+            foreach ($returnType in $Exclude[$namespaceAndName].Keys) {
+                foreach ($parameters in $Exclude[$namespaceAndName][$returnType]) {
+                    $excludeSignatures += "static " + $returnType + " $functionName($parameters)"
+                }
+            }
+        }
+        $Exclude = $excludeSignatures
     }
     else {
         $signatures = GetFunctionSignatures -InstanceMember -FuncName $FuncName -ParentClass $ParentClass
@@ -508,6 +519,7 @@ function ClassFunctionOverrides {
 
     return $code
 }
+
 
 function ClassOverride {
 

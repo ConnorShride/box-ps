@@ -28,7 +28,7 @@ static [System.Diagnostics.Process] Start([System.Diagnostics.ProcessStartInfo] 
 
         # record the action
         $behaviorProps["script"] = @($script)
-        RecordAction $([Action]::new(@("script_exec"), "[System.Diagnostics.Process]::Start", $behaviorProps, $PSBoundParameters, $MyInvocation.Line))
+        RecordAction $([Action]::new(@("script_exec"), "[System.Diagnostics.Process]::Start", $behaviorProps, $PSBoundParameters, $MyInvocation.Line, ""))
 
         # run the script
         $boxifiedScript = PreProcessScript $script
@@ -36,7 +36,7 @@ static [System.Diagnostics.Process] Start([System.Diagnostics.ProcessStartInfo] 
     }
     else {
         $behaviorProps["files"] = @($startInfo.FileName)
-        RecordAction $([Action]::new(@("file_exec"), "[System.Diagnostics.Process]::Start", $behaviorProps, $PSBoundParameters, $MyInvocation.Line))
+        RecordAction $([Action]::new(@("file_exec"), "[System.Diagnostics.Process]::Start", $behaviorProps, $PSBoundParameters, $MyInvocation.Line, ""))
     }
 
     return $null
@@ -53,7 +53,7 @@ static [System.Diagnostics.Process] Start([string] $fileName, [string] $argument
 
         # record the action
         $behaviorProps["script"] = @($script)
-        RecordAction $([Action]::new(@("script_exec"), "[System.Diagnostics.Process]::Start", $behaviorProps, $PSBoundParameters, $MyInvocation.Line))
+        RecordAction $([Action]::new(@("script_exec"), "[System.Diagnostics.Process]::Start", $behaviorProps, $PSBoundParameters, $MyInvocation.Line, ""))
 
         # run the script
         $boxifiedScript = PreProcessScript $script
@@ -61,7 +61,7 @@ static [System.Diagnostics.Process] Start([string] $fileName, [string] $argument
     }
     else {
         $behaviorProps["files"] = @($fileName)
-        RecordAction $([Action]::new(@("file_exec"), "[System.Diagnostics.Process]::Start", $behaviorProps, $PSBoundParameters, $MyInvocation.Line))
+        RecordAction $([Action]::new(@("file_exec"), "[System.Diagnostics.Process]::Start", $behaviorProps, $PSBoundParameters, $MyInvocation.Line, ""))
     }
 
     return $null
@@ -78,7 +78,7 @@ static [System.Diagnostics.Process] Start([string] $fileName, [string] $argument
 
         # record the action
         $behaviorProps["script"] = @($script)
-        RecordAction $([Action]::new(@("script_exec"), "[System.Diagnostics.Process]::Start", $behaviorProps, $PSBoundParameters, $MyInvocation.Line))
+        RecordAction $([Action]::new(@("script_exec"), "[System.Diagnostics.Process]::Start", $behaviorProps, $PSBoundParameters, $MyInvocation.Line, ""))
 
         # run the script
         $boxifiedScript = PreProcessScript $script
@@ -86,7 +86,7 @@ static [System.Diagnostics.Process] Start([string] $fileName, [string] $argument
     }
     else {
         $behaviorProps["files"] = @($fileName)
-        RecordAction $([Action]::new(@("file_exec"), "[System.Diagnostics.Process]::Start", $behaviorProps, $PSBoundParameters, $MyInvocation.Line))
+        RecordAction $([Action]::new(@("file_exec"), "[System.Diagnostics.Process]::Start", $behaviorProps, $PSBoundParameters, $MyInvocation.Line, ""))
     }
     
     return $null

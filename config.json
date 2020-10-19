@@ -231,11 +231,15 @@
             "Microsoft.PowerShell.Core\\mkdir",
             "Microsoft.PowerShell.Management\\Get-WmiObject"
         ],
-        "Statics": [
-            "static [System.Diagnostics.Process] Start([System.Diagnostics.ProcessStartInfo] $startInfo)",
-            "static [System.Diagnostics.Process] Start([string] $fileName, [string] $arguments)",
-            "static [System.Diagnostics.Process] Start([string] $fileName, [string] $arguments, [string] $userName, [securestring] $password, [string] $domain)"
-        ],
+        "Statics": {
+            "[System.Diagnostics.Process]::Start": {
+                "[System.Diagnostics.Process]": [
+                    "[System.Diagnostics.ProcessStartInfo] $startInfo",
+                    "[string] $fileName, [string] $arguments",
+                    "[string] $fileName, [string] $arguments, [string] $userName, [securestring] $password, [string] $domain"
+                ]
+            }
+        },
         "ClassMembers": []
     }
 }

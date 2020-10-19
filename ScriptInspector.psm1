@@ -14,10 +14,15 @@ function ReplaceStaticNamespaces {
     $functions = Microsoft.PowerShell.Utility\New-Object System.Collections.ArrayList
 
     # get all the static functions names we care about
-    foreach ($behavior in $config["Statics"].keys) {
-        foreach ($function in $config["Statics"][$behavior].keys) {
-            $functions.Add([string]($function)) | Out-Null
-        }
+
+    # gather the automatic overrides
+    foreach ($function in $config["Statics"].keys) {
+        $functions.Add([string]($function)) | Out-Null
+    }
+
+    # gather the manual overrides
+    foreach ($function in $config["Manuals"]["Statics"].Keys) {
+        $functions.Add([string]($function)) | Out-Null
     }
 
     # find an instance of a static method invocation we care about 
