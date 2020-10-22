@@ -25,9 +25,9 @@
         "$env:userdomain": "victimdomain",
         "$env:username": "victim",
         "$env:userprofile": "C:\\Users\\victim",
+        "$bhome": "C:\\Users\\victim",
         "$env:windir": "C:\\WINDOWS",
         "$bshome": "C:\\Windows\\System32\\WindowsPowerShell\\v1.0",
-        "$bshome1": "C:\\Windows\\System32\\WindowsPowerShell\\v1.0",
         "$MaximumDriveCount": 4096
     },
     "BehaviorProps": {

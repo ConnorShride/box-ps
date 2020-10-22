@@ -117,7 +117,19 @@ function EnvReplacement {
         $Script = $Script -ireplace [regex]::Escape($var), $var
     }
 
-    return $Script -ireplace "pshome", "bshome"
+    $Script = $Script -ireplace "\`$pshome", "`$bshome"
+    $Script = $Script -ireplace "\`$home", "`$bhome"
+
+    return $Script
+}
+
+function ReplaceBadEscapes {
+
+    param(
+        [String] $Script
+    )
+
+    return $Script.Replace("``e", "e")
 }
 
 function BoxifyScript {
@@ -126,6 +138,7 @@ function BoxifyScript {
         [String] $Script
     )
     
+    $Script = ReplaceBadEscapes($Script)
     $Script = EnvReplacement($Script)
     $Script = $utils.SeparateLines($Script)
     $Script = HandleNamespaces($Script)
