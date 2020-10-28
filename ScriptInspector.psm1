@@ -129,7 +129,7 @@ function ReplaceBadEscapes {
         [String] $Script
     )
 
-    return $Script.Replace("``e", "e")
+    return $Script.Replace("``e", "e").Replace("``u", "u")
 }
 
 function BoxifyScript {
