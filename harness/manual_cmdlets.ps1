@@ -67,6 +67,137 @@ function Invoke-Expression {
 	return $invokeRes
 }
 
+function Start-Job {
+
+	[cmdletbinding(DefaultParameterSetName="ComputerName")]
+	param(
+		[Parameter(ParameterSetName="FilePathComputerName")]
+		[Parameter(ParameterSetName="ComputerName")]
+		[Parameter(ParameterSetName="LiteralFilePathComputerName")]
+		[Alias("Args")]
+		[Object[]] $ArgumentList,
+		[Parameter(ParameterSetName="LiteralFilePathComputerName")]
+		[Parameter(ParameterSetName="ComputerName")]
+		[Parameter(ParameterSetName="FilePathComputerName")]
+		[AuthenticationMechanism] $Authentication,
+		[Parameter(ParameterSetName="ComputerName")]
+		[Parameter(ParameterSetName="FilePathComputerName")]
+		[Parameter(ParameterSetName="LiteralFilePathComputerName")]
+		[pscredential] $Credential,
+		[Parameter(ParameterSetName="DefinitionName",Mandatory=$true)]
+		[string] $DefinitionName,
+		[Parameter(ParameterSetName="DefinitionName")]
+		[string] $DefinitionPath,
+		[Parameter(ParameterSetName="FilePathComputerName",Mandatory=$true)]
+		[string] $FilePath,
+		[Parameter(ParameterSetName="ComputerName")]
+		[Parameter(ParameterSetName="LiteralFilePathComputerName")]
+		[Parameter(ParameterSetName="FilePathComputerName")]
+		[scriptblock] $InitializationScript,
+		[Parameter(ParameterSetName="LiteralFilePathComputerName")]
+		[Parameter(ParameterSetName="ComputerName")]
+		[Parameter(ParameterSetName="FilePathComputerName")]
+		[Parameter(ValueFromPipeline=$true)]
+		[psobject] $InputObject,
+		[Parameter(ParameterSetName="LiteralFilePathComputerName",Mandatory=$true)]
+		[Alias("PSPath, LP")]
+		[string] $LiteralPath,
+		[Parameter(ParameterSetName="ComputerName")]
+		[Parameter(ParameterSetName="FilePathComputerName")]
+		[Parameter(ParameterSetName="LiteralFilePathComputerName")]
+		[Parameter(ValueFromPipeline=$true)]
+		[string] $Name,
+		[Parameter(ParameterSetName="FilePathComputerName")]
+		[Parameter(ParameterSetName="ComputerName")]
+		[Parameter(ParameterSetName="LiteralFilePathComputerName")]
+		[version] $PSVersion,
+		[Parameter(ParameterSetName="FilePathComputerName")]
+		[Parameter(ParameterSetName="ComputerName")]
+		[Parameter(ParameterSetName="LiteralFilePathComputerName")]
+		[switch] $RunAs32,
+		[Parameter(ParameterSetName="ComputerName",Mandatory=$true)]
+		[Parameter(Position=0)]
+		[Alias("Command")]
+		[scriptblock] $ScriptBlock,
+		[Parameter(ParameterSetName="DefinitionName")]
+		[string] $Type,
+		[string] $WorkingDirectory
+	)
+
+	$scrapeIOCsCode = Microsoft.PowerShell.Management\Get-Content -Raw $CODE_DIR/harness/find_in_mem_iocs.ps1
+	Microsoft.PowerShell.Utility\Invoke-Expression $scrapeIOCsCode
+
+	# the script that is executed by the job here is the scriptblock which is an unnamed function,
+	# so we need to give it a name and feed in the arguments properly to sandbox
+
+	$script = ""
+	$behaviorProps = @{}
+    
+	# read in the script from the file to sandbox
+	# just try to on the off chance they put it in the current dir so this will actually work (no windows paths)
+	if ($FilePath) {
+        $script = Microsoft.PowerShell.Management\Get-Content -Raw $FilePath
+        $behaviorProps["script"] = @($script)
+	}
+	# script executed in the job is given with a scriptblock, implement as a function
+	else {
+
+		# pass down an argument list variable if present with a 
+		if ($ArgumentList) {
+			$script += "`$arglist = @`'`r`n$ArgumentList`r`n'@`r`n"
+		}
+
+		$script += "function boxpsjob {`r`n"
+
+		# if the scriptblock starts with a parameter block, Start-Job seems to treat this like 
+		# a function, taking in an argument list through it, so write one with it
+		$match = [Regex]::Match($ScriptBlock, "^\s*(param\(.*\)).*")
+		if ($match.Success) {
+
+			# grab the parameter block definition
+			$paramBlockCapture = $match.Groups[1].Captures[0]
+			$paramBlock = $paramBlockCapture.Value
+
+			# grab the rest of the script block minus the parameter block
+			$functionBlock = $ScriptBlock.ToString().Substring($paramBlockCapture.Index + $paramBlock.Length)
+
+			# build the body of the function
+			$script += "`t$paramBlock`r`n"
+			$script += "`t$functionBlock`r`n"
+		}
+		# the scriptblock is not defining a parameter block, so if it's taking in an argument list, 
+		# it's going to be input with the $args automatic variable
+		else {
+			$script += "`t$ScriptBlock`r`n"
+		}
+
+		$script += "}`r`n"
+
+		# add the call to the function
+		$script += "boxpsjob"
+
+		if ($ArgumentList) {
+			$script += " `$arglist"
+        }
+
+        $behaviorProps["script"] = @($ScriptBlock)
+	}
+
+	RecordAction $([Action]::new(@("script_exec"), "Microsoft.PowerShell.Core\Start-Job", $behaviorProps, $MyInvocation, ""))
+
+	$invokeRes = ""
+	if ($script) {
+
+		$modifiedCommand = PreProcessScript $script
+
+		# actually run it, assign the result for situations like...
+		# ex. $foo = Invoke-Expression "New-Object System.Net.WebClient"
+		$invokeRes = Microsoft.PowerShell.Utility\Invoke-Expression $modifiedCommand
+	}
+
+	return $invokeRes
+}
+
 function New-Object {
 	param(
 		[Parameter(ParameterSetName="Net",Position=1)]

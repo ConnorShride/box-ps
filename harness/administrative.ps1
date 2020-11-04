@@ -103,7 +103,7 @@ function RecordAction {
         [Action] $Action
     )
     
-    $json = $Action | ConvertTo-Json -Depth 10
+    $json = $Action | ConvertTo-Json -Depth 5
     ($json + ",") | Out-File -Append "$WORK_DIR/actions.json"
 }
 

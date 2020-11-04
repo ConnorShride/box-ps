@@ -589,9 +589,14 @@ function CmdletOverride {
     )
 
     $shortName = $utils.GetUnqualifiedName($CmdletName)
-    $behaviorsListCode = $(BuildStringArrayCode $CmdletInfo["Behaviors"])
-    
     $code = "function $shortName {`r`n"
+    
+    # if the override does not have a behaviors member, it's not an action the user cares about
+    # tracking, just a cmdlet we want to intercept for other reasons
+    if (!$CmdletInfo["Behaviors"]) {
+        return $code + "}`r`n"
+    }
+
     $code += $utils.TabPad($(CmdletParamsCode $shortName $CmdletInfo["ArgAdditions"]))
     $code += $utils.TabPad($(InMemoryIOCsCode))
     $code += $utils.TabPad($(ArgModificationCode $CmdletInfo["ArgModifications"]))
@@ -608,6 +613,7 @@ function CmdletOverride {
         $code += "`t`$extraInfo = `"$($CmdletInfo["ExtraInfo"])`"`r`n"
     }
 
+    $behaviorsListCode = $(BuildStringArrayCode $CmdletInfo["Behaviors"])
     $code += "`tRecordAction `$([Action]::new($behaviorsListCode, `"$($CmdletName)`", `$behaviorProps, `$MyInvocation, `$extraInfo))`r`n"
 
     if ($CmdletInfo.Flags) {
