@@ -22,7 +22,7 @@ if ($MyInvocation.InvocationName -ne "Test-Path") {
     
     $declaredVars | ForEach-Object {
         $_.Value | Out-String -Stream | ForEach-Object { 
-            $networkIOCs += ScrapeUrls $_
+            $networkIOCs += ScrapeNetworkIOCs $_
         }
         $_.Value | Out-String -Stream | ForEach-Object { 
             $fileSystemIOCs += ScrapeFilePaths $_
@@ -32,7 +32,7 @@ if ($MyInvocation.InvocationName -ne "Test-Path") {
         }
     }
 
-    $networkIOCs | Microsoft.PowerShell.Utility\Out-File -Append "$WORK_DIR/scraped_urls.txt"
+    $networkIOCs | Microsoft.PowerShell.Utility\Out-File -Append "$WORK_DIR/scraped_network.txt"
     $fileSystemIOCs | Microsoft.PowerShell.Utility\Out-File -Append "$WORK_DIR/scraped_paths.txt"
     $environmentProbes | Microsoft.PowerShell.Utility\Out-File -Append "$WORK_DIR/scraped_probes.txt"
 }

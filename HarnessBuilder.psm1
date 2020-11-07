@@ -125,11 +125,21 @@ function InMemoryIOCsCode {
 function RoutineCode {
 
     param(
-        [string] $Routine
+        [hashtable] $RoutineInfo
     )
 
+    $routineScript = $RoutineInfo.Keys[0]
+
+    # prepend an assignment of a variable the routine script cares about to an "$routineArg" variable
+    if ($null -ne $RoutineInfo[$routineScript]) {
+        $code += "`$routineArg = `$$($RoutineInfo[$routineScript])`r`n"
+    }
+
+    # prepend an initialization of a $routineReturn variable that will be reassigned by the routine if it wants
+    $code += "`$routineReturn = `"`"`r`n"
+
     # read in the code from the snipped stored in the harness directory and IEX it
-    $code += "`$routineCode = Microsoft.PowerShell.Management\Get-Content -Raw `$CODE_DIR/harness/$Routine.ps1`r`n"
+    $code += "`$routineCode = Microsoft.PowerShell.Management\Get-Content -Raw `$CODE_DIR/harness/$routineScript.ps1`r`n"
     $code += "Microsoft.PowerShell.Utility\Invoke-Expression `$routineCode`r`n"
 
     # ExtraInfo should be set to the result of it in "$routineReturn", which will be set in the
@@ -466,15 +476,17 @@ function ClassFunctionOverrides {
             if ($intersection) {
     
                 $code += $signature + " {`r`n"
+                $code += "`t`$CODE_DIR = `"<CODE_DIR>`"`r`n"
+                $code += "`t`$WORK_DIR = `"./working`"`r`n"
                 $code += $utils.TabPad($(BehaviorPropsCode -ClassFunc -SigAndArgs $sigAndArgs -BehaviorPropInfo $OverrideInfo["BehaviorPropInfo"]))
                 $behaviorsListCode = $(BuildStringArrayCode $OverrideInfo["Behaviors"])
 
                 $code += "`t`$extraInfo = `"`"`r`n"
                 if ($OverrideInfo["Routine"]) {
-                    $code += $utils.TabPad($(RoutineCode $CmdletInfo["Routine"]))
+                    $code += $utils.TabPad($(RoutineCode $OverrideInfo["Routine"]))
                 }
                 elseif ($OverrideInfo["ExtraInfo"]) {
-                    $code += "`t`$extraInfo = `"$($CmdletInfo["ExtraInfo"])`"`r`n"
+                    $code += "`t`$extraInfo = `"$($OverrideInfo["ExtraInfo"])`"`r`n"
                 }
 
                 if ($Static) {
@@ -653,7 +665,7 @@ function BuildHarness {
     $commentSep = "################################################################################"
 
     # code containing namespace imports, class definition for Actions
-    $harness += [IO.File]::ReadAllText("$harnessPath/administrative.ps1").Replace("<CODE_DIR>", $PSScriptRoot) + "`r`n`r`n"
+    $harness += [IO.File]::ReadAllText("$harnessPath/administrative.ps1") + "`r`n`r`n"
 
     # may need to boxify script layers as they get decoded and executed
     $harness += "Microsoft.PowerShell.Core\Import-Module -Name `$CODE_DIR/ScriptInspector.psm1`r`n`r`n"

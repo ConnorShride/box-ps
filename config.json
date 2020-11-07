@@ -38,6 +38,7 @@
         "new_object": ["object"],
         "network": ["uri"],
         "file_exec": ["files"],
+        "memory_manipulation": ["bytes"],
         "environment_probe": []
     },
     "Cmdlets": {
@@ -239,6 +240,14 @@
                     "[System.Diagnostics.ProcessStartInfo] $startInfo",
                     "[string] $fileName, [string] $arguments",
                     "[string] $fileName, [string] $arguments, [string] $userName, [securestring] $password, [string] $domain"
+                ]
+            },
+            "[System.Runtime.InteropServices.Marshal]::Copy": {
+                "[void]": [
+                    "[byte[]] $source, [object] $destination, [object] $startIndex, [object] $length",
+                    "[long[]] $source, [object] $destination, [object] $startIndex, [object] $length",
+                    "[char[]] $source, [object] $destination, [object] $startIndex, [object] $length",
+                    "[short[]] $source, [object] $destination, [object] $startIndex, [object] $length"
                 ]
             }
         },

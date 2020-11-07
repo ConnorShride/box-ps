@@ -43,10 +43,10 @@ class Report {
     [object] $PotentialIndicators
     [object] $EnvironmentProbes
 
-    Report([object[]] $actions, [string[]] $scrapedUrls, [string[]] $scrapedPaths, 
+    Report([object[]] $actions, [string[]] $scrapedNetwork, [string[]] $scrapedPaths, 
             [string[]] $scrapedEnvProbes) {
         $this.Actions = $actions
-        $this.PotentialIndicators = $this.CombineScrapedIOCs($scrapedUrls, $scrapedPaths)
+        $this.PotentialIndicators = $this.CombineScrapedIOCs($scrapedNetwork, $scrapedPaths)
         $this.EnvironmentProbes = $this.GenerateEnvProbeReport($scrapedEnvProbes)
     }
 
@@ -119,10 +119,10 @@ class Report {
         return $envReport
     }
 
-    [hashtable] CombineScrapedIOCs([string[]] $scrapedUrls, [string[]] $scrapedPaths) {
+    [hashtable] CombineScrapedIOCs([string[]] $scrapedNetwork, [string[]] $scrapedPaths) {
 
         $pathsSet = New-Object System.Collections.Generic.HashSet[string]
-        $urlsSet = New-Object System.Collections.Generic.HashSet[string]
+        $networkSet = New-Object System.Collections.Generic.HashSet[string]
 
         # gather all file paths from actions
         $this.Actions | Where-Object -Property Behaviors -contains "file_system" | ForEach-Object {
@@ -131,24 +131,24 @@ class Report {
 
         # gather all network urls from actions 
         $this.Actions | Where-Object -Property Behaviors -contains "network" | ForEach-Object {
-            $($_.BehaviorProps.uri | ForEach-Object { $urlsSet.Add($_) > $null })
+            $($_.BehaviorProps.uri | ForEach-Object { $networkSet.Add($_) > $null })
         }
 
         # add scraped paths and urls
-        if ($scrapedUrls) {
-            $scrapedUrls | ForEach-Object { $urlsSet.Add($_) > $null }
+        if ($scrapedNetwork) {
+            $scrapedNetwork | ForEach-Object { $networkSet.Add($_) > $null }
         }
         if ($scrapedPaths) {
             $scrapedPaths | ForEach-Object { $pathsSet.Add($_) > $null }
         }
 
         $paths = [string[]]::new($pathsSet.Count)
-        $urls = [string[]]::new($urlsSet.Count)
-        $urlsSet.CopyTo($urls)
+        $network = [string[]]::new($networkSet.Count)
+        $networkSet.CopyTo($network)
         $pathsSet.CopyTo($paths)
 
         $result = @{
-            "network" = $urls;
+            "network" = $network;
             "file_system" = $paths
         }
 
@@ -401,7 +401,7 @@ else {
     }
 
     # build harness and integrate script with it
-    $harness = BuildHarness
+    $harness = (BuildHarness).Replace("<CODE_DIR>", $PSScriptRoot)
     $script = PreProcessScript $script
 
     # attach the harness to the script
@@ -427,12 +427,12 @@ else {
     $actions = $(StripBugActions $actions)
 
     # go gather the IOCs we may have scraped
-    $scrapedUrls = Get-Content $WORK_DIR/scraped_urls.txt -ErrorAction SilentlyContinue
+    $scrapedNetwork = Get-Content $WORK_DIR/scraped_network.txt -ErrorAction SilentlyContinue
     $scrapedPaths = Get-Content $WORK_DIR/scraped_paths.txt -ErrorAction SilentlyContinue
     $scrapedEnvProbes = Get-Content $WORK_DIR/scraped_probes.txt -ErrorAction SilentlyContinue
 
     # create the report and convert to JSON
-    $report = [Report]::new($actions, $scrapedUrls, $scrapedPaths, $scrapedEnvProbes)
+    $report = [Report]::new($actions, $scrapedNetwork, $scrapedPaths, $scrapedEnvProbes)
     $reportJson = $report | ConvertTo-Json -Depth 10
 
     # output the JSON report where the user wants it

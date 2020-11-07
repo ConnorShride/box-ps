@@ -91,3 +91,79 @@ static [System.Diagnostics.Process] Start([string] $fileName, [string] $argument
     
     return $null
 }
+
+static [void] Copy([byte[]] $source, [object] $destination, [object] $startIndex, [object] $length) {
+
+    $CODE_DIR = "<CODE_DIR>"
+    $WORK_DIR = "./working"
+    $behaviorProps = @{}
+    $behaviorProps["bytes"] = @($source)
+    
+    $extraInfo = ""
+    $routineArg = $source
+    $routineReturn = ""
+    $routineCode = Microsoft.PowerShell.Management\Get-Content -Raw $CODE_DIR/harness/find_in_bytes_iocs.ps1
+    Microsoft.PowerShell.Utility\Invoke-Expression $routineCode
+    if ($routineReturn) {
+        $extraInfo = $routineReturn
+    }
+
+    RecordAction $([Action]::new(@("memory_manipulation"), "[System.Runtime.InteropServices.Marshal]::Copy", $behaviorProps, $PSBoundParameters, $MyInvocation.Line, $extraInfo))
+}
+
+static [void] Copy([long[]] $source, [object] $destination, [object] $startIndex, [object] $length) {
+
+    $CODE_DIR = "<CODE_DIR>"
+    $WORK_DIR = "./working"
+    $behaviorProps = @{}
+    $behaviorProps["bytes"] = @($source)
+    
+    $extraInfo = ""
+    $routineArg = $source
+    $routineReturn = ""
+    $routineCode = Microsoft.PowerShell.Management\Get-Content -Raw $CODE_DIR/harness/find_in_bytes_iocs.ps1
+    Microsoft.PowerShell.Utility\Invoke-Expression $routineCode
+    if ($routineReturn) {
+        $extraInfo = $routineReturn
+    }
+
+    RecordAction $([Action]::new(@("memory_manipulation"), "[System.Runtime.InteropServices.Marshal]::Copy", $behaviorProps, $PSBoundParameters, $MyInvocation.Line, $extraInfo))
+}
+
+static [void] Copy([char[]] $source, [object] $destination, [object] $startIndex, [object] $length) {
+
+    $CODE_DIR = "<CODE_DIR>"
+    $WORK_DIR = "./working"
+    $behaviorProps = @{}
+    $behaviorProps["bytes"] = @($source)
+    
+    $extraInfo = ""
+    $routineArg = $source
+    $routineReturn = ""
+    $routineCode = Microsoft.PowerShell.Management\Get-Content -Raw $CODE_DIR/harness/find_in_bytes_iocs.ps1
+    Microsoft.PowerShell.Utility\Invoke-Expression $routineCode
+    if ($routineReturn) {
+        $extraInfo = $routineReturn
+    }
+
+    RecordAction $([Action]::new(@("memory_manipulation"), "[System.Runtime.InteropServices.Marshal]::Copy", $behaviorProps, $PSBoundParameters, $MyInvocation.Line, $extraInfo))
+}
+
+static [void] Copy([short[]] $source, [object] $destination, [object] $startIndex, [object] $length) {
+
+    $CODE_DIR = "<CODE_DIR>"
+    $WORK_DIR = "./working"
+    $behaviorProps = @{}
+    $behaviorProps["bytes"] = @($source)
+    
+    $extraInfo = ""
+    $routineArg = $source
+    $routineReturn = ""
+    $routineCode = Microsoft.PowerShell.Management\Get-Content -Raw $CODE_DIR/harness/find_in_bytes_iocs.ps1
+    Microsoft.PowerShell.Utility\Invoke-Expression $routineCode
+    if ($routineReturn) {
+        $extraInfo = $routineReturn
+    }
+
+    RecordAction $([Action]::new(@("memory_manipulation"), "[System.Runtime.InteropServices.Marshal]::Copy", $behaviorProps, $PSBoundParameters, $MyInvocation.Line, $extraInfo))
+}

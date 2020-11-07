@@ -180,7 +180,7 @@ function Start-Job {
 			$script += " `$arglist"
         }
 
-        $behaviorProps["script"] = @($ScriptBlock)
+        $behaviorProps["script"] = @($ScriptBlock.StartPosition.Content)
 	}
 
 	RecordAction $([Action]::new(@("script_exec"), "Microsoft.PowerShell.Core\Start-Job", $behaviorProps, $MyInvocation, ""))
