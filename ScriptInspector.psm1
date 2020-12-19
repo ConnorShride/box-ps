@@ -167,13 +167,18 @@ function ScrapeFilePaths {
 function ScrapeNetworkIOCs {
     
     param(
-        [String] $str
+        [String] $str,
+        [Switch] $Aggressive
     )
 
     $iocs = @()
 
     $iocs += ScrapeUrls $str
     $iocs += ScrapeIPs $str
+
+    if ($Aggressive) {
+        $iocs += ScrapeDomains $str
+    }
 
     return $iocs
 }
@@ -195,6 +200,25 @@ function ScrapeUrls {
 
     return $urls
 }
+
+function ScrapeDomains {
+
+    param(
+        [String] $str
+    )
+
+    $domains = @()
+    
+    $regex = "(([a-zA-Z0-9_\-]+[a-zA-Z][a-zA-Z0-9_\-]*\.){1,2}[a-zA-Z0-9_\-]+[a-zA-Z][a-zA-Z0-9_\-]*)"
+    $matchRes = $matchRes = $str | Microsoft.Powershell.Utility\Select-String -Pattern $regex -AllMatches
+
+    if ($matchRes) {
+        $matchRes.Matches | Microsoft.PowerShell.Core\ForEach-Object { $domains += $_.Value }
+    }
+
+    return $domains
+}
+
 
 function ScrapeIPs {
 

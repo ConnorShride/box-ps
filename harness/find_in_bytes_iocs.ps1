@@ -16,6 +16,6 @@ elseif ($routineArg.GetType() -eq [char[]]) {
     $ascii = $routineArg -join ''
 }
 
-ScrapeNetworkIOCs $ascii | Microsoft.PowerShell.Utility\Out-File -Append "$WORK_DIR/scraped_network.txt"
+ScrapeNetworkIOCs -Aggressive $ascii | Microsoft.PowerShell.Utility\Out-File -Append "$WORK_DIR/scraped_network.txt"
 
 $routineReturn = $ascii
