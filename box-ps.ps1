@@ -16,7 +16,8 @@ param (
     [parameter(Position=1)]
     [String] $OutFile,
     [parameter(ParameterSetName="IncludeArtifacts")]
-    [string] $OutDir
+    [string] $OutDir,
+    [switch] $NoCleanUp
 )
 
 # arg validation
@@ -417,7 +418,9 @@ else {
     if (!(Test-Path $actionsPath)) {
         $message = "sandboxing failed with an internal error. please post an issue on GitHub with the failing powershell"
         Write-Error -Message $message -Category NotSpecified
-        CleanUp
+        if (!$NoCleanUp) {
+            CleanUp
+        }
         Exit(-1)
     }
 
@@ -459,5 +462,7 @@ else {
     }
 
     Write-Host "[+] done sandboxing"
-    CleanUp
+    if (!$NoCleanUp) {
+        CleanUp
+    }
 }
