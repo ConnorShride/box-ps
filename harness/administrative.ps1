@@ -21,6 +21,7 @@ class Action <# lawsuit... I'll be here all week #> {
     [hashtable] $BehaviorProps
     [hashtable] $Parameters
     [string] $ExtraInfo
+    [int] $Id
 
     Action ([String[]] $Behaviors, [String] $Actor, [hashtable] $BehaviorProps,
         [InvocationInfo] $Invocation, [string] $ExtraInfo) {
@@ -30,6 +31,7 @@ class Action <# lawsuit... I'll be here all week #> {
         $this.BehaviorProps = $BehaviorProps
         $this.Line = $Invocation.Line.Trim()
         $this.ExtraInfo = $ExtraInfo
+        $this.Id = 0
 
         $paramsSplit = $this.SplitParams($Invocation)
         $this.Parameters = $paramsSplit["bound"]
@@ -52,6 +54,7 @@ class Action <# lawsuit... I'll be here all week #> {
         $this.Parameters = $BoundParams
         $this.Line = $Line.Trim()
         $this.ExtraInfo = $ExtraInfo
+        $this.Id = 0
     }
 
     # linear walk through all parameters rebuilding bound params and switches
@@ -103,6 +106,10 @@ function RecordAction {
         [Action] $Action
     )
     
+    # read and update the running action id on disk
+    $Action.Id = [int](Microsoft.PowerShell.Management\Get-Content -Raw "$WORK_DIR/action_id.txt")
+    ($Action.Id + 1) | Out-File "$WORK_DIR/action_id.txt"
+
     $json = $Action | ConvertTo-Json -Depth 5
     ($json + ",") | Out-File -Append "$WORK_DIR/actions.json"
 }

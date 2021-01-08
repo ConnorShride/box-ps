@@ -209,7 +209,7 @@ function ScrapeDomains {
 
     $domains = @()
     
-    $regex = "(([a-zA-Z0-9_\-]+[a-zA-Z][a-zA-Z0-9_\-]*\.){1,2}[a-zA-Z0-9_\-]+[a-zA-Z][a-zA-Z0-9_\-]*)"
+    $regex = "(([a-zA-Z0-9_\-]+[a-zA-Z][a-zA-Z0-9_\-]*\.){1,2}(?!(D|d)(L|l)(L|l))[a-zA-Z0-9_\-]+[a-zA-Z][a-zA-Z0-9_\-]*)"
     $matchRes = $matchRes = $str | Microsoft.Powershell.Utility\Select-String -Pattern $regex -AllMatches
 
     if ($matchRes) {

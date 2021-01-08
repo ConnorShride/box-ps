@@ -43,12 +43,14 @@ class Report {
     [object[]] $Actions
     [object] $PotentialIndicators
     [object] $EnvironmentProbes
+    [hashtable] $Artifacts
 
     Report([object[]] $actions, [string[]] $scrapedNetwork, [string[]] $scrapedPaths, 
-            [string[]] $scrapedEnvProbes) {
+            [string[]] $scrapedEnvProbes, [hashtable] $artifactMap) {
         $this.Actions = $actions
         $this.PotentialIndicators = $this.CombineScrapedIOCs($scrapedNetwork, $scrapedPaths)
         $this.EnvironmentProbes = $this.GenerateEnvProbeReport($scrapedEnvProbes)
+        $this.Artifacts = $artifactMap
     }
 
     [hashtable] GenerateEnvProbeReport([string[]] $scrapedEnvProbes) {
@@ -81,6 +83,7 @@ class Report {
 
         # first wrangle all the environment_probe actions we caught and split them by their goal
         $this.Actions | ForEach-Object {
+
             if ($_.Behaviors.Contains("environment_probe")) {
                 if ($_.ExtraInfo -eq "language_probe") {
                     AddListItem $envReport "Language" "Actors" $_.Actor
@@ -211,6 +214,7 @@ function GetInitialScript {
         "BehaviorProps" = @{
             "script" = @($decoded)
         }
+        "Id" = 0
     }
 
     $json = $action | ConvertTo-Json -Depth 10
@@ -241,6 +245,52 @@ function StripBugActions {
     return $actions
 }
 
+# runs through the actions writing artifacts we may care about to disk and returns a map of which
+# actions by ID produced which artifact hash
+function HarvestArtifacts {
+
+    param(
+        [object[]] $Actions
+    )
+
+    $artifactMap = @{}
+
+    New-Item -Path $WORK_DIR/artifacts -ItemType "directory" > /dev/null
+    $outDir = $WORK_DIR + "/artifacts/"
+
+    $Actions | ForEach-Object {
+
+        # write all the bytes being messed with to a file on disk
+        if ($_.Behaviors.Contains("memory_manipulation")) {
+            
+            $bytes = $_.BehaviorProps.bytes
+            $actionId = ($_.Id | Out-String).Trim()
+            $fileType = "unknown"
+
+            # basic check to see if this may be interesting
+            if ($bytes.Length -gt 10) {
+                
+                # write bytes and compute sha256
+                $outPath = $outDir + "tmp.bin"
+                [System.IO.File]::WriteAllBytes($outPath, $bytes)
+                $sha256 = $(Get-FileHash -Path $outPath -Algorithm SHA256).Hash
+                Move-Item -Path $outPath -Destination ($outDir + $sha256)
+
+                # check if the bytes indicate a PE file
+                if ($bytes[0] -eq 77 -and $bytes[1] -eq 90) {
+                    $fileType = "PE"
+                }
+
+                $artifactMap[$actionId] = @{
+                    "sha256" = $sha256;
+                    "fileType" = $fileType
+                }
+            }
+        }
+    }
+
+    return $artifactMap
+}
 
 # remove imported modules and clean up non-output file system artifacts
 function CleanUp {
@@ -354,6 +404,8 @@ else {
         New-Item $WORK_DIR -ItemType Directory > $null
     }
 
+    "1" | Out-File $WORK_DIR/action_id.txt
+
     Import-Module -Name $PSScriptRoot/HarnessBuilder.psm1
     Import-Module -Name $PSScriptRoot/ScriptInspector.psm1
 
@@ -427,15 +479,19 @@ else {
     # ingest the actions, potential IOCs, create report
     $actionsJson = Get-Content -Raw $actionsPath
     $actions = "[" + $actionsJson.TrimEnd(",`r`n") + "]" | ConvertFrom-Json
-    $actions = $(StripBugActions $actions)
 
+    $actions = $(StripBugActions $actions)
+    
     # go gather the IOCs we may have scraped
     $scrapedNetwork = Get-Content $WORK_DIR/scraped_network.txt -ErrorAction SilentlyContinue
     $scrapedPaths = Get-Content $WORK_DIR/scraped_paths.txt -ErrorAction SilentlyContinue
     $scrapedEnvProbes = Get-Content $WORK_DIR/scraped_probes.txt -ErrorAction SilentlyContinue
 
+    # wrangle and gather some file metadata on any artifacts of the script
+    $artifactMap = HarvestArtifacts $actions
+
     # create the report and convert to JSON
-    $report = [Report]::new($actions, $scrapedNetwork, $scrapedPaths, $scrapedEnvProbes)
+    $report = [Report]::new($actions, $scrapedNetwork, $scrapedPaths, $scrapedEnvProbes, $artifactMap)
     $reportJson = $report | ConvertTo-Json -Depth 10
 
     # output the JSON report where the user wants it
@@ -448,7 +504,7 @@ else {
 
         # overwrite output dir if it already exists
         if (Test-Path $OutDir) {
-            Remove-Item $OutDir/*
+            Remove-Item -Recurse $OutDir/*
         }
         else {
             New-Item $OutDir -ItemType Directory > $null
@@ -458,6 +514,9 @@ else {
         Move-Item $WORK_DIR/stdout.txt $OutDir/
         Move-Item $WORK_DIR/stderr.txt $OutDir/
         Move-Item $WORK_DIR/layers.ps1 $OutDir/
+        if ($(Get-ChildItem $WORK_DIR/artifacts).Length -gt 0) {
+            Move-Item $WORK_DIR/artifacts $OutDir
+        }
         $reportJson | Out-File $OutDir/report.json
     }
 
