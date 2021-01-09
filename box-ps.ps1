@@ -409,8 +409,10 @@ else {
     Import-Module -Name $PSScriptRoot/HarnessBuilder.psm1
     Import-Module -Name $PSScriptRoot/ScriptInspector.psm1
 
+    Write-Host -NoNewLine "[+] reading script..."
     $script = (Get-Content $InFile -ErrorAction Stop | Out-String)
     $script = GetInitialScript $script
+    Write-Host " done"
 
     # write out string environment variable to JSON for harness builder
     if ($EnvVar) {
@@ -453,6 +455,8 @@ else {
         }
     }
 
+    Write-Host -NoNewLine "[+] building script harness..."
+
     # build harness and integrate script with it
     $harness = (BuildHarness).Replace("<CODE_DIR>", $PSScriptRoot)
     $script = PreProcessScript $script
@@ -461,10 +465,13 @@ else {
     $harnessedScript = $harness + "`r`n`r`n" + $script
     $harnessedScript | Out-File -FilePath $harnessedScriptPath
 
-    Write-Host "[+] sandboxing script"
+    Write-Host " done"
+    Write-Host -NoNewLine "[+] sandboxing harnessed script..."
 
     # run it
     (timeout 5 pwsh -noni $harnessedScriptPath 2> $stderrPath 1> $stdoutPath)
+
+    Write-Host " done"
 
     # a lot of times actions.json will not be present if things go wrong
     if (!(Test-Path $actionsPath)) {
@@ -475,6 +482,8 @@ else {
         }
         Exit(-1)
     }
+
+    Write-Host -NoNewLine "[+] post-processing results..."
 
     # ingest the actions, potential IOCs, create report
     $actionsJson = Get-Content -Raw $actionsPath
@@ -494,9 +503,12 @@ else {
     $report = [Report]::new($actions, $scrapedNetwork, $scrapedPaths, $scrapedEnvProbes, $artifactMap)
     $reportJson = $report | ConvertTo-Json -Depth 10
 
+    Write-Host " done"
+
     # output the JSON report where the user wants it
     if ($OutFile) {
         $reportJson | Out-File $OutFile
+        Write-Host "[+] wrote report to file $OutFile"
     }
 
     # user wants more detailed artifacts as well as the report
@@ -518,9 +530,10 @@ else {
             Move-Item $WORK_DIR/artifacts $OutDir
         }
         $reportJson | Out-File $OutDir/report.json
+
+        Write-Host "[+] wrote analysis results to output directory $OutDir"
     }
 
-    Write-Host "[+] done sandboxing"
     if (!$NoCleanUp) {
         CleanUp
     }
