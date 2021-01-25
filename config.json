@@ -224,6 +224,12 @@
             "BehaviorPropInfo": {
                 "files": ["fileName"]
             }
+        },
+        "[System.Reflection.Assembly]::Load": {
+            "Behaviors": ["code_import"],
+            "BehaviorPropInfo": {
+                "code": ["rawAssembly"]
+            }
         }
     },
     "Manuals": {

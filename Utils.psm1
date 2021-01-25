@@ -39,7 +39,7 @@ function GetUnqualifiedName {
 function SeparateLines
 {
     param(
-        [char[]]$Script
+        [char[]] $Script
     )
 
     $prevChar = ''

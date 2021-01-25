@@ -187,6 +187,11 @@ function GetInitialScript {
         [string] $OrigScript
     )
 
+    # make sure it starts with "powershell" so we don't waste time (the rest is not efficient)
+    if (!($OrigScript -match "^[Pp][Oo][Ww][Ee][Rr][Ss][Hh][Ee][Ll][Ll].*$")) {
+        return $OrigScript
+    }
+
     # if the invocation uses an encoded command, we need to decode that
     # is encoded if there's an "-e" or "-en" and there's a base64 string in the invocation
     if ($OrigScript -match ".*\-[Ee][Nn]?[^qQn].*") { # excludes instances of "-eq"
@@ -253,6 +258,12 @@ function HarvestArtifacts {
         [object[]] $Actions
     )
 
+    # map actors we want to harvest artifacts for to the bytes behavior property
+    $overrides = @{
+        "[System.Reflection.Assembly]::Load" = "code";
+        "[System.Runtime.InteropServices.Marshal]::Copy" = "bytes"
+    }
+
     $artifactMap = @{}
 
     New-Item -Path $WORK_DIR/artifacts -ItemType "directory" > /dev/null
@@ -260,10 +271,9 @@ function HarvestArtifacts {
 
     $Actions | ForEach-Object {
 
-        # write all the bytes being messed with to a file on disk
-        if ($_.Behaviors.Contains("memory_manipulation")) {
-            
-            $bytes = $_.BehaviorProps.bytes
+        if ($overrides.Keys -contains $_.Actor) {
+        
+            $bytes = $_.BehaviorProps.($overrides[$_.Actor])
             $actionId = ($_.Id | Out-String).Trim()
             $fileType = "unknown"
 
@@ -359,7 +369,7 @@ if ($Docker) {
         $PSBoundParameters["OutDir"] = "./outdir"
     }
 
-    if ($EnvFIle) {
+    if ($EnvFile) {
         $PSBoundParameters["EnvFile"] = "./input_env.json"
         docker cp $EnvFile "$containerId`:/opt/box-ps/input_env.json"
     }

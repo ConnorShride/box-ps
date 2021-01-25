@@ -140,7 +140,8 @@ function BoxifyScript {
     
     $Script = ReplaceBadEscapes($Script)
     $Script = EnvReplacement($Script)
-    $Script = $utils.SeparateLines($Script)
+    # too inefficient for too little benefit
+    #$Script = $utils.SeparateLines($Script)
     $Script = HandleNamespaces($Script)
 
     return $Script
