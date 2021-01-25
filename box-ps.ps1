@@ -194,7 +194,7 @@ function GetInitialScript {
 
     # if the invocation uses an encoded command, we need to decode that
     # is encoded if there's an "-e" or "-en" and there's a base64 string in the invocation
-    if ($OrigScript -match ".*\-[Ee][Nn]?[^qQn].*") { # excludes instances of "-eq"
+    if ($OrigScript -match ".*\-[Ee][Nn]?[^qQnXx].*") { # excludes instances of "-eq" and "-ex"
 
         $match = [Regex]::Match($OrigScript, ".*?([A-Za-z0-9+/=]{40,}).*").captures
         if ($match -ne $null) {
@@ -203,7 +203,7 @@ function GetInitialScript {
         }
     }
 
-    $scrubbed = $OrigScript -replace "^[Pp][Oo][Ww][Ee][Rr][Ss][Hh][Ee][Ll][Ll](.exe)? ((-[\w``]+ ([\w``]+ )?)?)*"
+    $scrubbed = $OrigScript -replace "^[Pp][Oo][Ww][Ee][Rr][Ss][Hh][Ee][Ll][Ll](.exe)?\s+((-[\w``]+\s+([\w\d``]+ )?)?)*"
 
     if ($is_encoded) {
         $decoded = [System.Text.Encoding]::Unicode.GetString([System.Convert]::FromBase64String($encoded))
