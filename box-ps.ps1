@@ -3,12 +3,15 @@
     override goes ahead and executes the function because it's safe, it may error out (which is fine)
 #>
 
+[CmdletBinding(DefaultParameterSetName='IncludeArtifacts')]
 param (
     [switch] $Docker,
     [parameter(ParameterSetName="ReportOnly", Mandatory=$true)]
     [switch] $ReportOnly,
-    [parameter(Position=0, Mandatory=$true)]
+    [parameter(Position=0)]
     [String] $InFile,
+    [parameter(ValueFromPipeline=$true)]
+    [String] $ScriptContent,
     [String] $EnvVar,
     [String] $EnvFile,
     [parameter(ParameterSetName="ReportOnly", Mandatory=$true)]
@@ -20,8 +23,20 @@ param (
     [switch] $NoCleanUp
 )
 
-# arg validation
-if (!(Test-Path $InFile)) {
+# can't give both InFile and script content
+if ($ScriptContent -and $InFile) {
+    Write-Host "[-] can't give both an input file and script contents"
+    return
+}
+
+# must give either script content or InFile
+if (!$ScriptContent -and !$InFile) {
+    Write-Host "[-] must give either script contents or input file"
+    return
+}
+
+# input file must exist if given
+if ($InFile -and !(Test-Path $InFile)) {
     Write-Host "[-] input file does not exist. exiting."
     return
 }
@@ -34,8 +49,14 @@ if ($EnvVar -and $EnvFile) {
 
 # give OutDir a default value if the user hasn't specified they don't want artifacts 
 if (!$ReportOnly -and !$OutDir) {
-    # by default named <script>.boxed in the current working directory
-    $OutDir = "./$($InFile.Substring($InFile.LastIndexOf("/") + 1)).boxed"
+
+    if ($ScriptContent) {
+        $OutDir = "./piped.boxed"
+    }
+    else {
+        # by default named <script>.boxed in the current working directory
+        $OutDir = "./$($InFile.Substring($InFile.LastIndexOf("/") + 1)).boxed"
+    }
 }
 
 class Report {
@@ -159,23 +180,6 @@ class Report {
         return $result
     }
 }
-
-# cuts the full path from the file path to leave just the name
-function GetShortFileName {
-    param(
-        [string] $Path
-    )
-
-    if ($Path.Contains("/")) {
-        $shortName = $Path.Substring($Path.LastIndexOf("/")+1)
-    }
-    else {
-        $shortName = $Path
-    }
-
-    return $shortName
-}
-
 
 # removes, if present, the invocation to Powershell that comes up front. It may be written to
 # be interpreted with a cmd.exe shell, having cmd.exe obfuscation, and therefore does not play well 
@@ -313,7 +317,7 @@ function CleanUp {
 
 $WORK_DIR = "./working"
 
-# don't run it here, pull down the box-ps docker container and run it in there
+# pull down the box-ps docker container and run it in there
 if ($Docker) {
 
     # test to see if docker is installed. EXIT IF NOT
@@ -322,7 +326,7 @@ if ($Docker) {
     }
     catch [System.Management.Automation.CommandNotFoundException] {
         Write-Host "[-] docker is not installed. install it and add your user to the docker group"
-        Exit(-1)
+        return
     }
 
     # some other error with docker. EXIT
@@ -330,19 +334,16 @@ if ($Docker) {
         $msg = $output.Exception.Message
         if ($msg.Contains("Got permission denied")) {
             Write-Host "[-] permissions incorrect. add your user to the docker group"
-            Exit(-1)
+            return
         }
         Write-Host "[-] there's a problem with your docker environment..."
         Write-Host $msg
     }
 
     # validate that the input environment variable file exists if given
-    if ($EnvFile) {
-
-        if (!(Test-Path $EnvFile)) {
-            Write-Host "[-] input environment variable file doesn't exist. exiting."
-            return
-        }
+    if ($EnvFile -and !(Test-Path $EnvFile)) {
+        Write-Host "[-] input environment variable file doesn't exist. exiting."
+        return
     }
 
     Write-Host "[+] pulling latest docker image"
@@ -355,12 +356,24 @@ if ($Docker) {
     $idMatch = $psOutput | Select-String -Pattern "[\w]+_[\w]+"
     $containerId = $idMatch.Matches.Value
 
-    # modify args for running in the container
-    # just keep all the input/output files in the box-ps dir in the container
-    $PSBoundParameters.Remove("Docker") > $null
-    $PSBoundParameters["InFile"] = GetShortFileName $InFile
-    docker cp $InFile "$containerId`:/opt/box-ps/"
+    # modify args to those that the container should receive
 
+    $PSBoundParameters.Remove("Docker") > $null
+
+    # copy the input file into the container
+    $PSBoundParameters["InFile"] = "./infile.ps1"
+    if ($InFile) {
+        docker cp $InFile "$containerId`:/opt/box-ps/infile.ps1"
+    }
+    # given script contents instead
+    else {
+        
+        # pipe the script contents into a file in the container
+        $ScriptContent | docker exec -i $containerId /bin/bash -c "cat - > /opt/box-ps/infile.ps1"
+        $PSBoundParameters.Remove("ScriptContent") > $null
+    }
+
+    # just keep all the input/output files in the box-ps dir in the container
     if ($OutFile) {
         $PSBoundParameters["OutFile"] = "./out.json"
     }
@@ -398,7 +411,7 @@ if ($Docker) {
     # clean up
     docker kill $containerId > $null
 }
-# sandbox outside of container
+# do sandboxing
 else {
 
     $stderrPath = "$WORK_DIR/stderr.txt"
@@ -419,10 +432,13 @@ else {
     Import-Module -Name $PSScriptRoot/HarnessBuilder.psm1
     Import-Module -Name $PSScriptRoot/ScriptInspector.psm1
 
-    Write-Host -NoNewLine "[+] reading script..."
-    $script = (Get-Content $InFile -ErrorAction Stop | Out-String)
-    $script = GetInitialScript $script
-    Write-Host " done"
+    # read script content from the input file
+    if ($InFile) {
+        Write-Host -NoNewLine "[+] reading script..."
+        $ScriptContent = (Get-Content $InFile -ErrorAction Stop | Out-String)
+        $ScriptContent = GetInitialScript $ScriptContent
+        Write-Host " done"
+    }
 
     # write out string environment variable to JSON for harness builder
     if ($EnvVar) {
@@ -469,10 +485,10 @@ else {
 
     # build harness and integrate script with it
     $harness = (BuildHarness).Replace("<CODE_DIR>", $PSScriptRoot)
-    $script = PreProcessScript $script
+    $ScriptContent = PreProcessScript $ScriptContent
 
     # attach the harness to the script
-    $harnessedScript = $harness + "`r`n`r`n" + $script
+    $harnessedScript = $harness + "`r`n`r`n" + $ScriptContent
     $harnessedScript | Out-File -FilePath $harnessedScriptPath
 
     Write-Host " done"
@@ -490,7 +506,7 @@ else {
         if (!$NoCleanUp) {
             CleanUp
         }
-        Exit(-1)
+        return
     }
 
     Write-Host -NoNewLine "[+] post-processing results..."
@@ -540,8 +556,6 @@ else {
             Move-Item $WORK_DIR/artifacts $OutDir
         }
         $reportJson | Out-File $OutDir/report.json
-
-        Write-Host "[+] wrote analysis results to output directory $OutDir"
     }
 
     if (!$NoCleanUp) {
