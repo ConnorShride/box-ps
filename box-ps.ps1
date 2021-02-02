@@ -501,10 +501,16 @@ else {
 
     # a lot of times actions.json will not be present if things go wrong
     if (!(Test-Path $actionsPath)) {
-        $message = "sandboxing failed with an internal error. please post an issue on GitHub with the failing powershell"
-        Write-Error -Message $message -Category NotSpecified
-        if (!$NoCleanUp) {
-            CleanUp
+        # crashing here would be cringy
+        try {
+            Write-Host "[-] sandboxing failed..."
+            Write-Host (Get-Content -ErrorAction stop -Raw ./working/stderr.txt)
+            if (!$NoCleanUp) {
+                CleanUp
+            }
+        }
+        catch {
+            Write-Host "[-] couldn't find any errors to report"
         }
         return
     }
