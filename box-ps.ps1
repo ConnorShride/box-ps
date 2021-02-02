@@ -534,7 +534,6 @@ else {
     # output the JSON report where the user wants it
     if ($OutFile) {
         $reportJson | Out-File $OutFile
-        Write-Host "[+] wrote report to file $OutFile"
     }
 
     # user wants more detailed artifacts as well as the report

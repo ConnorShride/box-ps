@@ -3,24 +3,35 @@
 # pulls down the most recent box-ps docker images and uses it to sandbox the given powershell script
 # in a network-isolated environment
 
-usage="docker-box-ps.sh <powershell script path> <output JSON file path>"
+usage1="docker-box-ps.sh <powershell script path> <output JSON file path>"
+usage2="docker-box-ps.sh <powershell script path> -d <output analysis dir>"
+usage3="<script content> | docker-box-ps.sh -p <output JSON file path>"
+usage4="<script content> | docker-box-ps.sh -p -d <output analysis dir>"
 
 # argument validation
-if [ "$#" -ne 2 ]
+if [[ "$#" -lt 2 ]] && [[ "$#" -gt 3 ]]
 then
-	echo "[-] two arguments required. $# provided"
-	echo "[-] usage: $usage"
+	echo "[-] two or three arguments required. $# provided"
+	echo "[-] usage 1: $usage1"
+	echo "[-] usage 2: $usage2"
+	echo "[-] usage 3: $usage3"
+	echo "[-] usage 4: $usage4"
 	exit -1
 fi
 
-if [ ! -f $1 ]
+if [[ "$#" -eq 3 ]] && [[ $2 != "-d" ]]
+then
+	echo "[-] usages for three arguments..."
+	echo $usage2
+	echo $usage4 
+	exit -1
+fi
+
+if [[ $1 != "-p" ]] && [[ ! -f $1 ]]
 then
 	echo "[-] input file does not exist"
 	exit -1
 fi
-
-in_script_path=$1
-out_json_path=$2
 
 # verify valid docker environment
 ps_output=`docker ps 2>&1`
@@ -47,20 +58,40 @@ docker pull connorshride/box-ps:latest > /dev/null
 echo "[+] starting docker container"
 docker run -td --network none connorshride/box-ps:latest > /dev/null
 
-in_script_short_name=`basename $in_script_path`
-out_script_short_name=`basename $out_json_path`
+container_id=$(docker ps -f status=running -f ancestor=connorshride/box-ps -l | tail -n +2 | cut -f1 -d' ')
+
+# pipe the input into a file in the docker container
+if [[ $1 == "-p" ]]
+then
+	docker exec -i $container_id /bin/bash -c "cat - > /opt/box-ps/infile.ps1" < /dev/stdin
 
 # copy input script into container
-container_id=$(docker ps -f status=running -f ancestor=connorshride/box-ps -l | tail -n +2 | cut -f1 -d' ')
-docker cp $in_script_path "$container_id:/opt/box-ps/"
+else
+	docker cp $1 "$container_id:/opt/box-ps/infile.ps1"
+fi
 
 # run box-ps in docker container
 echo "[+] running box-ps in container"
-docker exec $container_id pwsh ./box-ps.ps1 -InFile $in_script_short_name -OutFile $out_script_short_name
 
-# move sandbox results out of container
-docker cp "$container_id:/opt/box-ps/$out_script_short_name" $out_json_path
-echo "[+] moved sandbox results from container to $out_json_path"
+# user wants the whole analysis dir
+if [[ $2 == "-d" ]]
+then
+	docker exec $container_id pwsh ./box-ps.ps1 -InFile "./infile.ps1" -OutDir "./outdir"
+
+	# remove the output dir if it exists
+	if [[ -d $3 ]]
+	then
+		rm -r $3
+	fi
+
+	docker cp "$container_id:/opt/box-ps/outdir" $3
+
+# user just wants the JSON report
+else
+	docker exec $container_id pwsh ./box-ps.ps1 -InFile "./infile.ps1" -OutFile "./outfile.json"
+	docker cp "$container_id:/opt/box-ps/outfile.json" $2
+	echo "[+] moved analysis report from container to $2"
+fi
 
 # kill container
 docker kill $container_id > /dev/null
