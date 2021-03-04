@@ -2,7 +2,9 @@ $utils = Microsoft.PowerShell.Core\Import-Module -Name $PSScriptRoot/Utils.psm1 
 $config = Microsoft.PowerShell.Management\Get-Content $PSScriptRoot/config.json | 
     Microsoft.PowerShell.Utility\ConvertFrom-Json -AsHashtable
 
-$WORK_DIR = "./working"
+# Use the current PID to give each box-ps run a unique working directory.
+# This allows multiple box-ps instances to analyze samples in the same directory.
+$WORK_DIR = "./working_" + $PID
 
 function ReplaceStaticNamespaces {
 

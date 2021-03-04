@@ -10,7 +10,7 @@ using namespace Microsoft.PowerShell
 using namespace NewtonSoft.Json
 using namespace System
 
-$WORK_DIR = "./working"
+$WORK_DIR = "./working_<PID>"
 $CODE_DIR = "<CODE_DIR>"
 
 class Action <# lawsuit... I'll be here all week #> {
