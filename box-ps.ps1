@@ -489,7 +489,7 @@ else {
 
     # build harness and integrate script with it
     $harness = (BuildHarness).Replace("<CODE_DIR>", $PSScriptRoot).Replace("<PID>", $PID)
-    $ScriptContent = PreProcessScript $ScriptContent
+    $ScriptContent = PreProcessScript $ScriptContent $PID
 
     # attach the harness to the script
     $harnessedScript = $harness + "`r`n`r`n" + $ScriptContent

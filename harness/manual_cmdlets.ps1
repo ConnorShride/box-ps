@@ -41,7 +41,7 @@ function Invoke-Expression {
     
     RecordAction $([Action]::new(@("script_exec"), "Microsoft.PowerShell.Utility\Invoke-Expression", $behaviorProps, $MyInvocation, ""))
 
-    $modifiedCommand = PreProcessScript $Command
+    $modifiedCommand = PreProcessScript $Command "<PID>"
 
     # actually run it, assign the result for situations like...
     # ex. $foo = Invoke-Expression "New-Object System.Net.WebClient"
@@ -188,7 +188,7 @@ function Start-Job {
 	$invokeRes = ""
 	if ($script) {
 
-		$modifiedCommand = PreProcessScript $script
+		$modifiedCommand = PreProcessScript $script "<PID>"
 
 		# actually run it, assign the result for situations like...
 		# ex. $foo = Invoke-Expression "New-Object System.Net.WebClient"
@@ -278,7 +278,7 @@ function powershell.exe {
 
     RecordAction $([Action]::new(@("script_exec"), "powershell.exe", $behaviorProps, $MyInvocation, ""))
 
-    $boxifiedScript = PreProcessScript $behaviorProps["script"]
+    $boxifiedScript = PreProcessScript $behaviorProps["script"] "<PID>"
 
 	Microsoft.PowerShell.Utility\Invoke-Expression $boxifiedScript
 }

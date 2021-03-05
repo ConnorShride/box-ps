@@ -2,10 +2,6 @@ $utils = Microsoft.PowerShell.Core\Import-Module -Name $PSScriptRoot/Utils.psm1 
 $config = Microsoft.PowerShell.Management\Get-Content $PSScriptRoot/config.json | 
     Microsoft.PowerShell.Utility\ConvertFrom-Json -AsHashtable
 
-# Use the current PID to give each box-ps run a unique working directory.
-# This allows multiple box-ps instances to analyze samples in the same directory.
-$WORK_DIR = "./working_" + $PID
-
 function ReplaceStaticNamespaces {
 
     param(
@@ -365,13 +361,14 @@ function ScrapeLanguageProbes {
 function PreProcessScript {
 
     param(
-        [string] $Script
+        [string] $Script,
+	[string] $PID
     )
 
     $Script = BoxifyScript $Script
-    ScrapeNetworkIOCs $Script | Microsoft.PowerShell.Utility\Out-File -Append "$WORK_DIR/scraped_network.txt" 
-    ScrapeFilePaths $Script | Microsoft.PowerShell.Utility\Out-File -Append "$WORK_DIR/scraped_paths.txt"
-    ScrapeEnvironmentProbes $Script | Microsoft.PowerShell.Utility\Out-File -Append "$WORK_DIR/scraped_probes.txt"
+    ScrapeNetworkIOCs $Script | Microsoft.PowerShell.Utility\Out-File -Append "./working_$PID/scraped_network.txt" 
+    ScrapeFilePaths $Script | Microsoft.PowerShell.Utility\Out-File -Append "./working_$PID/scraped_paths.txt"
+    ScrapeEnvironmentProbes $Script | Microsoft.PowerShell.Utility\Out-File -Append "./working_$PID/scraped_probes.txt"
 
     $separator = ("*" * 100 + "`r`n")
     $layerOut = $separator + $Script + "`r`n" + $separator
