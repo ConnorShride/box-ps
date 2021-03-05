@@ -65,14 +65,16 @@ class Report {
     [object] $PotentialIndicators
     [object] $EnvironmentProbes
     [hashtable] $Artifacts
+    [string] $WorkingDir
 
     Report([object[]] $actions, [string[]] $scrapedNetwork, [string[]] $scrapedPaths, 
-            [string[]] $scrapedEnvProbes, [hashtable] $artifactMap) {
-        $this.Actions = $actions
-        $this.PotentialIndicators = $this.CombineScrapedIOCs($scrapedNetwork, $scrapedPaths)
-        $this.EnvironmentProbes = $this.GenerateEnvProbeReport($scrapedEnvProbes)
-        $this.Artifacts = $artifactMap
-    }
+           [string[]] $scrapedEnvProbes, [hashtable] $artifactMap, [string] $workingDir) {
+               $this.Actions = $actions
+               $this.PotentialIndicators = $this.CombineScrapedIOCs($scrapedNetwork, $scrapedPaths)
+               $this.EnvironmentProbes = $this.GenerateEnvProbeReport($scrapedEnvProbes)
+               $this.Artifacts = $artifactMap
+               $this.WorkingDir = $workingDir               
+           }
 
     [hashtable] GenerateEnvProbeReport([string[]] $scrapedEnvProbes) {
 
@@ -308,14 +310,15 @@ function HarvestArtifacts {
 
 # remove imported modules and clean up non-output file system artifacts
 function CleanUp {
-
     Remove-Module HarnessBuilder -ErrorAction SilentlyContinue
     Remove-Module ScriptInspector -ErrorAction SilentlyContinue
     Remove-Module Utils -ErrorAction SilentlyContinue
     Remove-Item -Recurse $WORK_DIR
 }
 
-$WORK_DIR = "./working"
+# Use the current PID to give each box-ps run a unique working directory.
+# This allows multiple box-ps instances to analyze samples in the same directory.
+$WORK_DIR = "./working_" + $PID
 
 # pull down the box-ps docker container and run it in there
 if ($Docker) {
@@ -457,6 +460,7 @@ else {
         }
         $varObj | ConvertTo-Json | Out-File $WORK_DIR/input_env.json
     }
+
     # copy the given json file where the harness builder expects it
     elseif ($EnvFile) {
 
@@ -484,8 +488,8 @@ else {
     Write-Host -NoNewLine "[+] building script harness..."
 
     # build harness and integrate script with it
-    $harness = (BuildHarness).Replace("<CODE_DIR>", $PSScriptRoot)
-    $ScriptContent = PreProcessScript $ScriptContent
+    $harness = (BuildHarness).Replace("<CODE_DIR>", $PSScriptRoot).Replace("<PID>", $PID)
+    $ScriptContent = PreProcessScript $ScriptContent $PID
 
     # attach the harness to the script
     $harnessedScript = $harness + "`r`n`r`n" + $ScriptContent
@@ -504,7 +508,7 @@ else {
         # crashing here would be cringy
         try {
             Write-Host "[-] sandboxing failed..."
-            Write-Host (Get-Content -ErrorAction stop -Raw ./working/stderr.txt)
+            Write-Host (Get-Content -ErrorAction stop -Raw $WORK_DIR/stderr.txt)
             if (!$NoCleanUp) {
                 CleanUp
             }
@@ -532,7 +536,7 @@ else {
     $artifactMap = HarvestArtifacts $actions
 
     # create the report and convert to JSON
-    $report = [Report]::new($actions, $scrapedNetwork, $scrapedPaths, $scrapedEnvProbes, $artifactMap)
+    $report = [Report]::new($actions, $scrapedNetwork, $scrapedPaths, $scrapedEnvProbes, $artifactMap, $WORK_DIR)
     $reportJson = $report | ConvertTo-Json -Depth 10
 
     Write-Host " done"

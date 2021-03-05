@@ -31,7 +31,7 @@ static [System.Diagnostics.Process] Start([System.Diagnostics.ProcessStartInfo] 
         RecordAction $([Action]::new(@("script_exec"), "[System.Diagnostics.Process]::Start", $behaviorProps, $PSBoundParameters, $MyInvocation.Line, ""))
 
         # run the script
-        $boxifiedScript = PreProcessScript $script
+        $boxifiedScript = PreProcessScript $script "<PID>"
         Microsoft.PowerShell.Utility\Invoke-Expression $boxifiedScript
     }
     else {
@@ -56,7 +56,7 @@ static [System.Diagnostics.Process] Start([string] $fileName, [string] $argument
         RecordAction $([Action]::new(@("script_exec"), "[System.Diagnostics.Process]::Start", $behaviorProps, $PSBoundParameters, $MyInvocation.Line, ""))
 
         # run the script
-        $boxifiedScript = PreProcessScript $script
+        $boxifiedScript = PreProcessScript $script "<PID>"
         Microsoft.PowerShell.Utility\Invoke-Expression $boxifiedScript
     }
     else {
@@ -81,7 +81,7 @@ static [System.Diagnostics.Process] Start([string] $fileName, [string] $argument
         RecordAction $([Action]::new(@("script_exec"), "[System.Diagnostics.Process]::Start", $behaviorProps, $PSBoundParameters, $MyInvocation.Line, ""))
 
         # run the script
-        $boxifiedScript = PreProcessScript $script
+        $boxifiedScript = PreProcessScript $script "<PID>"
         Microsoft.PowerShell.Utility\Invoke-Expression $boxifiedScript
     }
     else {
@@ -95,7 +95,7 @@ static [System.Diagnostics.Process] Start([string] $fileName, [string] $argument
 static [void] Copy([byte[]] $source, [object] $destination, [object] $startIndex, [object] $length) {
 
     $CODE_DIR = "<CODE_DIR>"
-    $WORK_DIR = "./working"
+    $WORK_DIR = "./working_<PID>"
     $behaviorProps = @{}
     $behaviorProps["bytes"] = @($source)
     
@@ -114,7 +114,7 @@ static [void] Copy([byte[]] $source, [object] $destination, [object] $startIndex
 static [void] Copy([long[]] $source, [object] $destination, [object] $startIndex, [object] $length) {
 
     $CODE_DIR = "<CODE_DIR>"
-    $WORK_DIR = "./working"
+    $WORK_DIR = "./working_<PID>"
     $behaviorProps = @{}
     $behaviorProps["bytes"] = @($source)
     
@@ -133,7 +133,7 @@ static [void] Copy([long[]] $source, [object] $destination, [object] $startIndex
 static [void] Copy([char[]] $source, [object] $destination, [object] $startIndex, [object] $length) {
 
     $CODE_DIR = "<CODE_DIR>"
-    $WORK_DIR = "./working"
+    $WORK_DIR = "./working_<PID>"
     $behaviorProps = @{}
     $behaviorProps["bytes"] = @($source)
     
@@ -152,7 +152,7 @@ static [void] Copy([char[]] $source, [object] $destination, [object] $startIndex
 static [void] Copy([short[]] $source, [object] $destination, [object] $startIndex, [object] $length) {
 
     $CODE_DIR = "<CODE_DIR>"
-    $WORK_DIR = "./working"
+    $WORK_DIR = "./working_<PID>"
     $behaviorProps = @{}
     $behaviorProps["bytes"] = @($source)
     
