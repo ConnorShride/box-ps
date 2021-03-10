@@ -12,24 +12,29 @@ using namespace System
 
 $WORK_DIR = "./working"
 $CODE_DIR = "<CODE_DIR>"
+$BOXPS_CONFIG = Microsoft.PowerShell.Management\Get-Content "$CODE_DIR/config.json" | ConvertFrom-Json -AsHashtable
 
 class Action <# lawsuit... I'll be here all week #> {
 
     [String[]] $Behaviors
+    [String[]] $SubBehaviors
     [String] $Actor
     [String] $Line
     [hashtable] $BehaviorProps
     [hashtable] $Parameters
     [string] $ExtraInfo
+    [int] $Id
 
-    Action ([String[]] $Behaviors, [String] $Actor, [hashtable] $BehaviorProps,
-        [InvocationInfo] $Invocation, [string] $ExtraInfo) {
+    Action ([String[]] $Behaviors, [String[]] $SubBehaviors, [String] $Actor, 
+        [hashtable] $BehaviorProps, [InvocationInfo] $Invocation, [string] $ExtraInfo) {
 
         $this.Behaviors = $Behaviors
+        $this.SubBehaviors = $SubBehaviors
         $this.Actor = $Actor
         $this.BehaviorProps = $BehaviorProps
         $this.Line = $Invocation.Line.Trim()
         $this.ExtraInfo = $ExtraInfo
+        $this.Id = 0
 
         $paramsSplit = $this.SplitParams($Invocation)
         $this.Parameters = $paramsSplit["bound"]
@@ -43,15 +48,17 @@ class Action <# lawsuit... I'll be here all week #> {
     # e.g. System.Net.WebClient.DownloadFile
     #   These are guaranteed not to have switches, and the MyInvocation variable does not
     #   contain boundparameters, so callers need to be able to pass the PSBoundParameters variable
-    Action ([String[]] $Behaviors, [String] $Actor, [hashtable] $BehaviorProps, 
-        [hashtable] $BoundParams, [String] $Line, [String] $ExtraInfo) {
+    Action ([String[]] $Behaviors, [String[]] $SubBehaviors, [String] $Actor, 
+        [hashtable] $BehaviorProps, [hashtable] $BoundParams, [String] $Line, [String] $ExtraInfo) {
 
         $this.Behaviors = $Behaviors
+        $this.SubBehaviors = $SubBehaviors
         $this.Actor = $Actor
         $this.BehaviorProps = $BehaviorProps
         $this.Parameters = $BoundParams
         $this.Line = $Line.Trim()
         $this.ExtraInfo = $ExtraInfo
+        $this.Id = 0
     }
 
     # linear walk through all parameters rebuilding bound params and switches
@@ -103,7 +110,11 @@ function RecordAction {
         [Action] $Action
     )
     
-    $json = $Action | ConvertTo-Json -Depth 10
+    # read and update the running action id on disk
+    $Action.Id = [int](Microsoft.PowerShell.Management\Get-Content -Raw "$WORK_DIR/action_id.txt")
+    ($Action.Id + 1) | Out-File "$WORK_DIR/action_id.txt"
+
+    $json = $Action | ConvertTo-Json -Depth 5
     ($json + ",") | Out-File -Append "$WORK_DIR/actions.json"
 }
 
@@ -117,8 +128,7 @@ function RedirectObjectCreation {
 }
 
 function GetOverridedClasses {
-    $config = Microsoft.PowerShell.Management\Get-Content "$CODE_DIR/config.json" | ConvertFrom-Json -AsHashtable
-    return $config["Classes"].Keys | ForEach-Object { $_.ToLower() }
+    return $BOXPS_CONFIG["Classes"].Keys | ForEach-Object { $_.ToLower() }
 }
 
 <# 

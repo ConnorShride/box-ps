@@ -39,7 +39,7 @@ function GetUnqualifiedName {
 function SeparateLines
 {
     param(
-        [char[]]$Script
+        [char[]] $Script
     )
 
     $prevChar = ''
@@ -90,7 +90,7 @@ function ListIntersection {
         [ArrayList] $list2
     )
 
-    return $list1 | Microsoft.PowerShell.Core\Where-object { $list2 -contains $_ }
+    return @($list1 | Microsoft.PowerShell.Core\Where-object { $list2 -contains $_ })
 }
 
 function ListDifference {

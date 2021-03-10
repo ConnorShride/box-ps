@@ -14,10 +14,15 @@ function ReplaceStaticNamespaces {
     $functions = Microsoft.PowerShell.Utility\New-Object System.Collections.ArrayList
 
     # get all the static functions names we care about
-    foreach ($behavior in $config["Statics"].keys) {
-        foreach ($function in $config["Statics"][$behavior].keys) {
-            $functions.Add([string]($function)) | Out-Null
-        }
+
+    # gather the automatic overrides
+    foreach ($function in $config["Statics"].keys) {
+        $functions.Add([string]($function)) | Out-Null
+    }
+
+    # gather the manual overrides
+    foreach ($function in $config["Manuals"]["Statics"].Keys) {
+        $functions.Add([string]($function)) | Out-Null
     }
 
     # find an instance of a static method invocation we care about 
@@ -112,7 +117,19 @@ function EnvReplacement {
         $Script = $Script -ireplace [regex]::Escape($var), $var
     }
 
-    return $Script -ireplace "pshome", "bshome"
+    $Script = $Script -ireplace "\`$pshome", "`$bshome"
+    $Script = $Script -ireplace "\`$home", "`$bhome"
+
+    return $Script
+}
+
+function ReplaceBadEscapes {
+
+    param(
+        [String] $Script
+    )
+
+    return $Script.Replace("``e", "e").Replace("``u", "u")
 }
 
 function BoxifyScript {
@@ -121,8 +138,10 @@ function BoxifyScript {
         [String] $Script
     )
     
+    $Script = ReplaceBadEscapes($Script)
     $Script = EnvReplacement($Script)
-    $Script = $utils.SeparateLines($Script)
+    # too inefficient for too little benefit
+    #$Script = $utils.SeparateLines($Script)
     $Script = HandleNamespaces($Script)
 
     return $Script
@@ -136,7 +155,8 @@ function ScrapeFilePaths {
 
 	$paths = @()
 
-    $regex = "((file:(\\)+)|(\\\\smb\\)|([a-zA-Z]:(\\)+)|(\.(\.)?(\\)+))([^\*```"`'\?]+((\\)+)?)*"
+    # TODO figure out how to support windows paths with spaces in them (thanks microsoft)
+    $regex = "((file:(\\)+)|(\\\\smb\\)|([a-zA-Z]:(\\)+)|(\.(\.)?(\\)+))([^\*```"`'\? ]+((\\)+)?)*"
     $matchRes = $str | Microsoft.Powershell.Utility\Select-String -Pattern $regex -AllMatches
 
     if ($matchRes) {
@@ -144,6 +164,25 @@ function ScrapeFilePaths {
     }
 
     return $paths
+}
+
+function ScrapeNetworkIOCs {
+    
+    param(
+        [String] $str,
+        [Switch] $Aggressive
+    )
+
+    $iocs = @()
+
+    $iocs += ScrapeUrls $str
+    $iocs += ScrapeIPs $str
+
+    if ($Aggressive) {
+        $iocs += ScrapeDomains $str
+    }
+
+    return $iocs
 }
 
 function ScrapeUrls {
@@ -162,6 +201,57 @@ function ScrapeUrls {
     }
 
     return $urls
+}
+
+function ScrapeDomains {
+
+    param(
+        [String] $str
+    )
+
+    $domains = @()
+    
+    $regex = "(([a-zA-Z0-9_\-]+[a-zA-Z][a-zA-Z0-9_\-]*\.){1,2}(?!(D|d)(L|l)(L|l))[a-zA-Z0-9_\-]+[a-zA-Z][a-zA-Z0-9_\-]*)"
+    $matchRes = $matchRes = $str | Microsoft.Powershell.Utility\Select-String -Pattern $regex -AllMatches
+
+    if ($matchRes) {
+        $matchRes.Matches | Microsoft.PowerShell.Core\ForEach-Object { $domains += $_.Value }
+    }
+
+    return $domains
+}
+
+
+function ScrapeIPs {
+
+    param(
+        [String] $str
+    )
+
+    $ips = @()
+
+    $regex = "\d{1,3}\.\d{1,3}\.\d{1,3}\.\d{1,3}"
+    
+    $matchRes = $str | Microsoft.Powershell.Utility\Select-String -Pattern $regex -AllMatches
+
+    if ($matchRes) {
+        $matchRes.Matches | Microsoft.PowerShell.Core\ForEach-Object { 
+            
+            # validate that each octet is less than 255 (lazy regex)
+            $valid = $true
+            $octets = $_.Value.Split(".")
+            foreach ($octet in $octets) {
+                if ($octet -as [int] -gt 255) {
+                    $valid = $false
+                }
+            }
+            if ($valid) {
+                $ips += $_.Value 
+            }
+        }
+    }
+
+    return $ips
 }
 
 # scrape out checks against known values representing truths about the environent
@@ -278,7 +368,7 @@ function PreProcessScript {
     )
 
     $Script = BoxifyScript $Script
-    ScrapeUrls $Script | Microsoft.PowerShell.Utility\Out-File -Append "$WORK_DIR/scraped_urls.txt" 
+    ScrapeNetworkIOCs $Script | Microsoft.PowerShell.Utility\Out-File -Append "$WORK_DIR/scraped_network.txt" 
     ScrapeFilePaths $Script | Microsoft.PowerShell.Utility\Out-File -Append "$WORK_DIR/scraped_paths.txt"
     ScrapeEnvironmentProbes $Script | Microsoft.PowerShell.Utility\Out-File -Append "$WORK_DIR/scraped_probes.txt"
 
@@ -290,6 +380,6 @@ function PreProcessScript {
 }
 
 Export-ModuleMember -Function PreProcessScript
-Export-ModuleMember -Function ScrapeUrls
+Export-ModuleMember -Function ScrapeNetworkIOCs
 Export-ModuleMember -Function ScrapeFilePaths
 Export-ModuleMember -Function ScrapeEnvironmentProbes

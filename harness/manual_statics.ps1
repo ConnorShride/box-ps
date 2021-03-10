@@ -19,24 +19,28 @@ static [string] GetScriptFromArguments([string] $arguments) {
 
 static [System.Diagnostics.Process] Start([System.Diagnostics.ProcessStartInfo] $startInfo) {
     
+    $subBehaviors = @("start_process")
     $behaviorProps = @{}
 
     # if powershell, treat this now as a script_exec rather than file_exec
     if ($startInfo.FileName.ToLower().Contains("powershell") -and $startInfo.Arguments) {
 
+        $behaviors += @("script_exec")
         $script = [BoxPSStatics]::GetScriptFromArguments($startInfo.Arguments)
 
         # record the action
-        $behaviorProps["script"] = @($script)
-        RecordAction $([Action]::new(@("script_exec"), "[System.Diagnostics.Process]::Start", $behaviorProps, $PSBoundParameters, $MyInvocation.Line))
+        $behaviorProps["script"] = $script
+        RecordAction $([Action]::new($behaviors, $subBehaviors, "[System.Diagnostics.Process]::Start", $behaviorProps, $PSBoundParameters, $MyInvocation.Line, ""))
 
         # run the script
         $boxifiedScript = PreProcessScript $script
         Microsoft.PowerShell.Utility\Invoke-Expression $boxifiedScript
     }
     else {
+
+        $behaviors += @("file_exec")
         $behaviorProps["files"] = @($startInfo.FileName)
-        RecordAction $([Action]::new(@("file_exec"), "[System.Diagnostics.Process]::Start", $behaviorProps, $PSBoundParameters, $MyInvocation.Line))
+        RecordAction $([Action]::new($behaviors, $subBehaviors, "[System.Diagnostics.Process]::Start", $behaviorProps, $PSBoundParameters, $MyInvocation.Line, ""))
     }
 
     return $null
@@ -44,24 +48,28 @@ static [System.Diagnostics.Process] Start([System.Diagnostics.ProcessStartInfo] 
 
 static [System.Diagnostics.Process] Start([string] $fileName, [string] $arguments) {
 
+    $subBehaviors = @("start_process")
     $behaviorProps = @{}
     
     # if powershell, treat this now as a script_exec rather than file_exec
     if ($fileName.ToLower().Contains("powershell") -and $arguments) {
 
+        $behaviors = @("script_exec")
         $script = [BoxPSStatics]::GetScriptFromArguments($arguments)
 
         # record the action
-        $behaviorProps["script"] = @($script)
-        RecordAction $([Action]::new(@("script_exec"), "[System.Diagnostics.Process]::Start", $behaviorProps, $PSBoundParameters, $MyInvocation.Line))
+        $behaviorProps["script"] = $script
+        RecordAction $([Action]::new($behaviors, $subBehaviors, "[System.Diagnostics.Process]::Start", $behaviorProps, $PSBoundParameters, $MyInvocation.Line, ""))
 
         # run the script
         $boxifiedScript = PreProcessScript $script
         Microsoft.PowerShell.Utility\Invoke-Expression $boxifiedScript
     }
     else {
+
+        $behaviors = @("file_exec")
         $behaviorProps["files"] = @($fileName)
-        RecordAction $([Action]::new(@("file_exec"), "[System.Diagnostics.Process]::Start", $behaviorProps, $PSBoundParameters, $MyInvocation.Line))
+        RecordAction $([Action]::new($behaviors, $subBehaviors, "[System.Diagnostics.Process]::Start", $behaviorProps, $PSBoundParameters, $MyInvocation.Line, ""))
     }
 
     return $null
@@ -69,25 +77,116 @@ static [System.Diagnostics.Process] Start([string] $fileName, [string] $argument
 
 static [System.Diagnostics.Process] Start([string] $fileName, [string] $arguments, [string] $userName, [securestring] $password, [string] $domain) {
     
+    $subBehaviors = @("start_process")
     $behaviorProps = @{}
 
     # if powershell, treat this now as a script_exec rather than file_exec
     if ($fileName.ToLower().Contains("powershell") -and $arguments) {
 
+        $behaviors = @("script_exec")
         $script = [BoxPSStatics]::GetScriptFromArguments($arguments)
 
         # record the action
-        $behaviorProps["script"] = @($script)
-        RecordAction $([Action]::new(@("script_exec"), "[System.Diagnostics.Process]::Start", $behaviorProps, $PSBoundParameters, $MyInvocation.Line))
+        $behaviorProps["script"] = $script
+        RecordAction $([Action]::new($behaviors, $subBehaviors, "[System.Diagnostics.Process]::Start", $behaviorProps, $PSBoundParameters, $MyInvocation.Line, ""))
 
         # run the script
         $boxifiedScript = PreProcessScript $script
         Microsoft.PowerShell.Utility\Invoke-Expression $boxifiedScript
     }
     else {
+        $behaviors = @("file_exec")
         $behaviorProps["files"] = @($fileName)
-        RecordAction $([Action]::new(@("file_exec"), "[System.Diagnostics.Process]::Start", $behaviorProps, $PSBoundParameters, $MyInvocation.Line))
+        RecordAction $([Action]::new($behaviors, $subBehaviors, "[System.Diagnostics.Process]::Start", $behaviorProps, $PSBoundParameters, $MyInvocation.Line, ""))
     }
     
     return $null
+}
+
+static [void] Copy([byte[]] $source, [object] $destination, [object] $startIndex, [object] $length) {
+
+    $CODE_DIR = "<CODE_DIR>"
+    $WORK_DIR = "./working"
+    $behaviorProps = @{}
+    $behaviorProps["bytes"] = [Int32[]]$source
+    
+    $extraInfo = ""
+    $routineArg = $source
+    $routineReturn = ""
+    $routineCode = Microsoft.PowerShell.Management\Get-Content -Raw $CODE_DIR/harness/find_in_bytes_iocs.ps1
+    Microsoft.PowerShell.Utility\Invoke-Expression $routineCode
+    if ($routineReturn) {
+        $extraInfo = $routineReturn
+    }
+
+    $behaviors = @("memory")
+    $subBehaviors = @("write_to_memory")
+
+    RecordAction $([Action]::new($behaviors, $subBehaviors, "[System.Runtime.InteropServices.Marshal]::Copy", $behaviorProps, $PSBoundParameters, $MyInvocation.Line, $extraInfo))
+}
+
+static [void] Copy([long[]] $source, [object] $destination, [object] $startIndex, [object] $length) {
+
+    $CODE_DIR = "<CODE_DIR>"
+    $WORK_DIR = "./working"
+    $behaviorProps = @{}
+    $behaviorProps["bytes"] = [Int32[]]$source
+    
+    $extraInfo = ""
+    $routineArg = $source
+    $routineReturn = ""
+    $routineCode = Microsoft.PowerShell.Management\Get-Content -Raw $CODE_DIR/harness/find_in_bytes_iocs.ps1
+    Microsoft.PowerShell.Utility\Invoke-Expression $routineCode
+    if ($routineReturn) {
+        $extraInfo = $routineReturn
+    }
+
+    $behaviors = @("memory")
+    $subBehaviors = @("write_to_memory")
+
+    RecordAction $([Action]::new($behaviors, $subBehaviors, "[System.Runtime.InteropServices.Marshal]::Copy", $behaviorProps, $PSBoundParameters, $MyInvocation.Line, $extraInfo))
+}
+
+static [void] Copy([char[]] $source, [object] $destination, [object] $startIndex, [object] $length) {
+
+    $CODE_DIR = "<CODE_DIR>"
+    $WORK_DIR = "./working"
+    $behaviorProps = @{}
+    $behaviorProps["bytes"] = [Int32[]]$source
+    
+    $extraInfo = ""
+    $routineArg = $source
+    $routineReturn = ""
+    $routineCode = Microsoft.PowerShell.Management\Get-Content -Raw $CODE_DIR/harness/find_in_bytes_iocs.ps1
+    Microsoft.PowerShell.Utility\Invoke-Expression $routineCode
+    if ($routineReturn) {
+        $extraInfo = $routineReturn
+    }
+
+    $behaviors = @("memory")
+    $subBehaviors = @("write_to_memory")
+    
+    RecordAction $([Action]::new($behaviors, $subBehaviors, "[System.Runtime.InteropServices.Marshal]::Copy", $behaviorProps, $PSBoundParameters, $MyInvocation.Line, $extraInfo))
+}
+
+static [void] Copy([short[]] $source, [object] $destination, [object] $startIndex, [object] $length) {
+
+    $CODE_DIR = "<CODE_DIR>"
+    $WORK_DIR = "./working"
+    $behaviorProps = @{}
+    $behaviorProps["bytes"] = [Int32[]]$source
+    
+    $extraInfo = ""
+    $routineArg = $source
+    $routineReturn = ""
+    $routineCode = Microsoft.PowerShell.Management\Get-Content -Raw $CODE_DIR/harness/find_in_bytes_iocs.ps1
+    Microsoft.PowerShell.Utility\Invoke-Expression $routineCode
+    if ($routineReturn) {
+        $extraInfo = $routineReturn
+    }
+
+    $behaviors = @("memory")
+    $subBehaviors = @("write_to_memory")
+
+    RecordAction $([Action]::new($behaviors, $subBehaviors, "[System.Runtime.InteropServices.Marshal]::Copy", $behaviorProps, $PSBoundParameters, $MyInvocation.Line, $extraInfo))
 }

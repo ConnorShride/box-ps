@@ -112,7 +112,9 @@ function BuildStringArrayCode {
     )
 
     $array = "@("
-    $Strings | ForEach-Object { $array += "`"" + $_ + "`"," } 
+    if ($null -ne $Strings) {
+        $Strings | ForEach-Object { $array += "`"" + $_ + "`"," } 
+    }
     return $array.Trim(",") + ")"
 }
 
@@ -125,11 +127,21 @@ function InMemoryIOCsCode {
 function RoutineCode {
 
     param(
-        [string] $Routine
+        [hashtable] $RoutineInfo
     )
 
+    $routineScript = $RoutineInfo.Keys[0]
+
+    # prepend an assignment of a variable the routine script cares about to an "$routineArg" variable
+    if ($null -ne $RoutineInfo[$routineScript]) {
+        $code += "`$routineArg = `$$($RoutineInfo[$routineScript])`r`n"
+    }
+
+    # prepend an initialization of a $routineReturn variable that will be reassigned by the routine if it wants
+    $code += "`$routineReturn = `"`"`r`n"
+
     # read in the code from the snipped stored in the harness directory and IEX it
-    $code += "`$routineCode = Microsoft.PowerShell.Management\Get-Content -Raw `$CODE_DIR/harness/$Routine.ps1`r`n"
+    $code += "`$routineCode = Microsoft.PowerShell.Management\Get-Content -Raw `$CODE_DIR/harness/$routineScript.ps1`r`n"
     $code += "Microsoft.PowerShell.Utility\Invoke-Expression `$routineCode`r`n"
 
     # ExtraInfo should be set to the result of it in "$routineReturn", which will be set in the
@@ -137,6 +149,52 @@ function RoutineCode {
     $code += "if (`$routineReturn) {`r`n"
     $code += "`t`$extraInfo = `$routineReturn`r`n"
     $code += "}"
+
+    return $code
+}
+
+function SubBehaviorsCode {
+
+    param(
+        [string[]] $SubBehaviors
+    )
+
+    $code += ""
+    $code += "`$subBehaviors = @("
+    foreach ($sub in $SubBehaviors) {
+        $code += "`"" + $sub + "`", "
+    }
+    $code = $code.TrimEnd(", ")
+    $code += ")`r`n"
+    
+    return $code
+}
+
+function BuildBehaviorPropValueCode {
+
+    param(
+        [string] $BehaviorPropName,
+        [string] $ArgName
+    )
+
+    $flexibleTypes = $config["BehaviorPropFlexibleTypes"]
+    $forcedTypes = $config["BehaviorPropForcedTypes"]
+
+    $code = ""
+
+    # just leave the type as the type it is in the function
+    if ($flexibleTypes.Contains($ArgName)) {
+        $code += "$ArgName"
+    }
+    # it's forced to be a certain type in config. just cast it and pray
+    else {
+        if ($ArgName -eq "") {
+            $code += "$($forcedTypes[$BehaviorPropName])`"`""
+        }
+        else {
+            $code += "$($forcedTypes[$BehaviorPropName])`$$ArgName"
+        }
+    }
 
     return $code
 }
@@ -159,23 +217,27 @@ function BehaviorPropsCode {
 
             $behaviorPropArgs = $BehaviorPropInfo[$behaviorProp]
 
-            # behavior property value is a hard-coded string, not a function argument
-            if ($behaviorPropArgs.GetType() -eq [string]) {
-                $code += "`$behaviorProps[`"$behaviorProp`"] = @(`"$($behaviorPropArgs)`")`r`n"
+            # don't have a way to get the behavior property value yet or we can't
+            if ($null -eq $behaviorPropArgs) {
+                $empty = ""
+                $code += "`$behaviorProps[`"$behaviorProp`"] = $(BuildBehaviorPropValueCode $behaviorProp $empty)`r`n"
             }
+            # behavior property value is from a function parameter
             else {
 
                 if ($behaviorPropArgs.Count -eq 1) {
-                    $code += "`$behaviorProps[`"$behaviorProp`"] = `@(`$$($behaviorPropArgs[0]))`r`n"
+                    $code += "`$behaviorProps[`"$behaviorProp`"] = $(BuildBehaviorPropValueCode $behaviorProp $behaviorPropArgs[0])`r`n"
                 }
-                # for commandlets, we have to find the argument that's present at script run-time
+                # we have more than one parameter (different usages of the function) that could
+                # contain the behavior property value.
+                # for commandlets, we have to find the parameter that's present at script run-time
                 elseif ($Cmdlet) {
 
                     $first = $true
                     foreach ($arg in $behaviorPropArgs) {
 
                         $block = "if (`$PSBoundParameters.ContainsKey(`"$arg`")) {`r`n"
-                        $block += "`t`$behaviorProps[`"$behaviorProp`"] = @(`$$arg)`r`n"
+                        $block += "`t`$behaviorProps[`"$behaviorProp`"] = $(BuildBehaviorPropValueCode $behaviorProp $arg)`r`n"
                         $block += "}`r`n"
 
                         if (!$first) {
@@ -186,19 +248,21 @@ function BehaviorPropsCode {
                         $code += $block
                     }
                 }
-                # for class functions, find the argument that it must be from the function signature
+                # for class functions, find the parameter that it must be from the function signature
+                # TODO THIS IS BROKEN PLS FIX ([System.Net.HttpWebRequest]::Create)
                 elseif ($ClassFunc) {
 
                     $sigArgsNames = $SigAndArgs.Item2
 
                     foreach ($arg in $behaviorPropArgValues) {
+
                         if ($arg.GetType() -eq [string]) {
                             if ($sigArgsNames.Contains($arg)) {
-                                $code += "`$behaviorProps[`"$behaviorProp`"] = @(`$$arg)`r`n"
+                                $code += "`$behaviorProps[`"$behaviorProp`"] = $(BuildBehaviorPropValueCode $behaviorProp $arg)`r`n"
                             }
                         }
                         # it's a hashtable
-                        # behavior property value may be a property of an argument that is an object
+                        # behavior property value may be a property of an parameter that is an object
                         else {
 
                             # name of the object-arg in the signature and the property of the object
@@ -209,7 +273,6 @@ function BehaviorPropsCode {
                                 $code += "`$behaviorProps[`"$behaviorProp`"] = @(`$$objectArgName.$objectProp)`r`n"
                             }
                         }
-
                     }
                 }
             }
@@ -396,15 +459,14 @@ function ClassPropertiesCode {
 
 function ClassFunctionOverrides {
 
-    # if Static, FuncName must be fully qualified name including namespace
-    # and ParentClass is not given
+    # if Static, FuncName must be fully qualified name including namespace and ParentClass is not given
     # TODO: Make parameter sets for these for clarity
     param(
         [switch] $Static,
         [string] $ParentClass,
         [string] $FuncName,
         [hashtable] $OverrideInfo,
-        [string[]] $Exclude
+        [object] $Exclude  # hashtable if Static, list if not
     )
 
     $signatures = @{}
@@ -412,6 +474,18 @@ function ClassFunctionOverrides {
     # get all the function signatures
     if ($Static) {
         $signatures = GetFunctionSignatures -Static -FuncName $FuncName
+
+        # build static function signatures we're excluding from the info in config
+        $excludeSignatures = @()
+        foreach ($namespaceAndName in $Exclude.Keys) { 
+            $functionName = $utils.GetUnqualifiedName($namespaceAndName)
+            foreach ($returnType in $Exclude[$namespaceAndName].Keys) {
+                foreach ($parameters in $Exclude[$namespaceAndName][$returnType]) {
+                    $excludeSignatures += "static " + $returnType + " $functionName($parameters)"
+                }
+            }
+        }
+        $Exclude = $excludeSignatures
     }
     else {
         $signatures = GetFunctionSignatures -InstanceMember -FuncName $FuncName -ParentClass $ParentClass
@@ -424,7 +498,7 @@ function ClassFunctionOverrides {
         $sigArgs = $signatures[$signature]
         $signature = TranslateClassFuncSignature -Signature $signature
 
-        # don't create overrides for the signatures in the set to exclude
+        # create overrides for the signatures we don't want to exclude
         if (!$Exclude.Contains($signature)) {
 
             $sigAndArgs = [Tuple]::Create($signature, $sigArgs)
@@ -452,25 +526,29 @@ function ClassFunctionOverrides {
 
             $intersection = $utils.ListIntersection($sigAndArgs[1], $supportedArgs)
     
+            # this signature contains a parameter we're wanting to track as a behavior property
             if ($intersection) {
     
                 $code += $signature + " {`r`n"
+                $code += "`t`$CODE_DIR = `"<CODE_DIR>`"`r`n"
+                $code += "`t`$WORK_DIR = `"./working`"`r`n"
                 $code += $utils.TabPad($(BehaviorPropsCode -ClassFunc -SigAndArgs $sigAndArgs -BehaviorPropInfo $OverrideInfo["BehaviorPropInfo"]))
-                $behaviorsListCode = $(BuildStringArrayCode $OverrideInfo["Behaviors"])
+                $code += "`t`$behaviors = " + (BuildStringArrayCode $OverrideInfo["Behaviors"]) + "`r`n"
+                $code += "`t`$subBehaviors = " + (BuildStringArrayCode $OverrideInfo.SubBehaviors) + "`r`n"
 
                 $code += "`t`$extraInfo = `"`"`r`n"
                 if ($OverrideInfo["Routine"]) {
-                    $code += $utils.TabPad($(RoutineCode $CmdletInfo["Routine"]))
+                    $code += $utils.TabPad($(RoutineCode $OverrideInfo["Routine"]))
                 }
                 elseif ($OverrideInfo["ExtraInfo"]) {
-                    $code += "`t`$extraInfo = `"$($CmdletInfo["ExtraInfo"])`"`r`n"
+                    $code += "`t`$extraInfo = `"$($OverrideInfo["ExtraInfo"])`"`r`n"
                 }
 
                 if ($Static) {
-                    $code += "`tRecordAction `$([Action]::new($behaviorsListCode, `"$FuncName`", `$behaviorProps, `$PSBoundParameters, `$MyInvocation.Line, `$extraInfo))`r`n"
+                    $code += "`tRecordAction `$([Action]::new(`$behaviors, `$subBehaviors, `"$FuncName`", `$behaviorProps, `$PSBoundParameters, `$MyInvocation.Line, `$extraInfo))`r`n"
                 }
                 else {
-                    $code += "`tRecordAction `$([Action]::new($behaviorsListCode, `"$ParentClass`.$FuncName`", `$behaviorProps, `$PSBoundParameters, `$MyInvocation.Line, `$extraInfo))`r`n"
+                    $code += "`tRecordAction `$([Action]::new(`$behaviors, `$subBehaviors, `"$ParentClass`.$FuncName`", `$behaviorProps, `$PSBoundParameters, `$MyInvocation.Line, `$extraInfo))`r`n"
                 }
         
                 # if the method actually has a return value
@@ -577,13 +655,20 @@ function CmdletOverride {
     )
 
     $shortName = $utils.GetUnqualifiedName($CmdletName)
-    $behaviorsListCode = $(BuildStringArrayCode $CmdletInfo["Behaviors"])
-    
     $code = "function $shortName {`r`n"
+    
+    # if the override does not have a behaviors member, it's not an action the user cares about
+    # tracking, just a cmdlet we want to intercept for other reasons
+    if (!$CmdletInfo["Behaviors"]) {
+        return $code + "}`r`n"
+    }
+
     $code += $utils.TabPad($(CmdletParamsCode $shortName $CmdletInfo["ArgAdditions"]))
     $code += $utils.TabPad($(InMemoryIOCsCode))
     $code += $utils.TabPad($(ArgModificationCode $CmdletInfo["ArgModifications"]))
     $code += $utils.TabPad($(BehaviorPropsCode -Cmdlet -BehaviorPropInfo $CmdletInfo.BehaviorPropInfo))
+    $code += "`t`$behaviors = " + (BuildStringArrayCode $CmdletInfo["Behaviors"]) + "`r`n"
+    $code += "`t`$subBehaviors = " + (BuildStringArrayCode $CmdletInfo.SubBehaviors) + "`r`n"
     $code += "`t`$extraInfo = `"`"`r`n"
 
     # extra routine to run before the action is recorded, sourced from the harness directory and ran
@@ -596,7 +681,7 @@ function CmdletOverride {
         $code += "`t`$extraInfo = `"$($CmdletInfo["ExtraInfo"])`"`r`n"
     }
 
-    $code += "`tRecordAction `$([Action]::new($behaviorsListCode, `"$($CmdletName)`", `$behaviorProps, `$MyInvocation, `$extraInfo))`r`n"
+    $code += "`tRecordAction `$([Action]::new(`$behaviors, `$subBehaviors, `"$($CmdletName)`", `$behaviorProps, `$MyInvocation, `$extraInfo))`r`n"
 
     if ($CmdletInfo.Flags) {
         if ($CmdletInfo.Flags -contains "call_parent") {
@@ -635,7 +720,7 @@ function BuildHarness {
     $commentSep = "################################################################################"
 
     # code containing namespace imports, class definition for Actions
-    $harness += [IO.File]::ReadAllText("$harnessPath/administrative.ps1").Replace("<CODE_DIR>", $PSScriptRoot) + "`r`n`r`n"
+    $harness += [IO.File]::ReadAllText("$harnessPath/administrative.ps1") + "`r`n`r`n"
 
     # may need to boxify script layers as they get decoded and executed
     $harness += "Microsoft.PowerShell.Core\Import-Module -Name `$CODE_DIR/ScriptInspector.psm1`r`n`r`n"

