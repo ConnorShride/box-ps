@@ -1,4 +1,8 @@
 *.code-workspace
 out.json
 dev/
-working/
+working*/
+**/*.boxed
+azure-function
+*.dockerfile
+*.dockerignore
