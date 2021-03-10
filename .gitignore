@@ -4,5 +4,5 @@ dev/
 working*/
 **/*.boxed
 azure-function
-*.dockerfile
+function.dockerfile
 *.dockerignore
