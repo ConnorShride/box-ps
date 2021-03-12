@@ -7,9 +7,15 @@ class Artifact:
 
     ################################################################################################
     def __init__(self, action_id, artifact_dict):
-        self.action_id = action_id
-        self.sha256 = artifact_dict["sha256"]
-        self.file_type = artifact_dict["fileType"]
+
+        try:
+
+            self.action_id = action_id
+            self.sha256 = artifact_dict["sha256"]
+            self.file_type = artifact_dict["fileType"]
+
+        except KeyError as e:
+            raise errors.BoxPSReportError("bad artifact data in report: " + str(e))
 
 # TODO deserialize environment probes
 ####################################################################################################
@@ -55,32 +61,46 @@ class Action:
     ################################################################################################
     def __init__(self, boxps_config, action_dict):
 
-        # build a list of enum objects for behaviors and subbehaviors
-        self.behaviors = [Behaviors[behavior] for behavior in action_dict["Behaviors"]]
-        self.sub_behaviors = [SubBehaviors[behavior] for behavior in action_dict["SubBehaviors"]]
+        try:
 
-        self.actor = action_dict["Actor"]
-        self.line = action_dict["Line"]
-        self.id = action_dict["Id"]
-        self.extra_info = None if action_dict["ExtraInfo"] == "" else action_dict["ExtraInfo"]
+            # build a list of enum objects for behaviors and subbehaviors
+            self.behaviors = [Behaviors[behavior] for behavior in action_dict["Behaviors"]]
+            self.sub_behaviors = [SubBehaviors[behavior] for behavior in action_dict["SubBehaviors"]]
+
+            self.actor = action_dict["Actor"]
+            self.line = action_dict["Line"]
+            self.id = action_dict["Id"]
+            self.extra_info = None if action_dict["ExtraInfo"] == "" else action_dict["ExtraInfo"]
+
+        except KeyError as e:
+            raise errors.BoxPSReportError("bad action data in report: " + str(e))
 
         # save the behavior properties in a dict when users want to discover them
         self.behavior_properties = {}
-        self.flex_type_properties = boxps_config["BehaviorPropFlexibleTypes"]
 
-        # add the behavior properties as members too for when users know what behavior properties
-        # they're looking for
-        for behavior_property in action_dict["BehaviorProps"].keys():
-            
-            # don't save flexible types as members. extra work is required to work with these
-            if behavior_property not in self.flex_type_properties:
+        try:
+            self.flex_type_properties = boxps_config["BehaviorPropFlexibleTypes"]
+        except KeyError as e:
+            raise errors.BoxPSReportError("bad config: " + str(e))
 
-                property_value = action_dict["BehaviorProps"][behavior_property]
-                self.behavior_properties[behavior_property] = property_value
-                setattr(self, behavior_property, property_value)
+        try:
 
-        # just save a dict of the parameters used
-        self.parameters = action_dict["Parameters"]
+            # add the behavior properties as members too for when users know what behavior properties
+            # they're looking for
+            for behavior_property in action_dict["BehaviorProps"].keys():
+                
+                # don't save flexible types as members. extra work is required to work with these
+                if behavior_property not in self.flex_type_properties:
+
+                    property_value = action_dict["BehaviorProps"][behavior_property]
+                    self.behavior_properties[behavior_property] = property_value
+                    setattr(self, behavior_property, property_value)
+
+            # just save a dict of the parameters used
+            self.parameters = action_dict["Parameters"]
+
+        except KeyError as e:
+            raise errors.BoxPSReportError("bad action data in report: " + str(e))
 
 
 ####################################################################################################
@@ -105,7 +125,11 @@ class BoxPSReport:
 
         # deserialize actions into a list sorted by order of execution (action ID)
         self.actions = []
-        actions_pool = report_dict["Actions"]
+
+        try:
+            actions_pool = report_dict["Actions"]
+        except KeyError:
+            raise errors.BoxPSReportError("no actions list in report")
 
         # basically selection sort the actions list
         while len(actions_pool) != 0:
@@ -118,31 +142,49 @@ class BoxPSReport:
 
             self.actions.insert(action_ndx, action)
 
-        # confident IOCs 
+        # confident network and file_system IOCs from action behavior properties
         network_actions = self.filter_actions(behaviors=[Behaviors.network])
+        file_system_actions = self.filter_actions(behaviors=[Behaviors.file_system])
         self.confident_net_iocs = [network_action.uri for network_action in network_actions]
+        self.confident_fs_iocs = []
+        for fs_action in file_system_actions:
+            self.confident_fs_iocs += fs_action.paths
 
-        # aggressive IOCs that include potential IOCs
+        # aggressive IOCs
+        try:
+            self.aggressive_net_iocs = report_dict["PotentialIndicators"]["network"]
+            self.aggressive_fs_iocs = report_dict["PotentialIndicators"]["file_system"]
+        except KeyError as e:
+            raise errors.BoxPSReportError("bad potential indicators data in report: " + str(e))
 
         # deserialize artifacts, separate out hashes for convenience
         self.artifacts = []
         self.artifact_hashes = []
-        for id_to_artifacts in report_dict["Artifacts"].items():
-            action_id = int(id_to_artifacts[0])
-            for artifact_dict in id_to_artifacts[1]:
-                artifact = Artifact(action_id, artifact_dict)
-                self.artifact_hashes.append(artifact.sha256.lower())
-                self.artifacts.append(artifact)
+
+        try:
+
+            for id_to_artifacts in report_dict["Artifacts"].items():
+
+                action_id = int(id_to_artifacts[0])
+
+                for artifact_dict in id_to_artifacts[1]:
+
+                    artifact = Artifact(action_id, artifact_dict)
+                    self.artifact_hashes.append(artifact.sha256.lower())
+                    self.artifacts.append(artifact)
+
+        except KeyError:
+            raise errors.BoxPSReportError("no artifacts object in report")
 
     ################################################################################################
     @property
     def layers(self):
         # property because this could involve bringing a whole bunch more memory into the process
-        # depending on the script. Also may not necessary because it should already be present in
-        # out_dir/layers.ps1
+        # depending on the script.
 
         layers = []
         filtered = self.filter_actions(behaviors=[Behaviors.script_exec, Behaviors.code_import])
+        
         for action in filtered:
             if Behaviors.script_exec in action.behaviors and action.script != "":
                 layers.append(action.script)
@@ -197,7 +239,7 @@ class BoxPSReport:
 
     ################################################################################################
     def actions_by_behavior(self):
-        # STILL IN ORDER OF EXECUTION
+        # STILL IN ORDER OF EXECUTION per behavior
 
         split = {}
 
@@ -210,10 +252,3 @@ class BoxPSReport:
                 split[behavior.name].append(action)
 
         return split
-
-    # TODO property method for getting list of certain network IOCs and another for aggressive with 
-        # network IOCs that include potential and parameter/layer scraping (make sure this
-        # includes all our compensation in maldoc_analyzer.py and make changes to boxps as necessary)
-    # TODO do the same thing for file system paths
-
-    # TODO raise reporterrors on whatever failing code would be critical

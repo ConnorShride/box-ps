@@ -6,3 +6,7 @@ working*/
 azure-function
 function.dockerfile
 *.dockerignore
+**/*.pyc
+**/build
+**/dist
+**/*egg-info

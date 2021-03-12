@@ -37,5 +37,7 @@ Error return codes...
 
 argument error - 1
 environment error - 2
-input file doesn't exist - 3
+bad input file - 3
 sandboxing failure - 4
+docker container operation error - 5
+sandboxing timeout - 124

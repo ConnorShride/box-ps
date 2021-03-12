@@ -37,7 +37,13 @@ if (!$ScriptContent -and !$InFile) {
 
 # input file must exist if given
 if ($InFile -and !(Test-Path $InFile)) {
-    [Console]::Error.WriteLine("[-] input file does not exist. exiting.")
+    [Console]::Error.WriteLine("[-] input file does not exist")
+    exit 3
+}
+
+# input file must be a file
+if ($InFile -and (Get-Item $InFile) -is [System.IO.DirectoryInfo]) {
+    [Console]::Error.WriteLine("[-] input file cannot be a directory")
     exit 3
 }
 
@@ -163,7 +169,7 @@ class Report {
             $($_.BehaviorProps.paths | ForEach-Object { $pathsSet.Add($_) > $null })
         }
 
-        # gather all network urls from actions 
+        # gather all network urls from actions
         $this.Actions | Where-Object -Property Behaviors -contains "network" | ForEach-Object {
             $($_.BehaviorProps.uri | ForEach-Object { $networkSet.Add($_) > $null })
         }
@@ -544,8 +550,8 @@ else {
     Write-Host " done"
     Write-Host -NoNewLine "[+] sandboxing harnessed script..."
 
-    # run it
-    (timeout 5 pwsh -noni $harnessedScriptPath 2> $stderrPath 1> $stdoutPath)
+    # run it in another shell
+    pwsh -noni $harnessedScriptPath 2> $stderrPath 1> $stdoutPath
 
     Write-Host " done"
 
@@ -553,6 +559,8 @@ else {
     $stderr = Get-Content -Raw $stderrPath
     $fail = $false
     $errorReason = ""
+
+    # detect some critical errors from the stderr of the sandbox process
 
     # indicates a script with invalid syntax
     if ($null -ne $stderr -and $stderr.Contains("ParserError: ")) {

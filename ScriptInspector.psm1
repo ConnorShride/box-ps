@@ -375,7 +375,7 @@ function PreProcessScript {
     $separator = ("*" * 100 + "`r`n")
     $layerOut = $separator + $Script + "`r`n" + $separator
     $layerOut | Microsoft.PowerShell.Utility\Out-File -Append -Path $WORK_DIR/layers.ps1
-    
+
     return $Script
 }
 
