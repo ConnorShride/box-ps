@@ -303,14 +303,16 @@ if __name__ == "__main__":
 
 Python CLI for box-ps. 
 
-DISCLAIMER...
+DISCLAIMER
+
 Designed for use on a linux machine. Using this on Windows systems has not been tested and is 
 strongly advised against. Box-ps will run powershell core on input scripts and attempt to intercept 
 malicious behavior but this is by no means guaranteed. In any case box-ps and this module will place
 potentially malicious artifacts of some kind onto disk, be they embedded PEs or JSON formatted 
 malicious strings of code, regardless of the options used.
 
-DOCKER...
+DOCKER
+
 This module is capable of using docker to sandbox malicious scripts to strip the networking 
 capabilities of the script and constrain it's access to your file system. Options can be given to 
 prevent malicious artifacts (extracted embedded files) from being written to disk outside the 
@@ -321,7 +323,8 @@ directory you specify. !!NOTE!! The latest box-ps container is pulled from Docke
 each run, and I don't have structured releases yet, so you should update this module often to keep 
 it in sync with the box-ps installation in the latest container.
 
-OUTPUT...
+OUTPUT
+
 If you haven't given the report_only option, the path to a full analysis directory will be printed 
 where you can retrieve any artifacts that may have been produced from analysis. The location of the
 output directory can be dictated by --boxed-dir or --out-dir. Otherwise if report_only is not given
@@ -330,7 +333,9 @@ report with --report-file, which will duplicate the report if it's already in th
 directory. If not using the docker option, this will temporarily create a 'working' directory in the
 current working directory necessary to run box-ps which contains all the stuff in the full analysis 
 directories, but will be deleted after running. If you pipe in script content to sandbox and are not 
-using docker, the script will be written to disk in a temp directory named <random>-boxps.ps1."""
+using docker, the script will be written to disk in a temp directory named <random>-boxps.ps1.
+ 
+"""
 
     usages = """
 
@@ -386,37 +391,45 @@ python ./boxps.py --file ./example-script.ps1 --layers --parameter-values --out-
         formatter_class=argparse.RawDescriptionHelpFormatter)
 
     parser.add_argument("-i", "--install-path", required=False, action="store", help="path to " +
-        "box-ps installation. Will otherwise look for env variable BOXPS")
+        "box-ps installation. Will otherwise look for env variable BOXPS.")
     parser.add_argument("-d", "--docker", required=False, action="store_true", default=False, 
         help="run box-ps from within a docker container that has networking disconnected. " +
         "Conatiner is killed after each run.")
     parser.add_argument("-o", "--out-dir", required=False, action="store", 
-        help="create an " +
-        " output directory in which to place analysis results (artifacts, JSON report file, stdout, " + 
-        "etc.) in the current working directory called either piped.boxed or <file>.boxed " +
-        " depending on input option. Will use a temp directory by default.")
-    parser.add_argument("-bd" , "--boxed-dir", required=False, default=False, action="store_true")
+        help="create a full analysis results output directory (artifacts, JSON report file, " +
+        "stdout, etc.) at the given path.")
+    parser.add_argument("-bd" , "--boxed-dir", required=False, default=False, action="store_true",
+        help="create a full analysis results output directory in the current working directory " +
+        "called <script_file_name>.boxed if using file input, or script.boxed if piping script " +
+        "content as input.")
     parser.add_argument("-r", "--report-only", required=False, action="store_true", default=False,
-        help="")
-    parser.add_argument("-rf", "--report-file", required=False, action="store")
+        help="don't produce a full analysis results output directory. Using this option will " +
+        "still result in all the same stuff being written in the 'working' directory which is " +
+        "deleted after running, unless using docker.")
+    parser.add_argument("-rf", "--report-file", required=False, action="store", help="path to the" +
+        "output JSON report file. It is stored either in the full analysis results directory or " +
+        "in temp by default.")
     parser.add_argument("-t", "--timeout", required=False, action="store", help="timeout for the " +
-        "sandboxing in seconds")
+        "sandboxing in seconds.")
     parser.add_argument("-e", "--env-file", required=False, action="store", help="path to JSON " +
         "formatted file mapping the names of environment variables that should be set in the " +
         "sandbox to their string values.")
     parser.add_argument("-p", "--piped", required=False, default=False, action="store_true", 
-        help="whether or not to read the powershell script content in from STDIN. See disclaimer.")
+        help="read the powershell script content in from STDIN. The script is still written to " +
+        "disk in temp unless using docker.")
     parser.add_argument("-pv", "--parameter-values", required=False, default=False, 
-        action="store_true", help="whether or not to print all parameter values from actions")
+        action="store_true", help="print all parameter values from actions, not just behavior " +
+        "property values.")
     parser.add_argument("-ns", "--no-snip", required=False, default=False,
-        action="store_true", help="if not given, will truncate absurdly long parameter and behavior property values " +
-        "(longer than 10,000 characters)")
+        action="store_true", help="don't truncate absurdly long parameter and behavior property " +
+        "values (longer than 10,000 characters).")
     parser.add_argument("-se", "--stderr", required=False, default=False, action="store_true",
-        help="print captured stderr from the script")
+        help="print captured stderr from the script. Only available if producing a full analysis " +
+        "output directory.")
     parser.add_argument("-l", "--layers", required=False, default=False, action="store_true",
-        help="whether or not to print all the 'layers' of the script in order excluding the initial script")
+        help="print all the 'layers' of the script in the order of their revealing.")
     parser.add_argument("-a", "--all", required=False, default=False, action="store_true",
-        help="print everything we can unsnipped")
+        help="print everything we can unsnipped.")
     parser.add_argument("-f", "--file", required=False, action="store", help="path to powershell " +
         "script file to sandbox.")
     args = parser.parse_args()
