@@ -78,8 +78,8 @@ return_code=0
 
 # pull latest prod box-ps image
 echo "[+] pulling latest docker image of box-ps"
-#docker pull connorshride/box-ps:latest > /dev/null
-docker pull connorshride/box-ps:develop > /dev/null
+docker pull connorshride/box-ps:latest > /dev/null
+#docker pull connorshride/box-ps:develop > /dev/null
 
 if [[ $? != 0 ]]
 then
@@ -89,8 +89,8 @@ fi
 
 # start container with no networking
 echo "[+] starting docker container"
-#docker run -td --network none connorshride/box-ps:latest > /dev/null
-docker run -td --network none connorshride/box-ps:develop > /dev/null
+docker run -td --network none connorshride/box-ps:latest > /dev/null
+#docker run -td --network none connorshride/box-ps:develop > /dev/null
 
 if [[ $? != 0 ]]
 then
@@ -104,8 +104,8 @@ then
 	exit $return_code
 fi
 
-#container_id=$(docker ps -f status=running -f ancestor=connorshride/box-ps -l | tail -n +2 | cut -f1 -d' ')
-container_id=$(docker ps -f status=running -f ancestor=connorshride/box-ps:develop -l | tail -n +2 | cut -f1 -d' ')
+container_id=$(docker ps -f status=running -f ancestor=connorshride/box-ps -l | tail -n +2 | cut -f1 -d' ')
+#container_id=$(docker ps -f status=running -f ancestor=connorshride/box-ps:develop -l | tail -n +2 | cut -f1 -d' ')
 
 # pipe the input into a file in the docker container
 if [[ $1 == "-p" ]]
