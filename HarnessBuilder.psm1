@@ -113,7 +113,9 @@ function BuildStringArrayCode {
     )
 
     $array = "@("
-    $Strings | ForEach-Object { $array += "`"" + $_ + "`"," } 
+    if ($null -ne $Strings) {
+        $Strings | ForEach-Object { $array += "`"" + $_ + "`"," } 
+    }
     return $array.Trim(",") + ")"
 }
 
@@ -152,6 +154,52 @@ function RoutineCode {
     return $code
 }
 
+function SubBehaviorsCode {
+
+    param(
+        [string[]] $SubBehaviors
+    )
+
+    $code += ""
+    $code += "`$subBehaviors = @("
+    foreach ($sub in $SubBehaviors) {
+        $code += "`"" + $sub + "`", "
+    }
+    $code = $code.TrimEnd(", ")
+    $code += ")`r`n"
+    
+    return $code
+}
+
+function BuildBehaviorPropValueCode {
+
+    param(
+        [string] $BehaviorPropName,
+        [string] $ArgName
+    )
+
+    $flexibleTypes = $config["BehaviorPropFlexibleTypes"]
+    $forcedTypes = $config["BehaviorPropForcedTypes"]
+
+    $code = ""
+
+    # just leave the type as the type it is in the function
+    if ($flexibleTypes.Contains($ArgName)) {
+        $code += "$ArgName"
+    }
+    # it's forced to be a certain type in config. just cast it and pray
+    else {
+        if ($ArgName -eq "") {
+            $code += "$($forcedTypes[$BehaviorPropName])`"`""
+        }
+        else {
+            $code += "$($forcedTypes[$BehaviorPropName])`$$ArgName"
+        }
+    }
+
+    return $code
+}
+
 function BehaviorPropsCode {
 
     param(
@@ -170,23 +218,27 @@ function BehaviorPropsCode {
 
             $behaviorPropArgs = $BehaviorPropInfo[$behaviorProp]
 
-            # behavior property value is a hard-coded string, not a function argument
-            if ($behaviorPropArgs.GetType() -eq [string]) {
-                $code += "`$behaviorProps[`"$behaviorProp`"] = @(`"$($behaviorPropArgs)`")`r`n"
+            # don't have a way to get the behavior property value yet or we can't
+            if ($null -eq $behaviorPropArgs) {
+                $empty = ""
+                $code += "`$behaviorProps[`"$behaviorProp`"] = $(BuildBehaviorPropValueCode $behaviorProp $empty)`r`n"
             }
+            # behavior property value is from a function parameter
             else {
 
                 if ($behaviorPropArgs.Count -eq 1) {
-                    $code += "`$behaviorProps[`"$behaviorProp`"] = `@(`$$($behaviorPropArgs[0]))`r`n"
+                    $code += "`$behaviorProps[`"$behaviorProp`"] = $(BuildBehaviorPropValueCode $behaviorProp $behaviorPropArgs[0])`r`n"
                 }
-                # for commandlets, we have to find the argument that's present at script run-time
+                # we have more than one parameter (different usages of the function) that could
+                # contain the behavior property value.
+                # for commandlets, we have to find the parameter that's present at script run-time
                 elseif ($Cmdlet) {
 
                     $first = $true
                     foreach ($arg in $behaviorPropArgs) {
 
                         $block = "if (`$PSBoundParameters.ContainsKey(`"$arg`")) {`r`n"
-                        $block += "`t`$behaviorProps[`"$behaviorProp`"] = @(`$$arg)`r`n"
+                        $block += "`t`$behaviorProps[`"$behaviorProp`"] = $(BuildBehaviorPropValueCode $behaviorProp $arg)`r`n"
                         $block += "}`r`n"
 
                         if (!$first) {
@@ -197,19 +249,21 @@ function BehaviorPropsCode {
                         $code += $block
                     }
                 }
-                # for class functions, find the argument that it must be from the function signature
+                # for class functions, find the parameter that it must be from the function signature
+                # TODO THIS IS BROKEN PLS FIX ([System.Net.HttpWebRequest]::Create)
                 elseif ($ClassFunc) {
 
                     $sigArgsNames = $SigAndArgs.Item2
 
                     foreach ($arg in $behaviorPropArgValues) {
+
                         if ($arg.GetType() -eq [string]) {
                             if ($sigArgsNames.Contains($arg)) {
-                                $code += "`$behaviorProps[`"$behaviorProp`"] = @(`$$arg)`r`n"
+                                $code += "`$behaviorProps[`"$behaviorProp`"] = $(BuildBehaviorPropValueCode $behaviorProp $arg)`r`n"
                             }
                         }
                         # it's a hashtable
-                        # behavior property value may be a property of an argument that is an object
+                        # behavior property value may be a property of an parameter that is an object
                         else {
 
                             # name of the object-arg in the signature and the property of the object
@@ -220,7 +274,6 @@ function BehaviorPropsCode {
                                 $code += "`$behaviorProps[`"$behaviorProp`"] = @(`$$objectArgName.$objectProp)`r`n"
                             }
                         }
-
                     }
                 }
             }
@@ -446,7 +499,7 @@ function ClassFunctionOverrides {
         $sigArgs = $signatures[$signature]
         $signature = TranslateClassFuncSignature -Signature $signature
 
-        # don't create overrides for the signatures in the set to exclude
+        # create overrides for the signatures we don't want to exclude
         if (!$Exclude.Contains($signature)) {
 
             $sigAndArgs = [Tuple]::Create($signature, $sigArgs)
@@ -474,13 +527,15 @@ function ClassFunctionOverrides {
 
             $intersection = $utils.ListIntersection($sigAndArgs[1], $supportedArgs)
     
+            # this signature contains a parameter we're wanting to track as a behavior property
             if ($intersection) {
     
                 $code += $signature + " {`r`n"
                 $code += "`t`$CODE_DIR = `"<CODE_DIR>`"`r`n"
                 $code += "`t`$WORK_DIR = `"./working_<PID>`"`r`n"
                 $code += $utils.TabPad($(BehaviorPropsCode -ClassFunc -SigAndArgs $sigAndArgs -BehaviorPropInfo $OverrideInfo["BehaviorPropInfo"]))
-                $behaviorsListCode = $(BuildStringArrayCode $OverrideInfo["Behaviors"])
+                $code += "`t`$behaviors = " + (BuildStringArrayCode $OverrideInfo["Behaviors"]) + "`r`n"
+                $code += "`t`$subBehaviors = " + (BuildStringArrayCode $OverrideInfo.SubBehaviors) + "`r`n"
 
                 $code += "`t`$extraInfo = `"`"`r`n"
                 if ($OverrideInfo["Routine"]) {
@@ -491,10 +546,10 @@ function ClassFunctionOverrides {
                 }
 
                 if ($Static) {
-                    $code += "`tRecordAction `$([Action]::new($behaviorsListCode, `"$FuncName`", `$behaviorProps, `$PSBoundParameters, `$MyInvocation.Line, `$extraInfo))`r`n"
+                    $code += "`tRecordAction `$([Action]::new(`$behaviors, `$subBehaviors, `"$FuncName`", `$behaviorProps, `$PSBoundParameters, `$MyInvocation.Line, `$extraInfo))`r`n"
                 }
                 else {
-                    $code += "`tRecordAction `$([Action]::new($behaviorsListCode, `"$ParentClass`.$FuncName`", `$behaviorProps, `$PSBoundParameters, `$MyInvocation.Line, `$extraInfo))`r`n"
+                    $code += "`tRecordAction `$([Action]::new(`$behaviors, `$subBehaviors, `"$ParentClass`.$FuncName`", `$behaviorProps, `$PSBoundParameters, `$MyInvocation.Line, `$extraInfo))`r`n"
                 }
         
                 # if the method actually has a return value
@@ -614,6 +669,8 @@ function CmdletOverride {
     $code += $utils.TabPad($(InMemoryIOCsCode))
     $code += $utils.TabPad($(ArgModificationCode $CmdletInfo["ArgModifications"]))
     $code += $utils.TabPad($(BehaviorPropsCode -Cmdlet -BehaviorPropInfo $CmdletInfo.BehaviorPropInfo))
+    $code += "`t`$behaviors = " + (BuildStringArrayCode $CmdletInfo["Behaviors"]) + "`r`n"
+    $code += "`t`$subBehaviors = " + (BuildStringArrayCode $CmdletInfo.SubBehaviors) + "`r`n"
     $code += "`t`$extraInfo = `"`"`r`n"
 
     # extra routine to run before the action is recorded, sourced from the harness directory and ran
@@ -626,8 +683,7 @@ function CmdletOverride {
         $code += "`t`$extraInfo = `"$($CmdletInfo["ExtraInfo"])`"`r`n"
     }
 
-    $behaviorsListCode = $(BuildStringArrayCode $CmdletInfo["Behaviors"])
-    $code += "`tRecordAction `$([Action]::new($behaviorsListCode, `"$($CmdletName)`", `$behaviorProps, `$MyInvocation, `$extraInfo))`r`n"
+    $code += "`tRecordAction `$([Action]::new(`$behaviors, `$subBehaviors, `"$($CmdletName)`", `$behaviorProps, `$MyInvocation, `$extraInfo))`r`n"
 
     if ($CmdletInfo.Flags) {
         if ($CmdletInfo.Flags -contains "call_parent") {

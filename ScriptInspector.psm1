@@ -153,7 +153,8 @@ function ScrapeFilePaths {
 
 	$paths = @()
 
-    $regex = "((file:(\\)+)|(\\\\smb\\)|([a-zA-Z]:(\\)+)|(\.(\.)?(\\)+))([^\*```"`'\?]+((\\)+)?)*"
+    # TODO figure out how to support windows paths with spaces in them (thanks microsoft)
+    $regex = "((file:(\\)+)|(\\\\smb\\)|([a-zA-Z]:(\\)+)|(\.(\.)?(\\)+))([^\*```"`'\? ]+((\\)+)?)*"
     $matchRes = $str | Microsoft.Powershell.Utility\Select-String -Pattern $regex -AllMatches
 
     if ($matchRes) {
@@ -362,7 +363,7 @@ function PreProcessScript {
 
     param(
         [string] $Script,
-	[string] $PID
+	    [string] $PID
     )
 
     $Script = BoxifyScript $Script
@@ -373,7 +374,7 @@ function PreProcessScript {
     $separator = ("*" * 100 + "`r`n")
     $layerOut = $separator + $Script + "`r`n" + $separator
     $layerOut | Microsoft.PowerShell.Utility\Out-File -Append -Path $WORK_DIR/layers.ps1
-    
+
     return $Script
 }
 

@@ -10,11 +10,17 @@ function mkdir {
         [Switch] $Force
     )
 
-    $behaviorProps = @{ 
-        "paths" = $Path
+	$scrapeIOCsCode = Microsoft.PowerShell.Management\Get-Content -Raw $CODE_DIR/harness/find_in_mem_iocs.ps1
+	Microsoft.PowerShell.Utility\Invoke-Expression $scrapeIOCsCode
+
+	$behaviors = @("file_system")
+	$subBehaviors = @("new_directory")
+
+    $behaviorProps = @{
+        "paths" = @($Path)
     }
 
-    RecordAction $([Action]::new(@("file_system"), "Microsoft.PowerShell.Core\mkdir", $behaviorProps, $MyInvocation, ""))
+    RecordAction $([Action]::new($behaviors, $subBehaviors, "Microsoft.PowerShell.Core\mkdir", $behaviorProps, $MyInvocation, ""))
 }
 
 function Invoke-Expression {
@@ -24,8 +30,14 @@ function Invoke-Expression {
 		[string] $Command
 	)
     
+	$scrapeIOCsCode = Microsoft.PowerShell.Management\Get-Content -Raw $CODE_DIR/harness/find_in_mem_iocs.ps1
+	Microsoft.PowerShell.Utility\Invoke-Expression $scrapeIOCsCode
+
+	$behaviors = @("script_exec")
+	$subBehaviors = @()
+
 	$behaviorProps = @{
-        "script" = @($Command)
+        "script" = $Command
     }
 	
 	$parentVars = Microsoft.PowerShell.Utility\Get-Variable -Scope 1
@@ -39,7 +51,7 @@ function Invoke-Expression {
 	    }
     }
     
-    RecordAction $([Action]::new(@("script_exec"), "Microsoft.PowerShell.Utility\Invoke-Expression", $behaviorProps, $MyInvocation, ""))
+    RecordAction $([Action]::new($behaviors, $subBehaviors, "Microsoft.PowerShell.Utility\Invoke-Expression", $behaviorProps, $MyInvocation, ""))
 
     $modifiedCommand = PreProcessScript $Command "<PID>"
 
@@ -131,13 +143,15 @@ function Start-Job {
 	# so we need to give it a name and feed in the arguments properly to sandbox
 
 	$script = ""
+	$behaviors = @("script_exec")
+	$subBehaviors = @("start_process")
 	$behaviorProps = @{}
     
 	# read in the script from the file to sandbox
 	# just try to on the off chance they put it in the current dir so this will actually work (no windows paths)
 	if ($FilePath) {
         $script = Microsoft.PowerShell.Management\Get-Content -Raw $FilePath
-        $behaviorProps["script"] = @($script)
+        $behaviorProps["script"] = $script
 	}
 	# script executed in the job is given with a scriptblock, implement as a function
 	else {
@@ -180,10 +194,10 @@ function Start-Job {
 			$script += " `$arglist"
         }
 
-        $behaviorProps["script"] = @($ScriptBlock.StartPosition.Content)
+        $behaviorProps["script"] = $ScriptBlock.StartPosition.Content
 	}
 
-	RecordAction $([Action]::new(@("script_exec"), "Microsoft.PowerShell.Core\Start-Job", $behaviorProps, $MyInvocation, ""))
+	RecordAction $([Action]::new($behaviors, $subBehaviors, "Microsoft.PowerShell.Core\Start-Job", $behaviorProps, $MyInvocation, ""))
 
 	$invokeRes = ""
 	if ($script) {
@@ -198,6 +212,7 @@ function Start-Job {
 	return $invokeRes
 }
 
+# Keep this override so we can eventually do fancy object redirection for emulated COM objects
 function New-Object {
 	param(
 		[Parameter(ParameterSetName="Net",Position=1)]
@@ -211,6 +226,12 @@ function New-Object {
 		[string] $COMObject
     )
     
+	$scrapeIOCsCode = Microsoft.PowerShell.Management\Get-Content -Raw $CODE_DIR/harness/find_in_mem_iocs.ps1
+	Microsoft.PowerShell.Utility\Invoke-Expression $scrapeIOCsCode
+
+	$behaviors = @("new_object")
+	$subBehaviors = @()
+
 	if ($PSBoundParameters.ContainsKey("TypeName")) {
 		$TypeName = $PSBoundParameters["TypeName"].ToLower()
 		$PSBoundParameters["TypeName"] = $PSBoundParameters["TypeName"].ToLower()
@@ -224,14 +245,15 @@ function New-Object {
     $behaviorProps = @{}
     
 	if ($PSBoundParameters.ContainsKey("COMObject")) {
-		$behaviorProps["object"] = @($COMObject)
+		$behaviorProps["object"] = $COMObject
     }
     
 	elseif ($PSBoundParameters.ContainsKey("TypeName")) {
-		$behaviorProps["object"] = @($TypeName)
+		$behaviorProps["object"] = $TypeName
 	}
 	
-    RecordAction $([Action]::new(@("new_object"), "Microsoft.PowerShell.Utility\New-Object", $behaviorProps, $MyInvocation, ""))
+	# too noisy and not valuable
+    #RecordAction $([Action]::new($behaviors, $subBehaviors, "Microsoft.PowerShell.Utility\New-Object", $behaviorProps, $MyInvocation, ""))
     
 	if ($(GetOverridedClasses).Contains($behaviorProps["object"].ToLower())) {
 	   return RedirectObjectCreation $TypeName
@@ -253,10 +275,16 @@ function powershell.exe {
         [switch] $NonInteractive
     )
     
+	$scrapeIOCsCode = Microsoft.PowerShell.Management\Get-Content -Raw $CODE_DIR/harness/find_in_mem_iocs.ps1
+	Microsoft.PowerShell.Utility\Invoke-Expression $scrapeIOCsCode
+
+	$behaviors = @("script_exec")
+	$subBehaviors = @("start_process")
     $behaviorProps = @{}
 
+	# command was given arg list style like "powershell Write-Host foo"
     if ($PSBoundParameters.ContainsKey("Command")) {
-		# command was given arg list style like "powershell Write-Host foo"
+
 		# join the list into a single string
 		if ($Command.Count -gt 1) {
 			foreach ($token in $Command) {
@@ -267,20 +295,111 @@ function powershell.exe {
 			$behaviorProps["script"] = $Command[0].ToString()
 		}
     }
+	# command is given as a b64 encoded string, decode it
     if ($PSBoundParameters.ContainsKey("EncodedCommand")) {
         $decodedScript = [System.Text.Encoding]::Unicode.GetString([System.Convert]::FromBase64String($EncodedCommand))
         $behaviorProps["script"] = $decodedScript
     }
-    # read the script and execute?
+    # read the script from a file
+	# TODO test this with a windows style path (should work I think)
     elseif ($PSBoundParameters.ContainsKey("File")) {
-        $behaviorProps["script"] = $File
+
+		$behaviors += @("file_system")
+		$subBehaviors += @("file_read")
+
+		$behaviorProps["paths"] = @($File)
+        $behaviorProps["script"] = Get-Content -Raw $File
     }
 
-    RecordAction $([Action]::new(@("script_exec"), "powershell.exe", $behaviorProps, $MyInvocation, ""))
+    RecordAction $([Action]::new($behaviors, $subBehaviors, "powershell.exe", $behaviorProps, $MyInvocation, ""))
 
     $boxifiedScript = PreProcessScript $behaviorProps["script"] "<PID>"
 
 	Microsoft.PowerShell.Utility\Invoke-Expression $boxifiedScript
+}
+
+function Add-Type {
+	[cmdletbinding(DefaultParameterSetName="FromSource")]
+	param(
+		[Parameter(ParameterSetName="FromAssemblyName",Mandatory=$true)]
+		[Alias("AN")]
+		[string[]] $AssemblyName,
+		[Parameter(ParameterSetName="FromPath")]
+		[Parameter(ParameterSetName="FromMember")]
+		[Parameter(ParameterSetName="FromSource")]
+		[Parameter(ParameterSetName="FromLiteralPath")]
+		[string[]] $CompilerOptions,
+		[Parameter(ParameterSetName="FromPath")]
+		[Parameter(ParameterSetName="FromMember")]
+		[Parameter(ParameterSetName="FromSource")]
+		[Parameter(ParameterSetName="FromLiteralPath")]
+		[switch] $IgnoreWarnings,
+		[Parameter(ParameterSetName="FromSource")]
+		[Parameter(ParameterSetName="FromMember")]
+		[Language] $Language,
+		[Parameter(ParameterSetName="FromLiteralPath",Mandatory=$true)]
+		[Alias("PSPath, LP")]
+		[string[]] $LiteralPath,
+		[Parameter(ParameterSetName="FromMember",Mandatory=$true)]
+		[Parameter(Position=1)]
+		[string[]] $MemberDefinition,
+		[Parameter(ParameterSetName="FromMember",Mandatory=$true)]
+		[Parameter(Position=0)]
+		[string] $Name,
+		[Parameter(ParameterSetName="FromMember")]
+		[Alias("NS")]
+		[string] $Namespace,
+		[Parameter(ParameterSetName="FromPath")]
+		[Parameter(ParameterSetName="FromMember")]
+		[Parameter(ParameterSetName="FromSource")]
+		[Parameter(ParameterSetName="FromLiteralPath")]
+		[Alias("OA")]
+		[string] $OutputAssembly,
+		[Parameter(ParameterSetName="FromPath")]
+		[Parameter(ParameterSetName="FromMember")]
+		[Parameter(ParameterSetName="FromSource")]
+		[Parameter(ParameterSetName="FromLiteralPath")]
+		[Alias("OT")]
+		[OutputAssemblyType] $OutputType,
+		[switch] $PassThru,
+		[Parameter(ParameterSetName="FromPath",Mandatory=$true)]
+		[Parameter(Position=0)]
+		[string[]] $Path,
+		[Parameter(ParameterSetName="FromPath")]
+		[Parameter(ParameterSetName="FromMember")]
+		[Parameter(ParameterSetName="FromSource")]
+		[Parameter(ParameterSetName="FromLiteralPath")]
+		[Alias("RA")]
+		[string[]] $ReferencedAssemblies,
+		[Parameter(ParameterSetName="FromSource",Mandatory=$true)]
+		[Parameter(Position=0)]
+		[string] $TypeDefinition,
+		[Parameter(ParameterSetName="FromMember")]
+		[Alias("Using")]
+		[string[]] $UsingNamespace
+	)
+
+	$scrapeIOCsCode = Microsoft.PowerShell.Management\Get-Content -Raw $CODE_DIR/harness/find_in_mem_iocs.ps1
+	Microsoft.PowerShell.Utility\Invoke-Expression $scrapeIOCsCode
+	
+	$behaviorProps = @{}
+	if ($PSBoundParameters.ContainsKey("TypeDefinition")) {
+		$behaviorProps["code"] = [string]$TypeDefinition
+	}
+	elseif ($PSBoundParameters.ContainsKey("MemberDefinition")) {
+		$behaviorProps["code"] = [string]$MemberDefinition
+	}
+	
+	$behaviors = @("code_import")
+	$subBehaviors = @("import_dotnet_code")
+	$extraInfo = ""
+
+    $separator = ("*" * 100 + "`r`n")
+    $layerOut = $separator + $behaviorProps["code"] + "`r`n" + $separator
+    $layerOut | Microsoft.PowerShell.Utility\Out-File -Append -Path $WORK_DIR/layers.ps1
+
+	RecordAction $([Action]::new($behaviors, $subBehaviors, "Microsoft.PowerShell.Utility\Add-Type", $behaviorProps, $MyInvocation, $extraInfo))
+	return Microsoft.PowerShell.Utility\Add-Type @PSBoundParameters
 }
 
 # not for sandboxing. I need this to compensate for a bug in this function which

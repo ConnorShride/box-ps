@@ -25,39 +25,47 @@ param (
 
 # can't give both InFile and script content
 if ($ScriptContent -and $InFile) {
-    Write-Host "[-] can't give both an input file and script contents"
-    return
+    [Console]::Error.WriteLine("[-] can't give both an input file and script contents")
+    exit 1
 }
 
 # must give either script content or InFile
 if (!$ScriptContent -and !$InFile) {
-    Write-Host "[-] must give either script contents or input file"
-    return
+    [Console]::Error.WriteLine("[-] must give either script contents or input file")
+    exit 1
 }
 
 # input file must exist if given
 if ($InFile -and !(Test-Path $InFile)) {
-    Write-Host "[-] input file does not exist. exiting."
-    return
+    [Console]::Error.WriteLine("[-] input file does not exist")
+    exit 3
+}
+
+# input file must be a file
+if ($InFile -and (Get-Item $InFile) -is [System.IO.DirectoryInfo]) {
+    [Console]::Error.WriteLine("[-] input file cannot be a directory")
+    exit 3
 }
 
 # can't give both options
 if ($EnvVar -and $EnvFile) {
-    Write-Host "[-] can't give both a string and a file for environment variable input"
-    return
+    [Console]::Error.WriteLine("[-] can't give both a string and a file for environment variable input")
+    exit 1
 }
 
 # give OutDir a default value if the user hasn't specified they don't want artifacts 
 if (!$ReportOnly -and !$OutDir) {
 
     if ($ScriptContent) {
-        $OutDir = "./piped.boxed"
+        $OutDir = "./script.boxed"
     }
     else {
         # by default named <script>.boxed in the current working directory
         $OutDir = "./$($InFile.Substring($InFile.LastIndexOf("/") + 1)).boxed"
     }
 }
+
+$utils = Import-Module -Name $PSScriptRoot/Utils.psm1 -AsCustomObject -Scope Local
 
 class Report {
 
@@ -69,12 +77,19 @@ class Report {
 
     Report([object[]] $actions, [string[]] $scrapedNetwork, [string[]] $scrapedPaths, 
            [string[]] $scrapedEnvProbes, [hashtable] $artifactMap, [string] $workingDir) {
-               $this.Actions = $actions
-               $this.PotentialIndicators = $this.CombineScrapedIOCs($scrapedNetwork, $scrapedPaths)
-               $this.EnvironmentProbes = $this.GenerateEnvProbeReport($scrapedEnvProbes)
-               $this.Artifacts = $artifactMap
-               $this.WorkingDir = $workingDir               
-           }
+
+                if ($null -eq $actions) {
+                    $this.Actions = @()
+                }
+                else {
+                    $this.Actions = $actions
+                }
+
+                $this.PotentialIndicators = $this.CombineScrapedIOCs($scrapedNetwork, $scrapedPaths)
+                $this.EnvironmentProbes = $this.GenerateEnvProbeReport($scrapedEnvProbes)
+                $this.Artifacts = $artifactMap
+                $this.WorkingDir = $workingDir               
+    }
 
     [hashtable] GenerateEnvProbeReport([string[]] $scrapedEnvProbes) {
 
@@ -108,13 +123,13 @@ class Report {
         $this.Actions | ForEach-Object {
 
             if ($_.Behaviors.Contains("environment_probe")) {
-                if ($_.ExtraInfo -eq "language_probe") {
+                if ($_.SubBehaviors.Contains("probe_language")) {
                     AddListItem $envReport "Language" "Actors" $_.Actor
                 }
-                elseif ($_.ExtraInfo -eq "host_probe") {
+                elseif ($_.SubBehaviors.Contains("probe_host")) {
                     AddListItem $envReport "Host" "Actors" $_.Actor
                 }
-                elseif ($_.ExtraInfo -eq "date_probe") {
+                elseif ($_.SubBehaviors.Contains("probe_date")) {
                     AddListItem $envReport "Date" "Actors" $_.Actor
                 }
             }
@@ -156,7 +171,7 @@ class Report {
             $($_.BehaviorProps.paths | ForEach-Object { $pathsSet.Add($_) > $null })
         }
 
-        # gather all network urls from actions 
+        # gather all network urls from actions
         $this.Actions | Where-Object -Property Behaviors -contains "network" | ForEach-Object {
             $($_.BehaviorProps.uri | ForEach-Object { $networkSet.Add($_) > $null })
         }
@@ -221,10 +236,14 @@ function GetInitialScript {
     # record the script
     [hashtable] $action = @{
         "Behaviors" = @("script_exec")
+        "SubBehaviors" = @("start_process")
         "Actor" = "powershell.exe"
+        "Line" = ""
+        "ExtraInfo" = ""
         "BehaviorProps" = @{
-            "script" = @($decoded)
+            "script" = $decoded
         }
+        "Parameters" = @{}
         "Id" = 0
     }
 
@@ -264,40 +283,75 @@ function HarvestArtifacts {
         [object[]] $Actions
     )
 
-    # map actors we want to harvest artifacts for to the bytes behavior property
-    $overrides = @{
-        "[System.Reflection.Assembly]::Load" = "code";
-        "[System.Runtime.InteropServices.Marshal]::Copy" = "bytes"
+    $behaviorMap = @{
+        "write_to_memory" = "bytes";
+        "file_write" = "content";
+        "binary_import" = "bytes";
     }
+
+    $supportedBehaviors = $behaviorMap.Keys
 
     $artifactMap = @{}
 
     New-Item -Path $WORK_DIR/artifacts -ItemType "directory" > /dev/null
     $outDir = $WORK_DIR + "/artifacts/"
 
-    $Actions | ForEach-Object {
+    # go through actions looking for behaviors that would give artifacts
+    foreach ($action in $Actions) {
 
-        if ($overrides.Keys -contains $_.Actor) {
-        
-            $bytes = $_.BehaviorProps.($overrides[$_.Actor])
-            $actionId = ($_.Id | Out-String).Trim()
+        $actionBehaviors = $action.Behaviors + $action.SubBehaviors
+        $behaviors = $utils.ListIntersection($supportedBehaviors, $actionBehaviors)
+
+        # go through behavior properties for those behaviors
+        foreach ($behavior in $behaviors) {
+
+            $artifactProperty = $behaviorMap[$behavior]
+
+            $artifactContent = $action.BehaviorProps."$artifactProperty"
+
+            if ($null -eq $artifactContent) {
+                continue
+            }
+
+            $artifactIsArray = $artifactContent.GetType().BaseType.Name -eq "Array"
+            $actionId = ($action.Id | Out-String).Trim()
             $fileType = "unknown"
 
             # basic check to see if this may be interesting
-            if ($bytes.Length -gt 10) {
-                
-                # write bytes and compute sha256
+            if ($artifactContent.Length -gt 10) {
+
+                # write content and compute sha256
                 $outPath = $outDir + "tmp.bin"
-                [System.IO.File]::WriteAllBytes($outPath, $bytes)
+
+                try {
+                    # array content means bytes ASSUMING CONTENT IS NEVER AN ARRAY OF TEXT
+                    if ($artifactIsArray) {
+                        [System.IO.File]::WriteAllBytes($outPath, $artifactContent)
+                    }
+                    # content is just text
+                    else {
+                        $artifactContent | Out-File $outPath
+                    }
+                }
+                catch {
+                    [Console]::Error.WriteLine("[-] error writing artifact to disk from action ID $actionId : $($_.Exception)")
+                    continue
+                }
+
+                # compute sha256 hash, move to artifact directory
                 $sha256 = $(Get-FileHash -Path $outPath -Algorithm SHA256).Hash
                 Move-Item -Path $outPath -Destination ($outDir + $sha256)
 
                 # check if the bytes indicate a PE file
-                if ($bytes[0] -eq 77 -and $bytes[1] -eq 90) {
+                if ($artifactIsArray -and $artifactContent[0] -eq 77 -and $artifactContent[1] -eq 90) {
                     $fileType = "PE"
                 }
 
-                $artifactMap[$actionId] = @{
+                if (!$artifactMap.Contains($actionId)) {
+                    $artifactMap[$actionId] = @()
+                }
+
+                $artifactMap[$actionId] += @{
                     "sha256" = $sha256;
                     "fileType" = $fileType
                 }
@@ -328,25 +382,25 @@ if ($Docker) {
         $output = docker ps 2>&1
     }
     catch [System.Management.Automation.CommandNotFoundException] {
-        Write-Host "[-] docker is not installed. install it and add your user to the docker group"
-        return
+        [Console]::Error.WriteLine("[-] docker is not installed. install it and add your user to the docker group")
+        exit 2
     }
 
     # some other error with docker. EXIT
     if ($output -and $output.GetType().Name -eq "ErrorRecord") {
         $msg = $output.Exception.Message
         if ($msg.Contains("Got permission denied")) {
-            Write-Host "[-] permissions incorrect. add your user to the docker group"
-            return
+            [Console]::Error.WriteLine("[-] permissions incorrect. add your user to the docker group")
         }
-        Write-Host "[-] there's a problem with your docker environment..."
-        Write-Host $msg
+        [Console]::Error.WriteLine("[-] there's a problem with your docker environment...")
+        [Console]::Error.WriteLine($msg)
+        exit 2
     }
 
     # validate that the input environment variable file exists if given
     if ($EnvFile -and !(Test-Path $EnvFile)) {
-        Write-Host "[-] input environment variable file doesn't exist. exiting."
-        return
+        [Console]::Error.WriteLine("[-] input environment variable file doesn't exist. exiting.")
+        exit 3
     }
 
     Write-Host "[+] pulling latest docker image"
@@ -407,7 +461,7 @@ if ($Docker) {
         $output = docker cp "$containerId`:/opt/box-ps/outdir" $OutDir 2>&1
         $output = $output | Out-String
         if ($output.Contains("Error") -and $output.Contains("No such container:path")) {
-            Write-Host "[-] no output directory produced in container"
+            [Console]::Error.WriteLine("[-] no output directory produced in container")
         }
     }
 
@@ -430,7 +484,9 @@ else {
         New-Item $WORK_DIR -ItemType Directory > $null
     }
 
+    # init working directory files
     "1" | Out-File $WORK_DIR/action_id.txt
+    New-Item $WORK_DIR/actions.json > $null
 
     Import-Module -Name $PSScriptRoot/HarnessBuilder.psm1
     Import-Module -Name $PSScriptRoot/ScriptInspector.psm1
@@ -448,9 +504,9 @@ else {
 
         # validate that it's in the right form <var_name>=<var_value>
         if (!$EnvVar.Contains("=")) {
-            Write-Host "[-] no equals sign in environment variable string"
-            Write-Host "[-] USAGE <var_name>=<value>"
-            return
+            [Console]::Error.WriteLine("[-] no equals sign in environment variable string")
+            [Console]::Error.WriteLine("[-] USAGE <var_name>=<value>")
+            exit 1
         }
 
         $name = $EnvVar[0..($EnvVar.IndexOf("="))] -join ''
@@ -466,8 +522,8 @@ else {
 
         # validate the file exists
         if (!(Test-Path $EnvFile)) {
-            Write-Host "[-] input environment variable file doesn't exist. exiting."
-            return
+            [Console]::Error.WriteLine("[-] input environment variable file doesn't exist. exiting.")
+            exit 3
         }
         else {
 
@@ -477,8 +533,8 @@ else {
                 $envFileContent | ConvertFrom-Json | Out-Null
             }
             catch {
-                Write-Host "[-] input environment variable file is not formatted in valid JSON. exiting"
-                return
+                [Console]::Error.WriteLine("[-] input environment variable file is not formatted in valid JSON. exiting")
+                exit 1
             }
 
             $envFileContent | Out-File $WORK_DIR/input_env.json
@@ -498,33 +554,46 @@ else {
     Write-Host " done"
     Write-Host -NoNewLine "[+] sandboxing harnessed script..."
 
-    # run it
-    (timeout 5 pwsh -noni $harnessedScriptPath 2> $stderrPath 1> $stdoutPath)
+    # run it in another shell
+    pwsh -noni $harnessedScriptPath 2> $stderrPath 1> $stdoutPath
 
     Write-Host " done"
 
-    # a lot of times actions.json will not be present if things go wrong
-    if (!(Test-Path $actionsPath)) {
-        # crashing here would be cringy
-        try {
-            Write-Host "[-] sandboxing failed..."
-            Write-Host (Get-Content -ErrorAction stop -Raw $WORK_DIR/stderr.txt)
-            if (!$NoCleanUp) {
-                CleanUp
-            }
+    # check for some indicators of sandboxing failure
+    $stderr = Get-Content -Raw $stderrPath
+    $fail = $false
+    $errorReason = ""
+
+    # detect some critical errors from the stderr of the sandbox process
+
+    # indicates a script with invalid syntax
+    if ($null -ne $stderr -and $stderr.Contains("ParserError: ")) {
+        $fail = $true
+        $errorReason = "invalid script syntax"
+    }
+
+    # print error and exit
+    if ($fail) {
+        [Console]::Error.WriteLine("[-] sandboxing failed: $errorReason...")
+        [Console]::Error.WriteLine($stderr)
+        if (!$NoCleanUp) {
+            CleanUp
         }
-        catch {
-            Write-Host "[-] couldn't find any errors to report"
-        }
-        return
+        exit 4
     }
 
     Write-Host -NoNewLine "[+] post-processing results..."
 
-    # ingest the actions, potential IOCs, create report
+    # ingest the recorded actions
     $actionsJson = Get-Content -Raw $actionsPath
-    $actions = "[" + $actionsJson.TrimEnd(",`r`n") + "]" | ConvertFrom-Json
+    if ($null -eq $actionsJson) {
+        $actionsJson = ""
+    }
 
+    $actions = "[" + $actionsJson.TrimEnd(",`r`n") + "]" | ConvertFrom-Json
+    if ($null -eq $actions) {
+        $actions = @()
+    }
     $actions = $(StripBugActions $actions)
     
     # go gather the IOCs we may have scraped
@@ -561,9 +630,11 @@ else {
         Move-Item $WORK_DIR/stdout.txt $OutDir/
         Move-Item $WORK_DIR/stderr.txt $OutDir/
         Move-Item $WORK_DIR/layers.ps1 $OutDir/
-        if ($(Get-ChildItem $WORK_DIR/artifacts).Length -gt 0) {
+
+        if ($(Test-Path $WORK_DIR/artifacts) -and $(Get-ChildItem $WORK_DIR/artifacts).Length -gt 0) {
             Move-Item $WORK_DIR/artifacts $OutDir
         }
+
         $reportJson | Out-File $OutDir/report.json
     }
 

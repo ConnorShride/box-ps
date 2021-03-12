@@ -1,0 +1,12 @@
+*.code-workspace
+out.json
+dev/
+working*/
+**/*.boxed
+azure-function
+function.dockerfile
+*.dockerignore
+**/*.pyc
+**/build
+**/dist
+**/*egg-info

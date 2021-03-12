@@ -1,2 +1,43 @@
 # box-ps
 Powershell sandboxing utility
+
+BehaviorProps": {
+    "code_import": ["code"],
+    "binary_import": ["bytes"],
+    "file_system": ["paths"],
+    "script_exec": ["script"],
+    "process": ["processes"],
+    "new_object": ["object"],
+    "network": ["uri"],
+    "file_exec": ["files"],
+    "memory": [],
+    "environment_probe": []
+}
+
+"SubBehaviorProps": {
+    "file_write": ["content"],
+    "get_file_info": [],
+    "change_directory": [],
+    "file_read": [],
+    "file_delete": [],
+    "get_process_info": [],
+    "kill_process": [],
+    "pause_process": [],
+    "import_dotnet_code": [],
+    "start_process": [],
+    "probe_os": [],
+    "probe_language": [],
+    "probe_date": [],
+    "upload": ["content"]
+    "write_to_memory": ["bytes"],
+    "new_directory": []
+}
+
+Error return codes...
+
+argument error - 1
+environment error - 2
+bad input file - 3
+sandboxing failure - 4
+docker container operation error - 5
+sandboxing timeout - 124

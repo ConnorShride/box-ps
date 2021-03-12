@@ -12,10 +12,12 @@ using namespace System
 
 $WORK_DIR = "./working_<PID>"
 $CODE_DIR = "<CODE_DIR>"
+$BOXPS_CONFIG = Microsoft.PowerShell.Management\Get-Content "$CODE_DIR/config.json" | ConvertFrom-Json -AsHashtable
 
 class Action <# lawsuit... I'll be here all week #> {
 
     [String[]] $Behaviors
+    [String[]] $SubBehaviors
     [String] $Actor
     [String] $Line
     [hashtable] $BehaviorProps
@@ -23,10 +25,11 @@ class Action <# lawsuit... I'll be here all week #> {
     [string] $ExtraInfo
     [int] $Id
 
-    Action ([String[]] $Behaviors, [String] $Actor, [hashtable] $BehaviorProps,
-        [InvocationInfo] $Invocation, [string] $ExtraInfo) {
+    Action ([String[]] $Behaviors, [String[]] $SubBehaviors, [String] $Actor, 
+        [hashtable] $BehaviorProps, [InvocationInfo] $Invocation, [string] $ExtraInfo) {
 
         $this.Behaviors = $Behaviors
+        $this.SubBehaviors = $SubBehaviors
         $this.Actor = $Actor
         $this.BehaviorProps = $BehaviorProps
         $this.Line = $Invocation.Line.Trim()
@@ -45,10 +48,11 @@ class Action <# lawsuit... I'll be here all week #> {
     # e.g. System.Net.WebClient.DownloadFile
     #   These are guaranteed not to have switches, and the MyInvocation variable does not
     #   contain boundparameters, so callers need to be able to pass the PSBoundParameters variable
-    Action ([String[]] $Behaviors, [String] $Actor, [hashtable] $BehaviorProps, 
-        [hashtable] $BoundParams, [String] $Line, [String] $ExtraInfo) {
+    Action ([String[]] $Behaviors, [String[]] $SubBehaviors, [String] $Actor, 
+        [hashtable] $BehaviorProps, [hashtable] $BoundParams, [String] $Line, [String] $ExtraInfo) {
 
         $this.Behaviors = $Behaviors
+        $this.SubBehaviors = $SubBehaviors
         $this.Actor = $Actor
         $this.BehaviorProps = $BehaviorProps
         $this.Parameters = $BoundParams
@@ -124,8 +128,7 @@ function RedirectObjectCreation {
 }
 
 function GetOverridedClasses {
-    $config = Microsoft.PowerShell.Management\Get-Content "$CODE_DIR/config.json" | ConvertFrom-Json -AsHashtable
-    return $config["Classes"].Keys | ForEach-Object { $_.ToLower() }
+    return $BOXPS_CONFIG["Classes"].Keys | ForEach-Object { $_.ToLower() }
 }
 
 <# 
