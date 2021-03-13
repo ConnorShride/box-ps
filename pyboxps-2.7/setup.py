@@ -1,7 +1,5 @@
 import setuptools
 
-print(str(setuptools.find_packages()))
-
 setuptools.setup(
     name="pyboxps",
     version="1.0",
