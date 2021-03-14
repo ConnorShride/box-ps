@@ -19,7 +19,7 @@ class BoxPSBadInstallError(BoxPSEnvError):
     pass
 
 ####################################################################################################
-class BoxPSVmemError(BoxPSEnvError):
+class BoxPSMemError(BoxPSEnvError):
     pass
 
 ####################################################################################################
