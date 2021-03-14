@@ -344,7 +344,7 @@ malicious behavior but this is by no means guaranteed. In any case box-ps and th
 potentially malicious artifacts of some kind onto disk, be they embedded PEs or JSON formatted 
 malicious strings of code, regardless of the options used. This module will remove any soft limits
 on memory during the sandboxing operation but reinstate them directly afterwards. Limits on virtual
-memory don't seem to work well on PowerShell core.
+memory don't seem to work well with PowerShell core on certain systems.
 
 DOCKER
 
