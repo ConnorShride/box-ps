@@ -41,15 +41,15 @@ class BoxPS:
         Validate that there is a valid box-ps installation and a valid and accessible docker 
         installation if the user wants to use it. If boxps_path is None, will look for an 
         environment variable named "BOXPS" to conatin the path. Will also validate that the system
-        has at least 4GB of virtual memory available to the process, and we can open a pwsh 
-        subprocess if not using docker. Checks are done in the following order and exceptions are
-        raised if any fail, short-cicuiting the rest of the checks.
+        has at least 4GB of memory available to the process, and we can open a pwsh subprocess if 
+        not using docker. Checks are done in the following order and exceptions are raised if any 
+        fail, short-cicuiting the rest of the checks.
 
         1. is BOXPS env variable present (if boxps_path is None)
         2. is the box-ps install path a directory
         3. is box-ps.ps1 and config.json present in the install dir
         4. is docker-box-ps.sh present in the install dir and executable (if using docker)
-        5. is there at least 4GB of virtual memory available to the process
+        5. is there at least 4GB of memory available
         5. can this process run the docker command (if using docker)
         6. can this process run the pwsh command (if not using docker)
 
@@ -66,7 +66,7 @@ class BoxPS:
 
             if boxps_path is None:
                 raise errors.BoxPSNoEnvVarError()
-        
+
         if not os.path.isdir(boxps_path):
             raise errors.BoxPSBadEnvVarError()
 
@@ -89,13 +89,11 @@ class BoxPS:
             except OSError as e:
                 raise errors.BoxPSBadInstallError("cannot execute docker-box-ps.sh: " + str(e))
 
-        # validate that the system has enough virtual memory per process allowed (4GB) or powershell
-        # core can't run. Thanks Microsoft!
-        mem_limit = resource.getrlimit(resource.RLIMIT_AS)[0]
-        if mem_limit != -1:
-            mem_limit_gb = mem_limit / (1024 ** 3)
-            if mem_limit_gb < 4:
-                raise errors.BoxPSVmemError()
+        # validate that the system has enough memory (4GB) or powershell core can't run
+        # Thanks Microsoft!
+        memory_gb = int((os.sysconf('SC_PAGE_SIZE') * os.sysconf('SC_PHYS_PAGES'))/(1024**3))
+        if memory_gb < 4:
+            raise errors.BoxPSMemError()
 
         # we want to run docker. validate we can
         if docker:
@@ -104,17 +102,44 @@ class BoxPS:
                 subprocess.check_call(["docker"], stdout=subprocess.PIPE, stderr=subprocess.PIPE)
             except OSError as e:
                 raise errors.BoxPSDependencyError("docker: " + str(e))
-        
+
         # we want to run pwsh. validate we can
         else:
+
+            limit = self._unset_soft_vmem_limit()
 
             try:
                 subprocess.check_call(["pwsh", "-v"], stdout=subprocess.PIPE, 
                     stderr=subprocess.PIPE)
             except OSError as e:
                 raise errors.BoxPSDependencyError("pwsh: " + str(e))
-        
+
+            self._reset_soft_vmem_limit(limit)
+
         return boxps_path
+
+    ################################################################################################
+    def _unset_soft_vmem_limit(self):
+        """
+        Queries for any soft limits on memory for the process. If there are some set, unsets them.
+
+        @return (int) limit on soft memory, or None if there isn't one
+        """
+
+        mem_limit = resource.getrlimit(resource.RLIMIT_AS)[0]
+        if mem_limit != -1:
+            resource.setrlimit(resource.RLIMIT_AS, (-1, -1))
+            return mem_limit
+        return None
+
+    ################################################################################################
+    def _reset_soft_vmem_limit(self, mem_limit):
+        """
+        Resets the soft limit on the processes memory if there was one.
+        """
+
+        if mem_limit is not None:
+            resource.setrlimit(resource.RLIMIT_AS, (mem_limit, -1))
 
     ################################################################################################
     def sandbox(self,
@@ -126,7 +151,8 @@ class BoxPS:
                 report_only=False,
                 report_file=None):
         """
-        Sandbox powershell to produce a BoxPSReport and other script artifacts if desired.
+        Sandbox powershell to produce a BoxPSReport and other script artifacts if desired. Unlimits
+        any soft memory limits on processes during the sanboxing, then resets them.
         
         INPUT...
         Must take either raw script content or a path to an input script, but not both. Environment
@@ -134,25 +160,25 @@ class BoxPS:
         for the sandboxing may be given in seconds. A BoxPSTimeoutError is raised on timeout.
         
         DOCKER..
-        Will use the docker-box-ps.sh bash script to containerize the sandbox if the BoxPS object 
-        was initialized with the docker flag set. docker-box-ps.sh will always pull the latest 
-        box-ps docker container to do the sandboxing. If giving raw script content, this method will 
+        Will use the docker-box-ps.sh bash script to containerize the sandbox if the BoxPS object
+        was initialized with the docker flag set. docker-box-ps.sh will always pull the latest
+        box-ps docker container to do the sandboxing. If giving raw script content, this method will
         pipe the script into a file within the docker container through docker-box-ps.sh, so the
         script is never written to disk outside the container.
         
         OUTPUT FILES/DIRECTORIES...
         This method will always produce a full analysis output directory on disk unless using docker
-        AND the report_only flag is given. The location of the analysis directory can be customized 
+        AND the report_only flag is given. The location of the analysis directory can be customized
         with the out_dir argument, but this cannot be done while giving the report_only flag, and if
         out_dir is not given the analysis directory will be placed in a temp directory named
         <random>-boxps.
         
-        This method will also always produce a "working" directory in the current working directory 
-        that contains all the files the full analysis directory would contain, regardless of your 
-        out_dir and report_only preferences, unless you're using docker in which case that directory 
+        This method will also always produce a "working" directory in the current working directory
+        that contains all the files the full analysis directory would contain, regardless of your
+        out_dir and report_only preferences, unless you're using docker in which case that directory
         will be written in the container only.
         
-        The JSON report will always be written to disk somewhere named either report.json in the 
+        The JSON report will always be written to disk somewhere named either report.json in the
         full analysis directory, in a temp folder named <random>-boxps.json, or at the path given in
         report_file.
 
@@ -222,6 +248,7 @@ class BoxPS:
             if env_vars is not None:
 
                 try:
+
                     env_file = tempfile.mkstemp(suffix="-boxps.env")[1]
                     with open(env_file, "w") as f:
                         f.write(json.dumps(env_vars))
@@ -235,8 +262,12 @@ class BoxPS:
             if timeout is not None:
                 cmd = ["timeout", str(timeout)] + cmd
 
+            limit = self._unset_soft_vmem_limit()
+
             proc = subprocess.Popen(cmd, stdout=subprocess.PIPE, stderr=subprocess.PIPE)
             stdout, stderr = proc.communicate()
+            
+            self._reset_soft_vmem_limit(limit)
 
         # sandbox within docker container. Use docker-box-ps.sh so we can pipe directly into it
         else:
@@ -311,7 +342,9 @@ Designed for use on a linux machine. Using this on Windows systems has not been 
 strongly advised against. Box-ps will run powershell core on input scripts and attempt to intercept 
 malicious behavior but this is by no means guaranteed. In any case box-ps and this module will place
 potentially malicious artifacts of some kind onto disk, be they embedded PEs or JSON formatted 
-malicious strings of code, regardless of the options used.
+malicious strings of code, regardless of the options used. This module will remove any soft limits
+on memory during the sandboxing operation but reinstate them directly afterwards. Limits on virtual
+memory don't seem to work well on PowerShell core.
 
 DOCKER
 
