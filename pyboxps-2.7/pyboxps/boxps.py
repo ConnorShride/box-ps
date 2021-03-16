@@ -469,8 +469,6 @@ python ./boxps.py --file ./example-script.ps1 --layers --parameter-values --out-
         "script file to sandbox.")
     args = parser.parse_args()
 
-    # TODO updated description, args help (some are wrong) usages, disclaimer
-
     # further arg validation
     
     # must give either a script or an input file
