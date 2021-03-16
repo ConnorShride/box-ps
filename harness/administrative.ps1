@@ -24,6 +24,7 @@ class Action <# lawsuit... I'll be here all week #> {
     [hashtable] $Parameters
     [string] $ExtraInfo
     [int] $Id
+    [string] $BeheviorID
 
     Action ([String[]] $Behaviors, [String[]] $SubBehaviors, [String] $Actor, 
         [hashtable] $BehaviorProps, [InvocationInfo] $Invocation, [string] $ExtraInfo) {
@@ -35,6 +36,8 @@ class Action <# lawsuit... I'll be here all week #> {
         $this.Line = $Invocation.Line.Trim()
         $this.ExtraInfo = $ExtraInfo
         $this.Id = 0
+        $this.BeheviorID = $this.GetBehaviorID()
+
 
         $paramsSplit = $this.SplitParams($Invocation)
         $this.Parameters = $paramsSplit["bound"]
@@ -59,6 +62,23 @@ class Action <# lawsuit... I'll be here all week #> {
         $this.Line = $Line.Trim()
         $this.ExtraInfo = $ExtraInfo
         $this.Id = 0
+        $this.BeheviorID = $this.GetBehaviorID()
+    }
+
+    [string] GetBehaviorID() {
+
+        $hashed = $this.Actor
+        foreach ($behaviorProp in $this.BehaviorProps.Keys) {
+            $hashed += $this.BehaviorProps[$behaviorProp] | Out-String
+        }
+
+        $stringStream = [System.IO.MemoryStream]::new()
+        $streamWriter = [System.IO.StreamWriter]::new($stringStream)
+        $streamWriter.write($hashed)
+        $streamWriter.Flush()
+        $stringStream.Position = 0
+
+        return Get-FileHash -InputStream $stringStream -Algorithm SHA256 | Select-Object Hash -ExpandProperty Hash
     }
 
     # linear walk through all parameters rebuilding bound params and switches

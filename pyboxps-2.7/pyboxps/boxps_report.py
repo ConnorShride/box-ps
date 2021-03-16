@@ -70,6 +70,7 @@ class Action:
             self.actor = action_dict["Actor"]
             self.line = action_dict["Line"]
             self.id = action_dict["Id"]
+            self.behavior_id = action_dict["BehaviorId"]
             self.extra_info = None if action_dict["ExtraInfo"] == "" else action_dict["ExtraInfo"]
 
         except KeyError as e:

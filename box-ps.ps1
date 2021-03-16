@@ -78,17 +78,17 @@ class Report {
     Report([object[]] $actions, [string[]] $scrapedNetwork, [string[]] $scrapedPaths, 
            [string[]] $scrapedEnvProbes, [hashtable] $artifactMap, [string] $workingDir) {
 
-                if ($null -eq $actions) {
-                    $this.Actions = @()
-                }
-                else {
-                    $this.Actions = $actions
-                }
+        if ($null -eq $actions) {
+            $this.Actions = @()
+        }
+        else {
+            $this.Actions = $actions
+        }
 
-                $this.PotentialIndicators = $this.CombineScrapedIOCs($scrapedNetwork, $scrapedPaths)
-                $this.EnvironmentProbes = $this.GenerateEnvProbeReport($scrapedEnvProbes)
-                $this.Artifacts = $artifactMap
-                $this.WorkingDir = $workingDir               
+        $this.PotentialIndicators = $this.CombineScrapedIOCs($scrapedNetwork, $scrapedPaths)
+        $this.EnvironmentProbes = $this.GenerateEnvProbeReport($scrapedEnvProbes)
+        $this.Artifacts = $artifactMap
+        $this.WorkingDir = $workingDir           
     }
 
     [hashtable] GenerateEnvProbeReport([string[]] $scrapedEnvProbes) {
