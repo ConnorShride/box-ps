@@ -180,33 +180,60 @@ class BoxPSReport:
     ################################################################################################
     @property
     def layers(self):
-        # property because this could involve bringing a whole bunch more memory into the process
-        # depending on the script.
+        """
+        Gathers any deobfuscated layers present in the actions. Only includes unique layers gathered
+        from actions with the "code_import" or "script_exec" behavior.
+
+        @return (list) unique list of deobfuscated script layers
+        """
 
         layers = []
         filtered = self.filter_actions(behaviors=[Behaviors.script_exec, Behaviors.code_import])
-        
+
         for action in filtered:
+
+            layer = ""
+
             if Behaviors.script_exec in action.behaviors and action.script != "":
-                layers.append(action.script)
+                layer = action.script
             elif Behaviors.code_import in action.behaviors and action.code != "":
-                layers.append(action.code)
+                layer = action.code
+
+            if layer and layer not in layers:
+                layers.append(layer)
 
         return layers
 
     ################################################################################################
     def get_action(self, action_id):
+        """
+        Gets an action by action ID
+
+        @param action_id (int) action ID
+        
+        @return (Action)
+        """
+
         for action in self.actions:
             if action.id == action_id:
                 return action
+
         return None
 
     ################################################################################################
     def filter_actions(self, behaviors=[], sub_behaviors = [], actors=[], parameters=[]):
-        # behaviors is a list of enum
-        # actors is a list of substrings of actors
-        # parameters is a list of exact parameter matches
-        # STILL IN ORDER OF EXECUTION
+        """
+        Filter the complete list of actions by behaviors, actors, or parameters used. An action that
+        has any of the values you give will be present in the filtered list, which will still be
+        sorted in order of their execution in the script.
+
+        @param behaviors (list) of Behavior enum values
+        @param sub_behaviors (list) of SubBehavior enum values
+        @param actors (list) of substrings to look for in the Actor field of the action
+        @param parameters (list) of exact matches on parameter names used in the action
+
+        @return (list) filtered actions
+        """
 
         filtered = []
         behavior_filter = set(behaviors)
@@ -240,7 +267,12 @@ class BoxPSReport:
 
     ################################################################################################
     def actions_by_behavior(self):
-        # STILL IN ORDER OF EXECUTION per behavior
+        """
+        Gather a dictionary grouping the actions by behavior (not SubBehaviors). The actions in each
+        list are still sorted by order of their execution in the script.
+
+        @return (dict) where the keys are behaviors and the values are lists of actions
+        """
 
         split = {}
 
