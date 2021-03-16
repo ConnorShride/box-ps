@@ -363,17 +363,17 @@ function PreProcessScript {
 
     param(
         [string] $Script,
-	    [string] $PID
+	    [string] $BoxPSPID
     )
 
     $Script = BoxifyScript $Script
-    ScrapeNetworkIOCs $Script | Microsoft.PowerShell.Utility\Out-File -Append "./working_$PID/scraped_network.txt" 
-    ScrapeFilePaths $Script | Microsoft.PowerShell.Utility\Out-File -Append "./working_$PID/scraped_paths.txt"
-    ScrapeEnvironmentProbes $Script | Microsoft.PowerShell.Utility\Out-File -Append "./working_$PID/scraped_probes.txt"
+    ScrapeNetworkIOCs $Script | Microsoft.PowerShell.Utility\Out-File -Append "./working_$BoxPSPID/scraped_network.txt" 
+    ScrapeFilePaths $Script | Microsoft.PowerShell.Utility\Out-File -Append "./working_$BoxPSPID/scraped_paths.txt"
+    ScrapeEnvironmentProbes $Script | Microsoft.PowerShell.Utility\Out-File -Append "./working_$BoxPSPID/scraped_probes.txt"
 
     $separator = ("*" * 100 + "`r`n")
     $layerOut = $separator + $Script + "`r`n" + $separator
-    $layerOut | Microsoft.PowerShell.Utility\Out-File -Append -Path $WORK_DIR/layers.ps1
+    $layerOut | Microsoft.PowerShell.Utility\Out-File -Append -Path "./working_$BoxPSPID/layers.ps1"
 
     return $Script
 }
