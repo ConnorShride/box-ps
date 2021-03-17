@@ -213,19 +213,14 @@ class BoxPSReport:
         
         @return (Action)
         """
-
-        for action in self.actions:
-            if action.id == action_id:
-                return action
-
-        return None
+        return get_action(self.actions, action_id)    
 
     ################################################################################################
-    def filter_actions(self, behaviors=[], sub_behaviors = [], actors=[], parameters=[]):
+    def filter_actions(self, behaviors=[], sub_behaviors=[], actors=[], parameters=[]):
         """
-        Filter the complete list of actions by behaviors, actors, or parameters used. An action that
-        has any of the values you give will be present in the filtered list, which will still be
-        sorted in order of their execution in the script.
+        Filter the list of actions by behaviors, actors, or parameters used. An action that has any 
+        of the values you give will be present in the filtered list, which will still be sorted in 
+        order of their execution in the script.
 
         @param behaviors (list) of Behavior enum values
         @param sub_behaviors (list) of SubBehavior enum values
@@ -234,36 +229,7 @@ class BoxPSReport:
 
         @return (list) filtered actions
         """
-
-        filtered = []
-        behavior_filter = set(behaviors)
-        sub_behavior_filter = set(sub_behaviors)
-
-        for action in self.actions:
-
-            # check for a desired behavior
-            if set(action.behaviors) & behavior_filter:
-                filtered.append(action)
-                continue
-
-            # check for a desired sub_behavior
-            if set(action.sub_behaviors) & sub_behavior_filter:
-                filtered.append(action)
-                continue
-
-            # check for a desired actor
-            filtered_actors = [a for a in actors if a in action.actor]
-            if filtered_actors:
-                filtered.append(action)
-                continue
-
-            # check for desired parameters
-            filtered_parameters = [p for p in parameters if p in action.parameters.keys()]
-            if filtered_parameters:
-                filtered.append(action)
-                continue
-
-        return filtered
+        return filter_actions(self.actions, behaviors, sub_behaviors, actors, parameters)
 
     ################################################################################################
     def actions_by_behavior(self):
@@ -273,15 +239,91 @@ class BoxPSReport:
 
         @return (dict) where the keys are behaviors and the values are lists of actions
         """
+        return actions_by_behavior(self.actions)
 
-        split = {}
 
-        for action in self.actions:
-            for behavior in action.behaviors:
+################################################################################################
+def get_action(actions, action_id):
+    """
+    Gets an action by action ID
 
-                if behavior.name not in split:
-                    split[behavior.name] = []
+    @param actions (list) of Action objects
+    @param action_id (int) action ID
+    
+    @return (Action)
+    """
 
-                split[behavior.name].append(action)
+    for action in actions:
+        if action.id == action_id:
+            return action
 
-        return split
+    return None
+
+################################################################################################
+def filter_actions(actions, behaviors=[], sub_behaviors=[], actors=[], parameters=[]):
+    """
+    Filter the list of actions by behaviors, actors, or parameters used. An action that has any 
+    of the values you give will be present in the filtered list, which will still be sorted in 
+    order of their execution in the script.
+
+    @param actions (list) of Action objects
+    @param behaviors (list) of Behavior enum values
+    @param sub_behaviors (list) of SubBehavior enum values
+    @param actors (list) of substrings to look for in the Actor field of the action
+    @param parameters (list) of exact matches on parameter names used in the action
+
+    @return (list) filtered actions
+    """
+
+    filtered = []
+    behavior_filter = set(behaviors)
+    sub_behavior_filter = set(sub_behaviors)
+
+    for action in actions:
+
+        # check for a desired behavior
+        if set(action.behaviors) & behavior_filter:
+            filtered.append(action)
+            continue
+
+        # check for a desired sub_behavior
+        if set(action.sub_behaviors) & sub_behavior_filter:
+            filtered.append(action)
+            continue
+
+        # check for a desired actor
+        filtered_actors = [a for a in actors if a in action.actor]
+        if filtered_actors:
+            filtered.append(action)
+            continue
+
+        # check for desired parameters
+        filtered_parameters = [p for p in parameters if p in action.parameters.keys()]
+        if filtered_parameters:
+            filtered.append(action)
+            continue
+
+    return filtered
+
+################################################################################################
+def actions_by_behavior(actions):
+    """
+    Gather a dictionary grouping the actions by behavior (not SubBehaviors). The actions in each
+    list are still sorted by order of their execution in the script.
+
+    @param actions (list) of Action objects
+
+    @return (dict) where the keys are behaviors and the values are lists of actions
+    """
+
+    split = {}
+
+    for action in actions:
+        for behavior in action.behaviors:
+
+            if behavior.name not in split:
+                split[behavior.name] = []
+
+            split[behavior.name].append(action)
+
+    return split
