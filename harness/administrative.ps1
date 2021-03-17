@@ -24,7 +24,7 @@ class Action <# lawsuit... I'll be here all week #> {
     [hashtable] $Parameters
     [string] $ExtraInfo
     [int] $Id
-    [string] $BeheviorID
+    [string] $BehaviorId
 
     Action ([String[]] $Behaviors, [String[]] $SubBehaviors, [String] $Actor, 
         [hashtable] $BehaviorProps, [InvocationInfo] $Invocation, [string] $ExtraInfo) {
@@ -36,7 +36,7 @@ class Action <# lawsuit... I'll be here all week #> {
         $this.Line = $Invocation.Line.Trim()
         $this.ExtraInfo = $ExtraInfo
         $this.Id = 0
-        $this.BeheviorID = $this.GetBehaviorID()
+        $this.BehaviorId = $this.GetBehaviorId()
 
 
         $paramsSplit = $this.SplitParams($Invocation)
@@ -62,10 +62,10 @@ class Action <# lawsuit... I'll be here all week #> {
         $this.Line = $Line.Trim()
         $this.ExtraInfo = $ExtraInfo
         $this.Id = 0
-        $this.BeheviorID = $this.GetBehaviorID()
+        $this.BehaviorId = $this.GetBehaviorId()
     }
 
-    [string] GetBehaviorID() {
+    [string] GetBehaviorId() {
 
         $hashed = $this.Actor
         foreach ($behaviorProp in $this.BehaviorProps.Keys) {

@@ -74,7 +74,7 @@ class Action:
             self.extra_info = None if action_dict["ExtraInfo"] == "" else action_dict["ExtraInfo"]
 
         except KeyError as e:
-            raise errors.BoxPSReportError("bad action data in report: " + str(e))
+            raise errors.BoxPSReportError("field in action data not present: " + str(e))
 
         # save the behavior properties in a dict when users want to discover them
         self.behavior_properties = {}
@@ -82,7 +82,7 @@ class Action:
         try:
             self.flex_type_properties = boxps_config["BehaviorPropFlexibleTypes"]
         except KeyError as e:
-            raise errors.BoxPSReportError("bad config: " + str(e))
+            raise errors.BoxPSReportError("field not present in config: " + str(e))
 
         try:
 
@@ -101,7 +101,7 @@ class Action:
             self.parameters = action_dict["Parameters"]
 
         except KeyError as e:
-            raise errors.BoxPSReportError("bad action data in report: " + str(e))
+            raise errors.BoxPSReportError("field in action data not present: " + str(e))
 
 
 ####################################################################################################
@@ -130,7 +130,7 @@ class BoxPSReport:
         try:
             actions_pool = report_dict["Actions"]
         except KeyError:
-            raise errors.BoxPSReportError("no actions list in report")
+            raise errors.BoxPSReportError("no Actions field in report")
 
         # basically selection sort the actions list
         while len(actions_pool) != 0:
@@ -156,7 +156,7 @@ class BoxPSReport:
             self.aggressive_net_iocs = report_dict["PotentialIndicators"]["network"]
             self.aggressive_fs_iocs = report_dict["PotentialIndicators"]["file_system"]
         except KeyError as e:
-            raise errors.BoxPSReportError("bad potential indicators data in report: " + str(e))
+            raise errors.BoxPSReportError("no potential indicators field in report: " + str(e))
 
         # deserialize artifacts, separate out hashes for convenience
         self.artifacts = []
@@ -175,7 +175,7 @@ class BoxPSReport:
                     self.artifacts.append(artifact)
 
         except KeyError:
-            raise errors.BoxPSReportError("no artifacts object in report")
+            raise errors.BoxPSReportError("no artifacts field in report")
 
     ################################################################################################
     @property
