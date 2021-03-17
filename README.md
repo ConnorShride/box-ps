@@ -41,3 +41,4 @@ bad input file - 3
 sandboxing failure - 4
 docker container operation error - 5
 sandboxing timeout - 124
+invalid script syntax - 6

@@ -35,5 +35,9 @@ class BoxPSTimeoutError(BoxPSSandboxError):
     pass
 
 ####################################################################################################
+class BoxPSScriptSyntaxError(BoxPSSandboxError):
+    pass
+
+####################################################################################################
 class BoxPSReportError(BoxPSError):
     pass

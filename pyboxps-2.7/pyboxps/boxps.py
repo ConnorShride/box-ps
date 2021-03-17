@@ -302,7 +302,13 @@ class BoxPS:
 
         # not stderr on the sandboxing sub-process. this means a critical error running the sandbox
         if stderr:
-            raise errors.BoxPSSandboxError(stderr.replace("[-] ", ""))
+            error = stderr.replace("[-] ", "")
+
+            # raise invalid syntax error
+            if proc.returncode == 6:
+                raise errors.BoxPSScriptSyntaxError(error)
+
+            raise errors.BoxPSSandboxError(error)
 
         # no report is also a critical error
         if not os.path.exists(report_path):

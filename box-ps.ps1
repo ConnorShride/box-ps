@@ -563,6 +563,7 @@ else {
     $stderr = Get-Content -Raw $stderrPath
     $fail = $false
     $errorReason = ""
+    $errorCode = 4
 
     # detect some critical errors from the stderr of the sandbox process
 
@@ -570,6 +571,7 @@ else {
     if ($null -ne $stderr -and $stderr.Contains("ParserError: ")) {
         $fail = $true
         $errorReason = "invalid script syntax"
+        $errorCode = 6
     }
 
     # print error and exit
@@ -579,7 +581,7 @@ else {
         if (!$NoCleanUp) {
             CleanUp
         }
-        exit 4
+        exit $errorCode
     }
 
     Write-Host -NoNewLine "[+] post-processing results..."
