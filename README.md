@@ -28,9 +28,12 @@ BehaviorProps": {
     "probe_os": [],
     "probe_language": [],
     "probe_date": [],
-    "upload": ["content"]
+    "upload": ["content"],
     "write_to_memory": ["bytes"],
-    "new_directory": []
+    "new_directory": [],
+    "list_directory_contents": [],
+    "check_for_file": [],
+    "get_path": []
 }
 
 Error return codes...

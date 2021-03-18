@@ -85,7 +85,7 @@
         },
         "Microsoft.PowerShell.Management\\Get-ChildItem": {
             "Behaviors": ["file_system"],
-            "SubBehaviors": ["get_file_info"],
+            "SubBehaviors": ["list_directory_contents"],
             "BehaviorPropInfo": {
                 "paths": ["Path"]
             },
@@ -93,7 +93,7 @@
         },
         "Microsoft.PowerShell.Management\\Test-Path": {
             "Behaviors": ["file_system"],
-            "SubBehaviors": ["get_file_info"],
+            "SubBehaviors": ["check_for_file"],
             "BehaviorPropInfo": {
                 "paths": ["Path"]
             },
@@ -225,7 +225,7 @@
         },
         "[System.Environment]::GetFolderPath": {
             "Behaviors": ["file_system"],
-            "SubBehaviors": [],
+            "SubBehaviors": ["get_path"],
             "BehaviorPropInfo": {
                 "paths": ["folder"]
             },

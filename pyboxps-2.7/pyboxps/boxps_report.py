@@ -54,6 +54,9 @@ class SubBehaviors(Enum):
     upload = 14
     write_to_memory = 15
     new_directory = 16
+    list_directory_contents = 17
+    check_for_file = 18
+    get_path = 19
 
 ####################################################################################################
 class Action:
