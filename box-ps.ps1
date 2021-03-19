@@ -234,7 +234,7 @@ function GetInitialScript {
         $decoded = $scrubbed
     }
 
-    # record the script
+    # TODO import administrative or something so we don't have duplicate code here it bites me every time
     [hashtable] $action = @{
         "Behaviors" = @("script_exec")
         "SubBehaviors" = @("start_process")
@@ -247,6 +247,17 @@ function GetInitialScript {
         "Parameters" = @{}
         "Id" = 0
     }
+
+
+    $hashed = "powershell.exe$decoded"
+
+    $stringStream = [System.IO.MemoryStream]::new()
+    $streamWriter = [System.IO.StreamWriter]::new($stringStream)
+    $streamWriter.write($hashed)
+    $streamWriter.Flush()
+    $stringStream.Position = 0
+
+    $action["BehaviorId"] = (Get-FileHash -InputStream $stringStream -Algorithm SHA256).Hash
 
     $json = $action | ConvertTo-Json -Depth 10
     ($json + ",") | Out-File -Append "$WORK_DIR/actions.json"
@@ -406,11 +417,15 @@ if ($Docker) {
 
     Write-Host "[+] pulling latest docker image"
     docker pull connorshride/box-ps:latest > $null
+    #docker pull connorshride/box-ps:develop > $null 
     Write-Host "[+] starting docker container"
     docker run -td --network none connorshride/box-ps:latest > $null
+    #docker run -td --network none connorshride/box-ps:develop > $null
 
     # get the ID of the container we just started
     $psOutput = docker ps -f status=running -f ancestor=connorshride/box-ps -l
+    #$psOutput=$(docker ps -f status=running -f ancestor=connorshride/box-ps:develop -l)
+
     $idMatch = $psOutput | Select-String -Pattern "[\w]+_[\w]+"
     $containerId = $idMatch.Matches.Value
 
@@ -430,6 +445,8 @@ if ($Docker) {
         $ScriptContent | docker exec -i $containerId /bin/bash -c "cat - > /opt/box-ps/infile.ps1"
         $PSBoundParameters.Remove("ScriptContent") > $null
     }
+
+    # TODO same error handling as below so we pass through return codes
 
     # just keep all the input/output files in the box-ps dir in the container
     if ($OutFile) {
@@ -572,6 +589,13 @@ else {
     $errorCode = 4
 
     # detect some critical errors from the stderr of the sandbox process
+
+    # check for timeout
+    if ($LASTEXITCODE -eq 124) {
+        $fail = $true
+        $errorReason = "sandboxing timed out"
+        $errorCode = 124
+    }
 
     # indicates a script with invalid syntax
     if ($null -ne $stderr -and $stderr.Contains("ParserError: ")) {

@@ -78,7 +78,7 @@ class Action <# lawsuit... I'll be here all week #> {
         $streamWriter.Flush()
         $stringStream.Position = 0
 
-        return Get-FileHash -InputStream $stringStream -Algorithm SHA256 | Select-Object Hash -ExpandProperty Hash
+        return (Get-FileHash -InputStream $stringStream -Algorithm SHA256).Hash
     }
 
     # linear walk through all parameters rebuilding bound params and switches
