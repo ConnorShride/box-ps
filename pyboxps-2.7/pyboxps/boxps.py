@@ -189,7 +189,7 @@ class BoxPS:
         @param out_dir (str) output path to full analysis directory
         @param env_vars (dict) map of environment variable names to string values for the script
         environment
-        @param timeout (int) timeout for script sandboxing
+        @param timeout (int) timeout for script sandboxing in seconds
         @param report_only (bool) whether or not to return the path to a full analysis directory
         @param report_file (str) path to place the outputted JSON report
 
@@ -260,7 +260,7 @@ class BoxPS:
                 cmd += ["-EnvFile", env_file]
 
             if timeout is not None:
-                cmd = ["timeout", str(timeout)] + cmd
+                cmd += ["-Timeout", str(timeout)]
 
             limit = self._unset_soft_vmem_limit()
 

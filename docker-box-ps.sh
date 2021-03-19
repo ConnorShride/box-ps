@@ -145,7 +145,7 @@ then
 
 	if [[ $timeout ]]
 	then
-		docker exec $container_id timeout $timeout pwsh ./box-ps.ps1 -InFile "./infile.ps1" -OutDir "./outdir"
+		docker exec $container_id pwsh ./box-ps.ps1 -InFile "./infile.ps1" -OutDir "./outdir" -Timeout $timeout
 	else
 		docker exec $container_id pwsh ./box-ps.ps1 -InFile "./infile.ps1" -OutDir "./outdir"
 	fi
@@ -178,7 +178,7 @@ else
 
 	if [[ $timeout ]]
 	then
-		docker exec $container_id timeout $timeout pwsh ./box-ps.ps1 -InFile "./infile.ps1" -OutFile "./outfile.json"
+		docker exec $container_id pwsh ./box-ps.ps1 -InFile "./infile.ps1" -OutFile "./outfile.json" -Timeout $timeout
 	else
 		docker exec $container_id pwsh ./box-ps.ps1 -InFile "./infile.ps1" -OutFile "./outfile.json"
 	fi

@@ -20,7 +20,8 @@ param (
     [String] $OutFile,
     [parameter(ParameterSetName="IncludeArtifacts")]
     [string] $OutDir,
-    [switch] $NoCleanUp
+    [switch] $NoCleanUp,
+    [string] $Timeout
 )
 
 # can't give both InFile and script content
@@ -555,7 +556,12 @@ else {
     Write-Host -NoNewLine "[+] sandboxing harnessed script..."
 
     # run it in another shell
-    pwsh -noni $harnessedScriptPath 2> $stderrPath 1> $stdoutPath
+    if ($Timeout) {
+        (timeout $Timeout pwsh -noni $harnessedScriptPath 2> $stderrPath 1> $stdoutPath)
+    }
+    else {
+        pwsh -noni $harnessedScriptPath 2> $stderrPath 1> $stdoutPath
+    }
 
     Write-Host " done"
 
