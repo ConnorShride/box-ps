@@ -583,7 +583,7 @@ python ./boxps.py --file ./example-script.ps1 --layers --parameter-values --out-
 
             # just print the parameters used
             else:
-                print "\nParameters Used: ",
+                print "\nParameters Used:",
                 for p in action.parameters.keys():
                     print p,
                 print("")

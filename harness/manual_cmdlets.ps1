@@ -362,9 +362,12 @@ function Add-Type {
 		[Alias("OT")]
 		[OutputAssemblyType] $OutputType,
 		[switch] $PassThru,
+		<#
+		Don't support importing from a path
 		[Parameter(ParameterSetName="FromPath",Mandatory=$true)]
 		[Parameter(Position=0)]
 		[string[]] $Path,
+		#>
 		[Parameter(ParameterSetName="FromPath")]
 		[Parameter(ParameterSetName="FromMember")]
 		[Parameter(ParameterSetName="FromSource")]
