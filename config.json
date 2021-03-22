@@ -247,7 +247,7 @@
         },
         "[System.Reflection.Assembly]::Load": {
             "Behaviors": ["binary_import"],
-            "SubBehaviors": ["import_dotnet_code"],
+            "SubBehaviors": ["import_dotnet_binary"],
             "BehaviorPropInfo": {
                 "bytes": ["rawAssembly"]
             }

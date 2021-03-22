@@ -33,7 +33,8 @@ BehaviorProps": {
     "new_directory": [],
     "list_directory_contents": [],
     "check_for_file": [],
-    "get_path": []
+    "get_path": [],
+    "import_dotnet_binary": []
 }
 
 Error return codes...

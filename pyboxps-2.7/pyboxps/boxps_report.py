@@ -57,6 +57,7 @@ class SubBehaviors(Enum):
     list_directory_contents = 17
     check_for_file = 18
     get_path = 19
+    import_dotnet_binary = 20
 
 ####################################################################################################
 class Action:
