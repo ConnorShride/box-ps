@@ -106,7 +106,7 @@ static [System.Diagnostics.Process] Start([string] $fileName, [string] $argument
 static [void] Copy([byte[]] $source, [object] $destination, [object] $startIndex, [object] $length) {
 
     $CODE_DIR = "<CODE_DIR>"
-    $WORK_DIR = "./working"
+    $WORK_DIR = "./working_<PID>"
     $behaviorProps = @{}
     $behaviorProps["bytes"] = [Int32[]]$source
     
@@ -128,7 +128,7 @@ static [void] Copy([byte[]] $source, [object] $destination, [object] $startIndex
 static [void] Copy([long[]] $source, [object] $destination, [object] $startIndex, [object] $length) {
 
     $CODE_DIR = "<CODE_DIR>"
-    $WORK_DIR = "./working"
+    $WORK_DIR = "./working_<PID>"
     $behaviorProps = @{}
     $behaviorProps["bytes"] = [Int32[]]$source
     
@@ -150,7 +150,7 @@ static [void] Copy([long[]] $source, [object] $destination, [object] $startIndex
 static [void] Copy([char[]] $source, [object] $destination, [object] $startIndex, [object] $length) {
 
     $CODE_DIR = "<CODE_DIR>"
-    $WORK_DIR = "./working"
+    $WORK_DIR = "./working_<PID>"
     $behaviorProps = @{}
     $behaviorProps["bytes"] = [Int32[]]$source
     
@@ -172,7 +172,7 @@ static [void] Copy([char[]] $source, [object] $destination, [object] $startIndex
 static [void] Copy([short[]] $source, [object] $destination, [object] $startIndex, [object] $length) {
 
     $CODE_DIR = "<CODE_DIR>"
-    $WORK_DIR = "./working"
+    $WORK_DIR = "./working_<PID>"
     $behaviorProps = @{}
     $behaviorProps["bytes"] = [Int32[]]$source
     
