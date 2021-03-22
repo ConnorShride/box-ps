@@ -72,3 +72,4 @@ WarningPreference
 WhatIf
 WhatIfPreference
 WORK_DIR
+BOXPS_CONFIG

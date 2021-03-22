@@ -19,15 +19,27 @@ if ($MyInvocation.InvocationName -ne "Test-Path") {
     }
     $excluded = Microsoft.PowerShell.Management\Get-Content $CODE_DIR/iocs_ignore_vars.txt
     $declaredVars = $declaredVars | Where-Object { $excluded -notcontains $_.Name }
-    
-    $declaredVars | ForEach-Object {
-        $_.Value | Out-String -Stream | ForEach-Object { 
+
+    foreach ($declaredVar in $declaredVars) {
+
+        $value = $declaredVar.Value
+
+        # ignore arrays of integers or bytes
+        if ($null -eq $value -or $value.GetType() -eq [int[]] -or $value.GetType() -eq [byte[]]) {
+            continue
+        }
+
+        if ($declaredVar.Value.GetType() -eq [string[]]) {
+            $value = $value -join ""
+        }
+
+        $value | Out-String -Stream | ForEach-Object { 
             $networkIOCs += ScrapeNetworkIOCs $_
         }
-        $_.Value | Out-String -Stream | ForEach-Object { 
+        $value | Out-String -Stream | ForEach-Object { 
             $fileSystemIOCs += ScrapeFilePaths $_
         }
-        $_.Value | Out-String -Stream | ForEach-Object {
+        $value | Out-String -Stream | ForEach-Object {
             $environmentProbes += ScrapeEnvironmentProbes -Variable $_
         }
     }
