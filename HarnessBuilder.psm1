@@ -138,18 +138,9 @@ function RoutineCode {
         $code += "`$routineArg = `$$($RoutineInfo[$routineScript])`r`n"
     }
 
-    # prepend an initialization of a $routineReturn variable that will be reassigned by the routine if it wants
-    $code += "`$routineReturn = `"`"`r`n"
-
     # read in the code from the snipped stored in the harness directory and IEX it
     $code += "`$routineCode = Microsoft.PowerShell.Management\Get-Content -Raw `$CODE_DIR/harness/$routineScript.ps1`r`n"
-    $code += "Microsoft.PowerShell.Utility\Invoke-Expression `$routineCode`r`n"
-
-    # ExtraInfo should be set to the result of it in "$routineReturn", which will be set in the
-    # routine and persist in the override due to Invoke-Expression madness
-    $code += "if (`$routineReturn) {`r`n"
-    $code += "`t`$extraInfo = `$routineReturn`r`n"
-    $code += "}"
+    $code += "`$routineReturn = Microsoft.PowerShell.Utility\Invoke-Expression `$routineCode`r`n"
 
     return $code
 }
@@ -537,12 +528,15 @@ function ClassFunctionOverrides {
                 $code += "`t`$behaviors = " + (BuildStringArrayCode $OverrideInfo["Behaviors"]) + "`r`n"
                 $code += "`t`$subBehaviors = " + (BuildStringArrayCode $OverrideInfo.SubBehaviors) + "`r`n"
 
-                $code += "`t`$extraInfo = `"`"`r`n"
                 if ($OverrideInfo["Routine"]) {
                     $code += $utils.TabPad($(RoutineCode $OverrideInfo["Routine"]))
                 }
-                elseif ($OverrideInfo["ExtraInfo"]) {
+
+                if ($OverrideInfo["ExtraInfo"]) {
                     $code += "`t`$extraInfo = `"$($OverrideInfo["ExtraInfo"])`"`r`n"
+                }
+                else {
+                    $code += "`t`$extraInfo = `"`"`r`n"
                 }
 
                 if ($Static) {
@@ -575,6 +569,10 @@ function ClassFunctionOverrides {
                         $args = $args.TrimEnd(", ")
                         $code += $args + ")`r`n"
                     }
+                    elseif ($OverrideInfo["Return"]) {
+                        $code += "`treturn $($OverrideInfo["Return"])`r`n"
+                    }
+                    # return null when we don't have anything to fake and we don't want to call the real one
                     else {
                         $code += "`treturn `$null`r`n"
                     }
@@ -671,24 +669,28 @@ function CmdletOverride {
     $code += $utils.TabPad($(BehaviorPropsCode -Cmdlet -BehaviorPropInfo $CmdletInfo.BehaviorPropInfo))
     $code += "`t`$behaviors = " + (BuildStringArrayCode $CmdletInfo["Behaviors"]) + "`r`n"
     $code += "`t`$subBehaviors = " + (BuildStringArrayCode $CmdletInfo.SubBehaviors) + "`r`n"
-    $code += "`t`$extraInfo = `"`"`r`n"
 
-    # extra routine to run before the action is recorded, sourced from the harness directory and ran
-    # via Invoke-Expression
+    # extra routine to run before the action is recorded, sourced from the harness directory and ran via Invoke-Expression
     if ($CmdletInfo["Routine"]) {
         $code += $utils.TabPad($(RoutineCode $CmdletInfo["Routine"]))
     }
+
     # there may be a hardcoded value for ExtraInfo in the config file
-    elseif ($CmdletInfo["ExtraInfo"]) {
+    # TODO add support for making the value $routineReturn
+    if ($CmdletInfo["ExtraInfo"]) {
         $code += "`t`$extraInfo = `"$($CmdletInfo["ExtraInfo"])`"`r`n"
+    }
+    else {
+        $code += "`t`$extraInfo = `"`"`r`n"
     }
 
     $code += "`tRecordAction `$([Action]::new(`$behaviors, `$subBehaviors, `"$($CmdletName)`", `$behaviorProps, `$MyInvocation, `$extraInfo))`r`n"
 
-    if ($CmdletInfo.Flags) {
-        if ($CmdletInfo.Flags -contains "call_parent") {
-            $code += "`treturn $CmdletName @PSBoundParameters`r`n"
-        }
+    if ($CmdletInfo.Flags -and $CmdletInfo.Flags -contains "call_parent") {
+        $code += "`treturn $CmdletName @PSBoundParameters`r`n"
+    }
+    elseif ($CmdletInfo["Return"]) {
+        $code += "`treturn $($CmdletInfo["Return"])`r`n"
     }
 
     return $code + "}`r`n"
