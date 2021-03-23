@@ -231,13 +231,6 @@
             },
             "Flags": ["call_parent"]
         },
-        "[System.Net.HttpWebRequest]::Create": {
-            "Behaviors": ["network"],
-            "SubBehaviors": [],
-            "BehaviorPropInfo": {
-                "uri": ["requestUriString", "requestUri"]
-            }
-        },
         "[System.Diagnostics.Process]::Start": {
             "Behaviors": ["file_exec"],
             "SubBehaviors": ["start_process"],
