@@ -212,7 +212,6 @@ function Start-Job {
 	return $invokeRes
 }
 
-# Keep this override so we can eventually do fancy object redirection for emulated COM objects
 function New-Object {
 	param(
 		[Parameter(ParameterSetName="Net",Position=1)]
@@ -252,8 +251,8 @@ function New-Object {
 		$behaviorProps["object"] = $TypeName
 	}
 	
-	# too noisy and not valuable
-    #RecordAction $([Action]::new($behaviors, $subBehaviors, "Microsoft.PowerShell.Utility\New-Object", $behaviorProps, $MyInvocation, ""))
+	# too noisy and not valuable except for debugging
+    # RecordAction $([Action]::new($behaviors, $subBehaviors, "Microsoft.PowerShell.Utility\New-Object", $behaviorProps, $MyInvocation, ""))
     
 	if ($(GetOverridedClasses).Contains($behaviorProps["object"].ToLower())) {
 	   return RedirectObjectCreation $TypeName

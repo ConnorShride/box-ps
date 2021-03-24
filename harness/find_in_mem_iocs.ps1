@@ -4,19 +4,27 @@ if ($MyInvocation.InvocationName -ne "Test-Path") {
     $networkIOCs = @()
     $fileSystemIOCs = @()
     $environmentProbes = @()
-    
+
     # get the variables present in the scope of the script
-    $parentVars = Microsoft.PowerShell.Utility\Get-Variable -Scope 1
-        
-    # get the variables present in this scope (overrided function)
+    try{
+        $parentVars = Microsoft.PowerShell.Utility\Get-Variable -Scope 1
+    }
+    # if they're dot sourceing an override, there will be no parent scope
+    catch
+    {
+        $parentVars = @()
+    }
+
+    # get the variables present in this scope
     $localVars = Microsoft.PowerShell.Utility\Get-Variable -Scope 0
+
+    # filter out built-in variables and variables we declare to leave only user declared vars
     $localVarNames = Microsoft.PowerShell.Utility\New-Object System.Collections.ArrayList
     $localVars | ForEach-Object { $localVarNames.Add($_.Name) > $null }
-        
-    # filter out built-in variables and variables we declare to leave only user declared vars
     $declaredVars = $parentVars | Microsoft.PowerShell.Core\Where-object { 
         $localVarNames -notcontains $_.Name
     }
+
     $excluded = Microsoft.PowerShell.Management\Get-Content $CODE_DIR/iocs_ignore_vars.txt
     $declaredVars = $declaredVars | Where-Object { $excluded -notcontains $_.Name }
 

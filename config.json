@@ -234,6 +234,13 @@
             },
             "Flags": ["call_parent"]
         },
+        "[System.IO.Directory]::CreateDirectory": {
+            "Behaviors": ["file_system"],
+            "SubBehaviors": ["new_directory"],
+            "BehaviorPropInfo": {
+                "paths": ["path"]
+            }
+        },
         "[System.Diagnostics.Process]::Start": {
             "Behaviors": ["file_exec"],
             "SubBehaviors": ["start_process"],
