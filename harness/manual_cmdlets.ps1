@@ -321,9 +321,12 @@ function powershell.exe {
 function Add-Type {
 	[cmdletbinding(DefaultParameterSetName="FromSource")]
 	param(
+		<#
+		Don't support importing from a path
 		[Parameter(ParameterSetName="FromAssemblyName",Mandatory=$true)]
 		[Alias("AN")]
 		[string[]] $AssemblyName,
+		#>
 		[Parameter(ParameterSetName="FromPath")]
 		[Parameter(ParameterSetName="FromMember")]
 		[Parameter(ParameterSetName="FromSource")]
