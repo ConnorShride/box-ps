@@ -36,6 +36,14 @@ function GetUnqualifiedName {
     return $unqualified
 }
 
+function SquashStaticName {
+    
+    param(
+        [string] $StaticName
+    )
+    return $StaticName -replace "[\[\]:\.]",""
+}
+
 function SeparateLines
 {
     param(

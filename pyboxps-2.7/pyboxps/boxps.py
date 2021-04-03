@@ -468,7 +468,7 @@ python ./boxps.py --file ./example-script.ps1 --layers --parameter-values --out-
         help="print captured stderr from the script. Only available if producing a full analysis " +
         "output directory.")
     parser.add_argument("-l", "--layers", required=False, default=False, action="store_true",
-        help="print all the 'layers' of the script in the order of their revealing.")
+        help="print all the 'layers' of the script in the order they're deobfuscated.")
     parser.add_argument("-a", "--all", required=False, default=False, action="store_true",
         help="print everything we can unsnipped.")
     parser.add_argument("-f", "--file", required=False, action="store", help="path to powershell " +

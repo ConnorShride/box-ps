@@ -291,6 +291,11 @@
                     "[char[]] $source, [object] $destination, [object] $startIndex, [object] $length",
                     "[short[]] $source, [object] $destination, [object] $startIndex, [object] $length"
                 ]
+            },
+            "[ScriptBlock]::Create": {
+                "[ScriptBlock]": [
+                    "[string] $string"
+                ]
             }
         },
         "ClassMembers": []

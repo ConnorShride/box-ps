@@ -3,6 +3,7 @@ Powershell sandboxing utility
 
 BehaviorProps": {
     "code_import": ["code"],
+    "code_create": ["code"],
     "binary_import": ["bytes"],
     "file_system": ["paths"],
     "script_exec": ["script"],
@@ -34,7 +35,8 @@ BehaviorProps": {
     "list_directory_contents": [],
     "check_for_file": [],
     "get_path": [],
-    "import_dotnet_binary": []
+    "import_dotnet_binary": [],
+    "init_code_block": []
 }
 
 Error return codes...

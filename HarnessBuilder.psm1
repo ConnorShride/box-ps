@@ -30,8 +30,8 @@ function CmdletParamsCode {
         [hashtable] $ArgAdditions
     )
 
-    $helpResults = Microsoft.PowerShell.Core\Get-Help -Full $Cmdlet
-    $helpParams = $helpResults.parameters.parameter
+    $helpParams = (Microsoft.PowerShell.Core\Get-Help -Full $Cmdlet).parameters.parameter
+    $doneParams = @()
 
     # get the default parameter set
     $defaultParamSet = (Microsoft.Powershell.Core\Get-Command $Cmdlet).DefaultParameterSet
@@ -51,6 +51,11 @@ function CmdletParamsCode {
     $code += "param(`r`n"
 
     foreach ($helpParam in $HelpParams) {
+
+        # don't add duplicate parameters (thanks Microsoft)
+        if ($doneParams -contains $helpParam.Name) {
+            continue
+        }
 
         # check if it has a non-default parameter set that we need to support
         if ($helpParam.parameterSetName -ne "(All)" -and $helpParam.parameterSetName -ne "Default") {
@@ -98,6 +103,8 @@ function CmdletParamsCode {
         }
 
         $code += "`t[$($helpParam.type.name)] `$$($helpParam.Name),`r`n"
+
+        $doneParams += $helpParam.Name
     }
 
     $code = $code.TrimEnd(",`r`n`t") + "`r`n)"
@@ -411,8 +418,7 @@ function GetFunctionSignatures {
 	}
     elseif ($InstanceMember) {
         $guineaPig = Microsoft.PowerShell.Utility\New-Object $ParentClass
-        $signatures = $guineaPig | Microsoft.PowerShell.Utility\Get-Member | 
-                        Microsoft.PowerShell.Core\Where-Object Name -eq $FuncName
+        $signatures = $guineaPig | Microsoft.PowerShell.Utility\Get-Member | Microsoft.PowerShell.Core\Where-Object Name -eq $FuncName
         $signatures = $signatures.Definition.Split("),") | Microsoft.PowerShell.Core\ForEach-Object {
 			if (!$_.EndsWith(")")) {
 				$_ += ")"
@@ -427,8 +433,7 @@ function GetFunctionSignatures {
     foreach ($signature in $signatures) {
 
         $signature -match "\((.*)\)" > $null
-        $sigAndArgs[$signature] = @($Matches[1].Split(", ") | 
-                                    Microsoft.PowerShell.Core\ForEach-Object { $_.Split()[1]})
+        $sigAndArgs[$signature] = @($Matches[1].Split(", ") | Microsoft.PowerShell.Core\ForEach-Object { $_.Split()[1]})
     }
     
     return $sigAndArgs
@@ -520,8 +525,9 @@ function ClassFunctionOverrides {
     
             # this signature contains a parameter we're wanting to track as a behavior property
             if ($intersection) {
-    
-                $code += $signature + " {`r`n"
+
+                # function name will be a "squashed" name containing the namespace information
+                $code += $($signature.Replace($utils.GetUnqualifiedName($FuncName) + "(", $utils.SquashStaticName($FuncName) + "(")) + " {`r`n"
                 $code += "`t`$CODE_DIR = `"<CODE_DIR>`"`r`n"
                 $code += "`t`$WORK_DIR = `"./working_<PID>`"`r`n"
                 $code += $utils.TabPad($(BehaviorPropsCode -ClassFunc -SigAndArgs $sigAndArgs -BehaviorPropInfo $OverrideInfo["BehaviorPropInfo"]))
@@ -725,9 +731,6 @@ function BuildHarness {
 
     # code containing namespace imports, class definition for Actions
     $harness += [IO.File]::ReadAllText("$harnessPath/administrative.ps1") + "`r`n`r`n"
-
-    # may need to boxify script layers as they get decoded and executed
-    $harness += "Microsoft.PowerShell.Core\Import-Module -Name `$CODE_DIR/ScriptInspector.psm1`r`n`r`n"
 
     $harness += $commentSep + "`r`n#CLASSES`r`n" + $commentSep + "`r`n"
     foreach ($class in $config["Classes"].Keys) {

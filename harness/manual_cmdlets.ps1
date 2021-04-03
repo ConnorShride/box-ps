@@ -274,7 +274,7 @@ function powershell.exe {
         [switch] $NonInteractive
     )
     
-	$scrapeIOCsCode = Microsoft.PowerShell.Management\Get-Content -Raw $CODE_DIR/harness/find_in_mem_iocs.ps1
+	$scrapeIOCsCode = Microsoft.PowerShell.Management\Get-Content -Raw $CODE_DIR/harness/find_in_mem_iocs.ps1 
 	Microsoft.PowerShell.Utility\Invoke-Expression $scrapeIOCsCode
 
 	$behaviors = @("script_exec")
@@ -312,9 +312,7 @@ function powershell.exe {
 
     RecordAction $([Action]::new($behaviors, $subBehaviors, "powershell.exe", $behaviorProps, $MyInvocation, ""))
 
-    $boxifiedScript = PreProcessScript $behaviorProps["script"] "<PID>"
-
-	Microsoft.PowerShell.Utility\Invoke-Expression $boxifiedScript
+	[BoxPSStatics]::SandboxScript($behaviorProps["script"])
 }
 
 function Add-Type {

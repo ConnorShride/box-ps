@@ -171,3 +171,6 @@ function FlattenProcessObjects {
 
     return $strings
 }
+
+Microsoft.PowerShell.Core\Import-Module -Name $CODE_DIR/ScriptInspector.psm1
+Microsoft.PowerShell.Core\Import-Module -Name $CODE_DIR/HarnessBuilder.psm1

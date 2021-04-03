@@ -2,13 +2,14 @@ $utils = Microsoft.PowerShell.Core\Import-Module -Name $PSScriptRoot/Utils.psm1 
 $config = Microsoft.PowerShell.Management\Get-Content $PSScriptRoot/config.json | 
     Microsoft.PowerShell.Utility\ConvertFrom-Json -AsHashtable
 
-function ReplaceStaticNamespaces {
+# replace static function calls that we are overriding for a call to our function
+# relies on function calls being unobfuscated :(
+function ReplaceStaticFunctions {
 
     param(
         [string] $Script
     )
 
-    $boxStaticsClass = "BoxPSStatics"
     $functions = Microsoft.PowerShell.Utility\New-Object System.Collections.ArrayList
 
     # get all the static functions names we care about
@@ -23,26 +24,14 @@ function ReplaceStaticNamespaces {
         $functions.Add([string]($function)) | Out-Null
     }
 
-    # find an instance of a static method invocation we care about 
-    # remove the method from the list 
-    while ($functions.Count -gt 0) {
+    foreach ($function in $functions) {
 
-        $shortName = $utils.GetUnqualifiedName($functions[0])
-        $match = $Script | Microsoft.Powershell.Utility\Select-String -Pattern $("\[[\w\.]+(?<!$boxStaticsClass)\]::$shortName\(")
-        $match = $match.Matches
+        # look for the whole plaintext function call with an optional "System." namespace, case insensitive
+        $funcPat = [Regex]::Escape($function).Replace("System\.", "(System\.)?") + "\("
+        $matches = ($Script | Microsoft.Powershell.Utility\Select-String -Pattern $funcPat).Matches
 
-        # remove the namespace
-        if ($match) {
-
-            $namespaceStart = $Script.LastIndexOf("[", $match.Index)
-            $namespaceEnd = $Script.IndexOf(']', $namespaceStart)
-    
-            $Script = $Script.Remove($namespaceStart + 1, $namespaceEnd - $namespaceStart - 1)
-            $Script = $Script.Insert($namespaceStart + 1, $boxStaticsClass)
-        }
-        # don't look for matches on that cmdlet anymore
-        else {
-            $functions.Remove($functions[0])
+        foreach ($match in $matches) {
+            $Script = $Script.Replace($match.Value, "[BoxPSStatics]::$($utils.SquashStaticName($function))(")
         }
     }
 
@@ -98,7 +87,7 @@ function HandleNamespaces {
         [string] $Script
     )
 
-    $Script = ReplaceStaticNamespaces $Script
+    $Script = ReplaceStaticFunctions $Script
     $Script = ScrubCmdletNamespaces $Script
 
     return $Script
@@ -366,7 +355,6 @@ function PreProcessScript {
 	    [string] $BoxPSPID
     )
 
-    $Script = BoxifyScript $Script
     ScrapeNetworkIOCs $Script | Microsoft.PowerShell.Utility\Out-File -Append "./working_$BoxPSPID/scraped_network.txt" 
     ScrapeFilePaths $Script | Microsoft.PowerShell.Utility\Out-File -Append "./working_$BoxPSPID/scraped_paths.txt"
     ScrapeEnvironmentProbes $Script | Microsoft.PowerShell.Utility\Out-File -Append "./working_$BoxPSPID/scraped_probes.txt"
@@ -375,7 +363,7 @@ function PreProcessScript {
     $layerOut = $separator + $Script + "`r`n" + $separator
     $layerOut | Microsoft.PowerShell.Utility\Out-File -Append -Path "./working_$BoxPSPID/layers.ps1"
 
-    return $Script
+    return (BoxifyScript $Script)
 }
 
 Export-ModuleMember -Function PreProcessScript
