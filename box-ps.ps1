@@ -210,7 +210,7 @@ function GetInitialScript {
     )
 
     # make sure it starts with "powershell" so we don't waste time (the rest is not efficient)
-    if (!($OrigScript -match "^[Pp][Oo][Ww][Ee][Rr][Ss][Hh][Ee][Ll][Ll].*$")) {
+    if (!($OrigScript -match "^\s*[Pp][Oo][Ww][Ee][Rr][Ss][Hh][Ee][Ll][Ll].*$")) {
         return $OrigScript
     }
 
@@ -225,7 +225,7 @@ function GetInitialScript {
         }
     }
 
-    $scrubbed = $OrigScript -replace "^[Pp][Oo][Ww][Ee][Rr][Ss][Hh][Ee][Ll][Ll](.exe)?\s+((-[\w``]+\s+([\w\d``]+ )?)?)*"
+    $scrubbed = $OrigScript -replace "^\s*[Pp][Oo][Ww][Ee][Rr][Ss][Hh][Ee][Ll][Ll](.exe)?\s+((-[\w``]+\s+([\w\d``]+ )?)?)*"
 
     if ($is_encoded) {
         $decoded = [System.Text.Encoding]::Unicode.GetString([System.Convert]::FromBase64String($encoded))
@@ -374,12 +374,24 @@ function HarvestArtifacts {
     return $artifactMap
 }
 
-# remove imported modules and clean up non-output file system artifacts
-function CleanUp {
+# clean up working directory if desired, remove imported modules, and exit with a code
+function CleanExit {
+    
+    param(
+        [bool] $NoCleanUp,
+        [int] $ExitCode,
+        [string] $WorkDir
+    )
+
+    if (!$NoCleanUp) {
+        Remove-Item -Recurse $WorkDir -ErrorAction SilentlyContinue
+    }
+
     Remove-Module HarnessBuilder -ErrorAction SilentlyContinue
     Remove-Module ScriptInspector -ErrorAction SilentlyContinue
     Remove-Module Utils -ErrorAction SilentlyContinue
-    Remove-Item -Recurse $WORK_DIR
+
+    exit $ExitCode
 }
 
 # Use the current PID to give each box-ps run a unique working directory.
@@ -524,7 +536,7 @@ else {
         if (!$EnvVar.Contains("=")) {
             [Console]::Error.WriteLine("[-] no equals sign in environment variable string")
             [Console]::Error.WriteLine("[-] USAGE <var_name>=<value>")
-            exit 1
+            CleanExit -NoCleanUp $NoCleanUp -WorkDir $WORK_DIR -ExitCode 1
         }
 
         $name = $EnvVar[0..($EnvVar.IndexOf("="))] -join ''
@@ -541,7 +553,7 @@ else {
         # validate the file exists
         if (!(Test-Path $EnvFile)) {
             [Console]::Error.WriteLine("[-] input environment variable file doesn't exist. exiting.")
-            exit 3
+            CleanExit -NoCleanUp $NoCleanUp -WorkDir $WORK_DIR -ExitCode 3
         }
         else {
 
@@ -552,7 +564,7 @@ else {
             }
             catch {
                 [Console]::Error.WriteLine("[-] input environment variable file is not formatted in valid JSON. exiting")
-                exit 1
+                CleanExit -NoCleanUp $NoCleanUp -WorkDir $WORK_DIR -ExitCode 1
             }
 
             $envFileContent | Out-File $WORK_DIR/input_env.json
@@ -574,7 +586,7 @@ else {
 
     # run it in another shell
     if ($Timeout) {
-        (timeout $Timeout pwsh -noni $harnessedScriptPath 2> $stderrPath 1> $stdoutPath)
+        (timeout --foreground $Timeout pwsh -noni $harnessedScriptPath 2> $stderrPath 1> $stdoutPath)
     }
     else {
         pwsh -noni $harnessedScriptPath 2> $stderrPath 1> $stdoutPath
@@ -608,10 +620,7 @@ else {
     if ($fail) {
         [Console]::Error.WriteLine("[-] sandboxing failed: $errorReason...")
         [Console]::Error.WriteLine($stderr)
-        if (!$NoCleanUp) {
-            CleanUp
-        }
-        exit $errorCode
+        CleanExit -NoCleanUp $NoCleanUp -WorkDir $WORK_DIR -ExitCode $errorCode
     }
 
     Write-Host -NoNewLine "[+] post-processing results..."
@@ -670,7 +679,5 @@ else {
         $reportJson | Out-File $OutDir/report.json
     }
 
-    if (!$NoCleanUp) {
-        CleanUp
-    }
+    CleanExit -NoCleanUp $NoCleanUp -WorkDir $WORK_DIR -ExitCode 0
 }
