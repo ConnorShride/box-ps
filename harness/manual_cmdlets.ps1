@@ -24,59 +24,78 @@ function mkdir {
 }
 
 function Invoke-Expression {
-
-	param(
+    param(
 		[Parameter(ValueFromPipeline=$true,Position=0,Mandatory=$true)]
 		[string] $Command
 	)
     
-	$scrapeIOCsCode = Microsoft.PowerShell.Management\Get-Content -Raw $CODE_DIR/harness/find_in_mem_iocs.ps1
-	Microsoft.PowerShell.Utility\Invoke-Expression $scrapeIOCsCode
+    Begin {}
+    Process {
 
-	$behaviors = @("script_exec")
-	$subBehaviors = @()
+        $isInteger = $false
 
-	$behaviorProps = @{
-        "script" = $Command
+        # don't do anything for commands that are just integers (using IEX to init a byte array)
+        try {
+            $test = [int]$Command
+            $isInteger = $true
+        }
+        # assume we've got a live one
+        catch {
+
+			# record the action
+            $behaviors = @("script_exec")
+            $subBehaviors = @()
+			$behaviorProps = @{
+				"script" = $Command
+			}
+
+            RecordAction $([Action]::new($behaviors, $subBehaviors, "Microsoft.PowerShell.Utility\Invoke-Expression", $behaviorProps, $MyInvocation, ""))
+
+            $scrapeIOCsCode = Microsoft.PowerShell.Management\Get-Content -Raw $CODE_DIR/harness/find_in_mem_iocs.ps1
+            Microsoft.PowerShell.Utility\Invoke-Expression $scrapeIOCsCode
+
+            $parentVars = Microsoft.PowerShell.Utility\Get-Variable -Scope 1
+            $localVars = Microsoft.PowerShell.Utility\Get-Variable -Scope 0
+            $localVars = $localVars | Microsoft.PowerShell.Core\ForEach-Object { $_.Name }
+            
+            # import all the variables from the parent scope so the invoke expression has them to work with
+            foreach ($parentVar in $parentVars) {
+                if (!($localVars.Contains($parentVar.Name))) {
+                    Microsoft.PowerShell.Utility\Set-Variable -Name $parentVar.Name -Value $parentVar.Value
+                }
+            }
+            
+            $modifiedCommand = PreProcessScript $Command "<PID>"
+
+            # actually run it, assign the result for situations like...
+            # ex. $foo = Invoke-Expression "New-Object System.Net.WebClient"
+            $invokeRes = Microsoft.PowerShell.Utility\Invoke-Expression $modifiedCommand
+
+            # invoked command may have initialized more variables that are to be used later, that are now
+            # defined in this local scope
+            $localVars = Microsoft.PowerShell.Utility\Get-Variable -Scope 0
+            $parentVars = $parentVars | Microsoft.PowerShell.Core\ForEach-Object { $_.Name }
+        
+            # yes... foreach is indeed a variable
+            $thisDeclaredVars = @("Command", "behaviorProps", "parentVars", "localVars", "parentVar", 
+                "invokeRes", "localVar", "varName", "foreach", "PSCmdlet")
+        
+            # pick out the variables the Invoke-Expression defined, export them to the parent scope
+            foreach ($localVar in $localVars) {
+                $varName = $localVar.Name
+                if (!($parentVars.Contains($varName)) -and !($thisDeclaredVars.Contains($varName))) {
+                    Microsoft.PowerShell.Utility\Set-Variable -Name $varName -Value $localVar.Value -Scope 1
+                }
+            }
+        
+            $invokeRes
+        }
+
+        if ($isInteger) {
+            Microsoft.PowerShell.Utility\Invoke-Expression $Command
+        }
     }
-	
-	$parentVars = Microsoft.PowerShell.Utility\Get-Variable -Scope 1
-	$localVars = Microsoft.PowerShell.Utility\Get-Variable -Scope 0
-    $localVars = $localVars | Microsoft.PowerShell.Core\ForEach-Object { $_.Name }
-    
-    # import all the variables from the parent scope so the invoke expression has them to work with
-	foreach ($parentVar in $parentVars) {
-	    if (!($localVars.Contains($parentVar.Name))) {
-	        Microsoft.PowerShell.Utility\Set-Variable -Name $parentVar.Name -Value $parentVar.Value
-	    }
-    }
-    
-    RecordAction $([Action]::new($behaviors, $subBehaviors, "Microsoft.PowerShell.Utility\Invoke-Expression", $behaviorProps, $MyInvocation, ""))
-
-    $modifiedCommand = PreProcessScript $Command "<PID>"
-
-    # actually run it, assign the result for situations like...
-    # ex. $foo = Invoke-Expression "New-Object System.Net.WebClient"
-    $invokeRes = Microsoft.PowerShell.Utility\Invoke-Expression $modifiedCommand
-
-    # invoked command may have initialized more variables that are to be used later, that are now
-    # defined in this local scope
-    $localVars = Microsoft.PowerShell.Utility\Get-Variable -Scope 0
-    $parentVars = $parentVars | Microsoft.PowerShell.Core\ForEach-Object { $_.Name }
-
-    # yes... foreach is indeed a variable
-    $thisDeclaredVars = @("Command", "behaviorProps", "parentVars", "localVars", "parentVar", 
-        "invokeRes", "localVar", "varName", "foreach", "PSCmdlet")
-
-    # pick out the variables the Invoke-Expression defined, export them to the parent scope
-    foreach ($localVar in $localVars) {
-        $varName = $localVar.Name
-        if (!($parentVars.Contains($varName)) -and !($thisDeclaredVars.Contains($varName))) {
-	        Microsoft.PowerShell.Utility\Set-Variable -Name $varName -Value $localVar.Value -Scope 1
-	    }
-    }
-
-	return $invokeRes
+    End {}
 }
 
 function Start-Job {
