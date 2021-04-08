@@ -23,6 +23,23 @@ function mkdir {
     RecordAction $([Action]::new($behaviors, $subBehaviors, "Microsoft.PowerShell.Core\mkdir", $behaviorProps, $MyInvocation, ""))
 }
 
+function curl ($url, $o) {
+
+	$behaviors = @("network")
+	$subBehaviors = @()
+	$behaviorProps = @{
+		"uri" = $url
+	}
+
+    if ($o) {
+	    $behaviors += @("file_system")
+		$subBehaviors += @("file_write")
+		$behaviorProps["paths"] = @($o)
+    }
+
+	RecordAction $([Action]::new($behaviors, $subBehaviors, "curl.exe", $behaviorProps, $MyInvocation, ""))
+}
+
 function Invoke-Expression {
     param(
 		[Parameter(ValueFromPipeline=$true,Position=0,Mandatory=$true)]
