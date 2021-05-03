@@ -292,6 +292,11 @@
                     "[short[]] $source, [object] $destination, [object] $startIndex, [object] $length"
                 ]
             },
+            "[System.Runtime.InteropServices.Marshal]::PtrToStringAuto": {
+                "[string]": [
+                    "[IntPtr] $ptr"
+                ]
+            },
             "[ScriptBlock]::Create": {
                 "[ScriptBlock]": [
                     "[string] $string"

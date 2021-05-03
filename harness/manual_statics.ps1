@@ -228,3 +228,7 @@ static [void] SystemRuntimeInteropServicesMarshalCopy([short[]] $source, [object
 
     RecordAction $([Action]::new($behaviors, $subBehaviors, "[System.Runtime.InteropServices.Marshal]::Copy", $behaviorProps, $PSBoundParameters, $MyInvocation.Line, $extraInfo))
 }
+
+static [string] SystemRuntimeInteropServicesMarshalPtrToStringAuto([IntPtr] $ptr) {
+    return [System.Runtime.InteropServices.Marshal]::PtrToStringBSTR($ptr)
+}
