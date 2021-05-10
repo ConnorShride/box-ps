@@ -41,7 +41,8 @@
         "object": "[string]",
         "code": "[string]",
         "bytes": "[Int32[]]",
-        "script": "[string]"
+        "script": "[string]",
+        "duration": "[string]"
     },
     "Cmdlets": {
         "Microsoft.PowerShell.Core\\Set-StrictMode": {},
@@ -142,7 +143,8 @@
             "Behaviors": ["process"],
             "SubBehaviors": ["pause_process"],
             "BehaviorPropInfo": {
-                "processes": null
+                "processes": null,
+                "duration": ["Seconds"]
             }
         },
         "Microsoft.PowerShell.Management\\Start-Process": {
@@ -208,12 +210,28 @@
                     "uri": ["address"]
                 }
             },
+            "OpenRead": {
+                "Behaviors": ["network"],
+                "SubBehaviors": [],
+                "BehaviorPropInfo": {
+                    "uri": ["address"]
+                }
+            },
             "UploadString": {
                 "Behaviors": ["network"],
                 "SubBehaviors": [],
                 "BehaviorPropInfo": {
                     "uri": ["address"]                    
-                }                
+                }   
+            }
+        },
+        "Microsoft.CSharp.CSharpCodeProvider": {
+            "CompileAssemblyFromSource": {
+                "Behaviors": ["code_import"],
+                "SubBehaviors": ["import_dotnet_code"],
+                "BehaviorPropInfo": {
+                    "code": ["sources"]
+                }
             }
         }
     },
@@ -224,6 +242,14 @@
             "BehaviorPropInfo": {
                 "paths": ["path"],
                 "content": ["bytes"]
+            }
+        },
+        "[System.IO.File]::WriteAllText": {
+            "Behaviors": ["file_system"],
+            "SubBehaviors": ["file_write"],
+            "BehaviorPropInfo": {
+                "paths": ["path"],
+                "content": ["contents"]
             }
         },
         "[System.Environment]::GetFolderPath": {
@@ -246,6 +272,14 @@
             "SubBehaviors": ["start_process"],
             "BehaviorPropInfo": {
                 "files": ["fileName"]
+            }
+        },
+        "[System.Threading.Thread]::Sleep": {
+            "Behaviors": ["process"],
+            "SubBehaviors": ["pause_process"],
+            "BehaviorPropInfo": {
+                "processes": null,
+                "duration": ["millisecondsTimeout", "timeout"]
             }
         },
         "[System.Reflection.Assembly]::Load": {

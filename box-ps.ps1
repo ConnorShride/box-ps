@@ -199,20 +199,27 @@ class Report {
     }
 }
 
-# removes, if present, the invocation to Powershell that comes up front. It may be written to
-# be interpreted with a cmd.exe shell, having cmd.exe obfuscation, and therefore does not play well 
-# with our PowerShell interpreted powershell.exe override. Also records the initial action as a 
-# script execution of the code we come up with here (decoded if it was b64 encoded).
-function GetInitialScript {
+# Isolates the script being executed in a powershell invocation. It may be written to be interpreted 
+# with a cmd.exe shell and therefore does not play well with our PowerShell-interpreted 
+# powershell.exe override (unquoted for the -Command flag or even cmd.exe obfuscation). Records the 
+# initial action as a script execution of the code we come up with here (decoded if it was b64 
+# encoded).
+function HandleCmdInvocation {
 
     param(
         [string] $OrigScript
     )
 
-    # make sure it starts with "powershell" so we don't waste time (the rest is not efficient)
-    if (!($OrigScript -match "^\s*[Pp][Oo][Ww][Ee][Rr][Ss][Hh][Ee][Ll][Ll].*$")) {
+    $OrigScript = $OrigScript.Trim()
+
+    # matches if the powershell.exe call is right up front and it's all on a single line
+    $cmdInvokePat = "^\s*[Pp][Oo][Ww][Ee][Rr][Ss][Hh][Ee][Ll][Ll](\.exe)?\s+.+$"
+
+    if (!($OrigScript | Select-String -Pattern $cmdInvokePat)) {
         return $OrigScript
     }
+
+    $invokedScript = $null
 
     # if the invocation uses an encoded command, we need to decode that
     # is encoded if there's an "-e" or "-en" and there's a base64 string in the invocation
@@ -220,21 +227,38 @@ function GetInitialScript {
 
         $match = [Regex]::Match($OrigScript, ".*?([A-Za-z0-9+/=]{40,}).*").captures
         if ($match -ne $null) {
-            $encoded = $match.groups[1]
-            $is_encoded = $true
+            $invokedScript = [System.Text.Encoding]::Unicode.GetString([System.Convert]::FromBase64String($match.groups[1]))
+        }
+    }
+    else {
+
+        # see if the script was given with the -Command option explicitely. (Must be the last argument)
+        $match = ($OrigScript | Select-String -Pattern "^\s*[Pp][Oo][Ww][Ee][Rr][Ss][Hh][Ee][Ll][Ll](?:\.exe)?\s+.*?-[Cc]?[Oo]?[Mm]?[Mm]?[Aa]?[Nn]?[Dd]?\s+(.+)$")
+        if ($match) {
+            $invokedScript = $match.Matches[0].Groups[1].Value
+        }
+        # the command used the -Command option implicitely. Scrub anything that looks like an argument 
+        # flag to leave only the command
+        else {
+            $invokedScript = $OrigScript -replace "^\s*[Pp][Oo][Ww][Ee][Rr][Ss][Hh][Ee][Ll][Ll](\.exe)?\s+((-[\w``]+\s+([\w\d``]+ )?)?)*"
+        }
+
+        # trim whitespace and unwrap any quotes around the command
+        $invokedScript = $invokedScript.Trim()
+        if (($invokedScript.StartsWith("`"") -and $invokedScript.EndsWith("`"")) -or 
+            ($invokedScript.StartsWith("'") -and $invokedScript.EndsWith("'"))) {
+            $invokedScript = $invokedScript.SubString(1,$invokedScript.Length-2)
+        }
+
+        # remove wrapping curly braces just in case this script was meant to be executed under 
+        # PowerShell and is interpreting a scriptblock
+        if ($invokedScript.StartsWith("{") -and $invokedScript.EndsWith("}")) {
+            $invokedScript = $invokedScript.SubString(1,$invokedScript.Length-2)
         }
     }
 
-    $scrubbed = $OrigScript -replace "^\s*[Pp][Oo][Ww][Ee][Rr][Ss][Hh][Ee][Ll][Ll](.exe)?\s+((-[\w``]+\s+([\w\d``]+ )?)?)*"
-
-    if ($is_encoded) {
-        $decoded = [System.Text.Encoding]::Unicode.GetString([System.Convert]::FromBase64String($encoded))
-    }
-    else {
-        $decoded = $scrubbed
-    }
-
     # TODO import administrative or something so we don't have duplicate code here it bites me every time
+    # TODO parse out flags used to put them in arguments
     [hashtable] $action = @{
         "Behaviors" = @("script_exec")
         "SubBehaviors" = @("start_process")
@@ -242,14 +266,13 @@ function GetInitialScript {
         "Line" = ""
         "ExtraInfo" = ""
         "BehaviorProps" = @{
-            "script" = $decoded
+            "script" = $invokedScript
         }
         "Parameters" = @{}
         "Id" = 0
     }
 
-
-    $hashed = "powershell.exe$decoded"
+    $hashed = "powershell.exe$invokedScript"
 
     $stringStream = [System.IO.MemoryStream]::new()
     $streamWriter = [System.IO.StreamWriter]::new($stringStream)
@@ -262,7 +285,7 @@ function GetInitialScript {
     $json = $action | ConvertTo-Json -Depth 10
     ($json + ",") | Out-File -Append "$WORK_DIR/actions.json"
 
-    return $decoded
+    return $invokedScript
 }
 
 # For some reason, some piece of the powershell codebase behind the scenes is calling my Test-Path
@@ -294,6 +317,8 @@ function HarvestArtifacts {
     param(
         [object[]] $Actions
     )
+
+    # TODO say the artifact is shellcode if it comes from write-to-memory and modify scan_maldoc
 
     $behaviorMap = @{
         "write_to_memory" = "bytes";
@@ -336,7 +361,7 @@ function HarvestArtifacts {
                 $outPath = $outDir + "tmp.bin"
 
                 try {
-                    # array content means bytes ASSUMING CONTENT IS NEVER AN ARRAY OF TEXT
+                    # array content means bytes, assuming we'll never have an array of chars
                     if ($artifactIsArray) {
                         [System.IO.File]::WriteAllBytes($outPath, $artifactContent)
                     }
@@ -525,7 +550,7 @@ else {
     if ($InFile) {
         Write-Host -NoNewLine "[+] reading script..."
         $ScriptContent = (Get-Content $InFile -ErrorAction Stop | Out-String)
-        $ScriptContent = GetInitialScript $ScriptContent
+        $ScriptContent = HandleCmdInvocation $ScriptContent
         Write-Host " done"
     }
 

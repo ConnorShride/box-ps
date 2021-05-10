@@ -23,7 +23,7 @@ BehaviorProps": {
     "file_delete": [],
     "get_process_info": [],
     "kill_process": [],
-    "pause_process": [],
+    "pause_process": ["duration"],
     "import_dotnet_code": [],
     "start_process": [],
     "probe_os": [],

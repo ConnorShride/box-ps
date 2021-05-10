@@ -227,8 +227,7 @@ function BehaviorPropsCode {
                 if ($behaviorPropArgs.Count -eq 1) {
                     $code += "`$behaviorProps[`"$behaviorProp`"] = $(BuildBehaviorPropValueCode $behaviorProp $behaviorPropArgs[0])`r`n"
                 }
-                # we have more than one parameter (different usages of the function) that could
-                # contain the behavior property value.
+                # we have more than one parameter (different usages of the function) that could contain the behavior property value
                 # for commandlets, we have to find the parameter that's present at script run-time
                 elseif ($Cmdlet) {
 
@@ -247,32 +246,12 @@ function BehaviorPropsCode {
                         $code += $block
                     }
                 }
+                # we have more than one parameter (different usages of the function) that could contain the behavior property value
                 # for class functions, find the parameter that it must be from the function signature
-                # TODO THIS IS BROKEN PLS FIX ([System.Net.HttpWebRequest]::Create)
                 elseif ($ClassFunc) {
 
-                    $sigArgsNames = $SigAndArgs.Item2
-
-                    foreach ($arg in $behaviorPropArgValues) {
-
-                        if ($arg.GetType() -eq [string]) {
-                            if ($sigArgsNames.Contains($arg)) {
-                                $code += "`$behaviorProps[`"$behaviorProp`"] = $(BuildBehaviorPropValueCode $behaviorProp $arg)`r`n"
-                            }
-                        }
-                        # it's a hashtable
-                        # behavior property value may be a property of an parameter that is an object
-                        else {
-
-                            # name of the object-arg in the signature and the property of the object
-                            $objectArgName = $($arg.Keys[0]).ToString()
-                            $objectProp = $arg[$objectArgName]
-
-                            if ($sigArgsNames.Contains($objectArgName)) {
-                                $code += "`$behaviorProps[`"$behaviorProp`"] = @(`$$objectArgName.$objectProp)`r`n"
-                            }
-                        }
-                    }
+                    $arg = $utils.ListIntersection($sigAndArgs.Item2, $behaviorPropArgs)
+                    $code += "`$behaviorProps[`"$behaviorProp`"] = $(BuildBehaviorPropValueCode $behaviorProp $arg)`r`n"
                 }
             }
         }
@@ -305,14 +284,14 @@ function ArgModificationCode {
     return $code
 }
 
-# translate .Net function signature into PS syntax
+# translate .Net (C#) function signature into PowerShell class syntax
 function TranslateClassFuncSignature {
 
     param(
         [string] $Signature
     )
 
-    # function return value type
+    # translate function return type. wrap [] around type name
     if ($Signature.StartsWith("static ")) {
         $scanNdx = $Signature.IndexOf(" ") + 1
         $Signature = $Signature.Insert($scanNdx, "[").Insert($Signature.IndexOf(" ", $scanNdx) + 1, "]")
@@ -321,16 +300,25 @@ function TranslateClassFuncSignature {
         $Signature = $Signature.Insert(0, "[").Insert($Signature.IndexOf(" ") + 1, "]")
     }
 
-    # first argument type and variables 
+    # handle first argument first
+    # remove Params keyword (can't use the functionality in powershell anyways)
     $firstArgTypeNdx = $Signature.IndexOf('(') + 1
+    if ($Signature.Substring($firstArgTypeNdx, 6) -eq "Params") {
+        $Signature = $Signature.Remove($firstArgTypeNdx, 7)
+    }
+
+    # wrap [] around argument type and prepend $ to variable name
     $Signature = $Signature.Insert($firstArgTypeNdx, "[")
     $firstArgNdx = $Signature.IndexOf(' ', $firstArgTypeNdx) + 2
     $Signature = $Signature.Insert($firstArgNdx - 2, "]").Insert($firstArgNdx, "$")
     
-    # subsequent argument types and variables
+    # same thing for subsequent argument types and variables
     $scanNdx = $firstArgNdx
     while ($Signature.IndexOf(',', $scanNdx) -ne -1) {
         $typeNdx = $Signature.IndexOf(',', $scanNdx) + 2
+        if ($Signature.Substring($typeNdx, 6) -eq "Params") {
+            $Signature = $Signature.Remove($typeNdx, 7)
+        }
         $Signature = $Signature.Insert($typeNdx, '[')
         $endTypeNdx = $Signature.IndexOf(' ', $typeNdx)
         $Signature = $Signature.Insert($endTypeNdx, ']').Insert($endTypeNdx + 2, '$')
@@ -340,9 +328,7 @@ function TranslateClassFuncSignature {
     return $Signature
 }
 
-# currently only builds code for the default constructor, so some object initialization will fail on
-# scripts in the wild
-function ClassConstructor {
+function ClassConstructors {
 
     param(
         [string] $ParentClass
@@ -351,35 +337,52 @@ function ClassConstructor {
     $guineaPig = Microsoft.PowerShell.Utility\New-Object $ParentClass
     $properties = GetPropertyTypes $ParentClass
     $shortName = $ParentClass.Split(".")[-1]
-    $code = "BoxPS$shortName () {`r`n"
+    $code = ""
 
-    foreach ($property in $properties.Keys) {
-
-        # get the value of the property we're wanting to create an override for from our guinea pig 
-        # object to see how the actual .Net constructor runs
-        Microsoft.PowerShell.Utility\Invoke-Expression "`$realProperty = `$guineaPig.$property"
-
-        if ($null -ne $realProperty) {
-            
-            # get the actual runtime type
-            Microsoft.PowerShell.Utility\Invoke-Expression `
-                "`$runtimeType = `$realProperty.GetType().FullName"
-            if ($runtimeType.Contains("+")) {
-                $runtimeType = $runtimeType.Split("+")[0]
-            }
-
-            # try to actually use the constructor first before putting it into the harness
-            # powershell may give a type here that isn't actually useful, and in these situations
-            # the script will (hopefully, probably) have to reassign the object anyways
-            try{
-                Microsoft.PowerShell.Utility\Invoke-Expression "[$runtimeType]::new()" > $null
-                $code += $utils.TabPad("`$this.$($property) = [$runtimeType]::new()")
-            }
-            catch {}
+    # build each public constructor
+    foreach ($constructor in ([type]$ParentClass).GetConstructors()) {
+        $code += "BoxPS$shortName ("
+        
+        # add constructor parameters to function signature
+        foreach ($parameter in $constructor.GetParameters()) {
+            $code += ("[" + $parameter.ParameterType + "]`$" + $parameter.Name + ", ")
         }
+        $code = $code.Trim(", ") + ") {`r`n"
+
+        # write code to assign the class properties to values within the constructor
+        foreach ($property in $properties.Keys) {
+
+            # TODO assign the property to the corresponding parameter if the name matches
+
+            # get the value of the property we're wanting to create an override for from our guinea pig 
+            # object to see how the actual .Net constructor assigns values to the property
+            Microsoft.PowerShell.Utility\Invoke-Expression "`$realProperty = `$guineaPig.$property"
+
+            # assign the property to it's empty value, or leave it null if it is that IRL
+            if ($null -ne $realProperty) {
+                
+                # get the actual runtime type
+                Microsoft.PowerShell.Utility\Invoke-Expression "`$runtimeType = `$realProperty.GetType().FullName"
+                if ($runtimeType.Contains("+")) {
+                    $runtimeType = $runtimeType.Split("+")[0]
+                }
+
+                # try to actually use the constructor first before putting it into the harness.
+                # powershell may give a type here that isn't actually initializable, and in these situations
+                # the script will (hopefully, probably) have to reassign the property anyways if it's
+                # important
+                try{
+                    Microsoft.PowerShell.Utility\Invoke-Expression "[$runtimeType]::new()" > $null
+                    $code += $utils.TabPad("`$this.$($property) = [$runtimeType]::new()")
+                }
+                catch {}
+            }
+        }
+        
+        $code += "}`r`n"
     }
 
-    return $code + "}`r`n"
+    return $code
 }
 
 function GetPropertyTypes {
@@ -388,7 +391,9 @@ function GetPropertyTypes {
         [string] $ObjectType
     )
 
-    $guineaPig = Microsoft.PowerShell.Utility\New-Object $ParentClass
+    $guineaPig = Microsoft.PowerShell.Utility\New-Object $ObjectType
+
+    # get all the advertised properties from the guineapig object
     $properties = Microsoft.PowerShell.Utility\Get-Member -InputObject $guineaPig | 
                     Microsoft.PowerShell.Core\Where-Object MemberType -eq property
 
@@ -433,7 +438,7 @@ function GetFunctionSignatures {
     foreach ($signature in $signatures) {
 
         $signature -match "\((.*)\)" > $null
-        $sigAndArgs[$signature] = @($Matches[1].Split(", ") | Microsoft.PowerShell.Core\ForEach-Object { $_.Split()[1]})
+        $sigAndArgs[$signature] = @($Matches[1].Split(", ") | Microsoft.PowerShell.Core\ForEach-Object { $_.Split()[-1]})
     }
     
     return $sigAndArgs
@@ -470,6 +475,7 @@ function ClassFunctionOverrides {
 
     # get all the function signatures
     if ($Static) {
+
         $signatures = GetFunctionSignatures -Static -FuncName $FuncName
 
         # build static function signatures we're excluding from the info in config
@@ -500,25 +506,13 @@ function ClassFunctionOverrides {
 
             $sigAndArgs = [Tuple]::Create($signature, $sigArgs)
     
-            # if the signature does not take an argument that we listed in the config file, then we
-            # aren't supporting it
+            # if the signature does not take an argument that we listed in the config file, then we aren't supporting it
             $BehaviorPropInfo = $OverrideInfo["BehaviorPropInfo"]
             $supportedArgs = @()
             foreach ($behaviorProp in $BehaviorPropInfo.keys) {
 
-                $behaviorPropArgs = $BehaviorPropInfo[$behaviorProp]
-
-                # if the behaviorprop value is an object, then the value is a property of the function 
-                # argument which is an object e.g. ProcessStartInfo.FileName is the "File" value for 
-                # behavior file_exec in the function [Diagnostics.Process]::Start(ProcessStartInfo)
-                foreach ($behaviorPropArg in $behaviorPropArgs) {
-                    if ($behaviorPropArg.GetType() -eq [Hashtable]) {
-                        $supportedArgs += $behaviorPropArg.Keys[0]
-                    }
-                    else {
-                        $supportedArgs += $behaviorPropArg
-                    }
-                }
+                # TODO if behavior prop args are only null we want to support all signatures
+                $supportedArgs += $BehaviorPropInfo[$behaviorProp]
             }
 
             $intersection = $utils.ListIntersection($sigAndArgs[1], $supportedArgs)
@@ -584,7 +578,7 @@ function ClassFunctionOverrides {
                     }
                 }
         
-                $code += "}`r`n"
+                $code += "}`r`n`r`n"
             }
         }
     }
@@ -607,7 +601,7 @@ function ClassOverride {
     $code = "class BoxPS$shortName : $FullClassName {`r`n"
 
     $code += $utils.TabPad($(ClassPropertiesCode -ParentClass $FullClassName))
-    $code += $utils.TabPad($(ClassConstructor -ParentClass $FullClassName))
+    $code += $utils.TabPad($(ClassConstructors -ParentClass $FullClassName))
 
     foreach ($functionName in $Functions.Keys) {
 

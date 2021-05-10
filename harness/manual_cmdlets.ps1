@@ -291,7 +291,7 @@ function New-Object {
     # RecordAction $([Action]::new($behaviors, $subBehaviors, "Microsoft.PowerShell.Utility\New-Object", $behaviorProps, $MyInvocation, ""))
     
 	if ($(GetOverridedClasses).Contains($behaviorProps["object"].ToLower())) {
-	   return RedirectObjectCreation $TypeName
+	   return RedirectObjectCreation $TypeName $ArgumentList
     }
 
 	return Microsoft.PowerShell.Utility\New-Object @PSBoundParameters
@@ -317,10 +317,9 @@ function powershell.exe {
 	$subBehaviors = @("start_process")
     $behaviorProps = @{}
 
-	# command was given arg list style like "powershell Write-Host foo"
     if ($PSBoundParameters.ContainsKey("Command")) {
 
-		# join the list into a single string
+		# command was given arg list style like "powershell Write-Host foo". join the list into a single string
 		if ($Command.Count -gt 1) {
 			foreach ($token in $Command) {
 				$behaviorProps["script"] += $token + " "
@@ -343,7 +342,7 @@ function powershell.exe {
 		$subBehaviors += @("file_read")
 
 		$behaviorProps["paths"] = @($File)
-        $behaviorProps["script"] = Get-Content -Raw $File
+        $behaviorProps["script"] = $(Microsoft.PowerShell.Management\Get-Content -Raw $File | Out-String)
     }
 
     RecordAction $([Action]::new($behaviors, $subBehaviors, "powershell.exe", $behaviorProps, $MyInvocation, ""))

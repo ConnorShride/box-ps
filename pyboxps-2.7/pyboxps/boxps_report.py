@@ -95,12 +95,12 @@ class Action:
             # add the behavior properties as members too for when users know what behavior properties
             # they're looking for
             for behavior_property in action_dict["BehaviorProps"].keys():
-                
+
+                property_value = action_dict["BehaviorProps"][behavior_property]
+                self.behavior_properties[behavior_property] = property_value
+
                 # don't save flexible types as members. extra work is required to work with these
                 if behavior_property not in self.flex_type_properties:
-
-                    property_value = action_dict["BehaviorProps"][behavior_property]
-                    self.behavior_properties[behavior_property] = property_value
                     setattr(self, behavior_property, property_value)
 
             # just save a dict of the parameters used

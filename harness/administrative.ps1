@@ -141,10 +141,11 @@ function RecordAction {
 function RedirectObjectCreation {
 
     param(
-        [string] $TypeName
+        [string] $TypeName,
+        [object[]] $ArgumentList
     )
 
-    return Microsoft.PowerShell.Utility\New-Object -TypeName "BoxPS$($TypeName.Split(".")[-1])"
+    return Microsoft.PowerShell.Utility\New-Object -TypeName "BoxPS$($TypeName.Split(".")[-1])" -ArgumentList $ArgumentList
 }
 
 function GetOverridedClasses {
