@@ -336,7 +336,7 @@ class BoxPS:
 ####################################################################################################
 # CLI
 ####################################################################################################
-if __name__ == "__main__":
+def main_cli():
 
     description = """
 
@@ -685,3 +685,7 @@ python ./boxps.py --file ./example-script.ps1 --layers --parameter-values --out-
         print_artifacts(report.artifacts)
     else:
         print("[-] NO ARTIFACTS\n")
+
+
+if __name__ == "__main__":
+    main_cli()
