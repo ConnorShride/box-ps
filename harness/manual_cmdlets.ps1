@@ -81,7 +81,7 @@ function Invoke-Expression {
                     Microsoft.PowerShell.Utility\Set-Variable -Name $parentVar.Name -Value $parentVar.Value
                 }
             }
-            
+
             $modifiedCommand = PreProcessScript $Command "<PID>"
 
             # actually run it, assign the result for situations like...
@@ -235,17 +235,9 @@ function Start-Job {
 
 	RecordAction $([Action]::new($behaviors, $subBehaviors, "Microsoft.PowerShell.Core\Start-Job", $behaviorProps, $MyInvocation, ""))
 
-	$invokeRes = ""
 	if ($script) {
-
-		$modifiedCommand = PreProcessScript $script "<PID>"
-
-		# actually run it, assign the result for situations like...
-		# ex. $foo = Invoke-Expression "New-Object System.Net.WebClient"
-		$invokeRes = Microsoft.PowerShell.Utility\Invoke-Expression $modifiedCommand
+		[boxpsstatics]::SandboxScript($script)
 	}
-
-	return $invokeRes
 }
 
 function New-Object {

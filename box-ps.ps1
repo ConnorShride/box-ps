@@ -222,8 +222,9 @@ function HandleCmdInvocation {
     $invokedScript = $null
 
     # if the invocation uses an encoded command, we need to decode that
-    # is encoded if there's an "-e" or "-en" and there's a base64 string in the invocation
-    if ($OrigScript -match ".*\-[Ee][Nn]?[^qQnXxPp].*") { # excludes instances of "-eq" and "-ex"
+    # is encoded if there's an "-e" or "-en" and there's a base64 string in the invocation, but not
+    # one of the other flags that also start with EN
+    if ($OrigScript -match ".*\-[Ee][Nn]?[^qQnXxPp].*") {
 
         $match = [Regex]::Match($OrigScript, ".*?([A-Za-z0-9+/=]{40,}).*").captures
         if ($match -ne $null) {
