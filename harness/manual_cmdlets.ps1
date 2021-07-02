@@ -280,10 +280,10 @@ function New-Object {
 	}
 	
 	# too noisy and not valuable except for debugging
-    # RecordAction $([Action]::new($behaviors, $subBehaviors, "Microsoft.PowerShell.Utility\New-Object", $behaviorProps, $MyInvocation, ""))
-    
-	if ($(GetOverridedClasses).Contains($behaviorProps["object"].ToLower())) {
-	   return RedirectObjectCreation $TypeName $ArgumentList
+    #RecordAction $([Action]::new($behaviors, $subBehaviors, "Microsoft.PowerShell.Utility\New-Object", $behaviorProps, $MyInvocation, ""))
+
+	if ($(GetOverridedClasses).Contains($behaviorProps["object"].ToLower() -replace "^system.")) {
+	    return RedirectObjectCreation $TypeName $ArgumentList
     }
 
 	return Microsoft.PowerShell.Utility\New-Object @PSBoundParameters

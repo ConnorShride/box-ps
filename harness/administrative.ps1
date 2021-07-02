@@ -149,7 +149,7 @@ function RedirectObjectCreation {
 }
 
 function GetOverridedClasses {
-    return $BOXPS_CONFIG["Classes"].Keys | ForEach-Object { $_.ToLower() }
+    return $BOXPS_CONFIG["Classes"].Keys | ForEach-Object { $_.ToLower() -replace "^system." }
 }
 
 <# 
