@@ -299,6 +299,13 @@
                 "pretend_paths_exist": "path"
             },
             "Return": "$routineReturn"
+        },
+        "[System.Net.WebRequest]::Create": {
+            "Behaviors": ["network"],
+            "SubBehaviors": [],
+            "BehaviorPropInfo": {
+                "uri": ["requestUriString", "requestUri"]
+            }
         }
     },
     "Manuals": {
