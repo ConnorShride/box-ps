@@ -319,8 +319,6 @@ function HarvestArtifacts {
         [object[]] $Actions
     )
 
-    # TODO say the artifact is shellcode if it comes from write-to-memory and modify scan_maldoc
-
     $behaviorMap = @{
         "write_to_memory" = "bytes";
         "file_write" = "content";
