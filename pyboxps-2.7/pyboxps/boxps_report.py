@@ -200,7 +200,9 @@ class BoxPSReport:
 
             layer = ""
 
-            if Behaviors.script_exec in action.behaviors and action.script != "":
+            if ((Behaviors.script_exec in action.behaviors) and
+                hasattr(action, "script") and
+                (action.script != "")):
                 layer = action.script
             elif Behaviors.code_import in action.behaviors and action.code != "":
                 layer = action.code
