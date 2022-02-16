@@ -32,8 +32,42 @@ if ($MyInvocation.InvocationName -ne "Test-Path") {
 
         $value = $declaredVar.Value
 
-        # ignore arrays of integers or bytes
+        # look for PEs
         if ($null -eq $value -or $value.GetType() -eq [int[]] -or $value.GetType() -eq [byte[]]) {
+
+            $MIN_PE_SIZE = 20 * 1024
+
+            # sanity check on the size of the array
+            if ($value.Length -ge $MIN_PE_SIZE) {
+
+                # see if the array probably contains a PE
+                if ($value -and $value[0] -eq 77 -and $value[1] -eq 90) {
+
+                    # write the PE to disk
+                    Microsoft.PowerShell.Management\New-Item -Path $WORK_DIR/artifacts -ItemType "directory" > /dev/null 2>&1
+                    $outDir = $WORK_DIR + "/artifacts/"
+                    $outPath = $outDir + "tmp.bin"
+                    [System.IO.File]::WriteAllBytes($outPath, $value)
+                    $sha256 = $(Get-FileHash -Path $outPath -Algorithm SHA256).Hash
+                    $destPath = $outDir + $sha256
+
+                    # see if we don't already have that file as an artifact
+                    if (!(Microsoft.PowerShell.Management\Test-Path $destPath)) {
+
+                        Microsoft.PowerShell.Management\Move-Item -Path $outPath -Destination $destPath
+
+                        # report it
+                        $sha256 | Microsoft.PowerShell.Utility\Out-File -Append "$WORK_DIR/in_mem_pes.txt"
+                    }
+                    else {
+                        Microsoft.PowerShell.Management\Remove-Item $outPath
+                    }
+                }
+            }
+
+            continue
+        }
+        else {
             continue
         }
 

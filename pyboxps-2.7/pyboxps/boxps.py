@@ -686,6 +686,13 @@ python ./boxps.py --file ./example-script.ps1 --layers --parameter-values --out-
     else:
         print("[-] NO ARTIFACTS\n")
 
+    if report.aggressive_artifacts:
+        print("[+] AGGRESSIVE ARTIFACTS...\n")
+        for sha256 in report.aggressive_artifacts:
+            print(sha256)
+    else:
+        print("[-] NO AFFRESSIVE ARTIFACTS...\n")
+
 
 if __name__ == "__main__":
     main_cli()

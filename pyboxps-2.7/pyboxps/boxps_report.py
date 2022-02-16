@@ -161,13 +161,14 @@ class BoxPSReport:
         try:
             self.aggressive_net_iocs = report_dict["PotentialIndicators"]["network"]
             self.aggressive_fs_iocs = report_dict["PotentialIndicators"]["file_system"]
+            self.aggressive_artifacts = report_dict["PotentialArtifacts"]
         except KeyError as e:
             raise errors.BoxPSReportError("no potential indicators field in report: " + str(e))
 
-        # deserialize artifacts, separate out hashes for convenience
         self.artifacts = []
         self.artifact_hashes = []
 
+        # deserialize artifacts, separate out hashes for convenience
         try:
 
             for id_to_artifacts in report_dict["Artifacts"].items():

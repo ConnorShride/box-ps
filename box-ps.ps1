@@ -74,10 +74,12 @@ class Report {
     [object] $PotentialIndicators
     [object] $EnvironmentProbes
     [hashtable] $Artifacts
+    [string[]] $PotentialArtifacts
     [string] $WorkingDir
 
     Report([object[]] $actions, [string[]] $scrapedNetwork, [string[]] $scrapedPaths, 
-           [string[]] $scrapedEnvProbes, [hashtable] $artifactMap, [string] $workingDir) {
+           [string[]] $scrapedEnvProbes, [hashtable] $artifactMap, [string[]] $potentialArtifacts,
+           [string] $workingDir) {
 
         if ($null -eq $actions) {
             $this.Actions = @()
@@ -89,6 +91,7 @@ class Report {
         $this.PotentialIndicators = $this.CombineScrapedIOCs($scrapedNetwork, $scrapedPaths)
         $this.EnvironmentProbes = $this.GenerateEnvProbeReport($scrapedEnvProbes)
         $this.Artifacts = $artifactMap
+        $this.PotentialArtifacts = $potentialArtifacts
         $this.WorkingDir = $workingDir           
     }
 
@@ -329,7 +332,7 @@ function HarvestArtifacts {
 
     $artifactMap = @{}
 
-    New-Item -Path $WORK_DIR/artifacts -ItemType "directory" > /dev/null
+    New-Item -Path $WORK_DIR/artifacts -ItemType "directory" > /dev/null 2>&1
     $outDir = $WORK_DIR + "/artifacts/"
 
     # go through actions looking for behaviors that would give artifacts
@@ -666,11 +669,20 @@ else {
     $scrapedPaths = Get-Content $WORK_DIR/scraped_paths.txt -ErrorAction SilentlyContinue
     $scrapedEnvProbes = Get-Content $WORK_DIR/scraped_probes.txt -ErrorAction SilentlyContinue
 
-    # wrangle and gather some file metadata on any artifacts of the script
+    # write out artifacts of the script from actions data
     $artifactMap = HarvestArtifacts $actions
 
+    # record the PEs found from variables content
+    if (Test-Path $WORK_DIR/in_mem_pes.txt) {
+        $potentialArtifacts = [string[]](Get-Content $WORK_DIR/in_mem_pes.txt)
+    }
+    else {
+        $potentialArtifacts = @()
+    }
+
     # create the report and convert to JSON
-    $report = [Report]::new($actions, $scrapedNetwork, $scrapedPaths, $scrapedEnvProbes, $artifactMap, $WORK_DIR)
+    $report = [Report]::new($actions, $scrapedNetwork, $scrapedPaths, 
+        $scrapedEnvProbes, $artifactMap, $potentialArtifacts, $WORK_DIR)
     $reportJson = $report | ConvertTo-Json -Depth 10
 
     Write-Host " done"
