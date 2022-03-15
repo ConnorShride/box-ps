@@ -71,7 +71,14 @@ function Invoke-Expression {
             $scrapeIOCsCode = Microsoft.PowerShell.Management\Get-Content -Raw $CODE_DIR/harness/find_in_mem_iocs.ps1
             Microsoft.PowerShell.Utility\Invoke-Expression $scrapeIOCsCode
 
-            $parentVars = Microsoft.PowerShell.Utility\Get-Variable -Scope 1
+            try{
+                $parentVars = Microsoft.PowerShell.Utility\Get-Variable -Scope 1
+            }
+            catch
+            {
+                # No enclosing scope.
+                $parentVars = @()
+            }
             $localVars = Microsoft.PowerShell.Utility\Get-Variable -Scope 0
             $localVars = $localVars | Microsoft.PowerShell.Core\ForEach-Object { $_.Name }
             
@@ -86,18 +93,24 @@ function Invoke-Expression {
 
             # actually run it, assign the result for situations like...
             # ex. $foo = Invoke-Expression "New-Object System.Net.WebClient"
-            $invokeRes = Microsoft.PowerShell.Utility\Invoke-Expression $modifiedCommand
+            try {
+                $invokeRes = Microsoft.PowerShell.Utility\Invoke-Expression $modifiedCommand
+            }
+            catch { }
 
             # invoked command may have initialized more variables that are to be used later, that are now
             # defined in this local scope
             $localVars = Microsoft.PowerShell.Utility\Get-Variable -Scope 0
             $parentVars = $parentVars | Microsoft.PowerShell.Core\ForEach-Object { $_.Name }
-        
+            
             # yes... foreach is indeed a variable
             $thisDeclaredVars = @("Command", "behaviorProps", "parentVars", "localVars", "parentVar", 
                 "invokeRes", "localVar", "varName", "foreach", "PSCmdlet")
         
             # pick out the variables the Invoke-Expression defined, export them to the parent scope
+            if ($parentVars -eq $null) {
+                $parentVars = @()
+            }
             foreach ($localVar in $localVars) {
                 $varName = $localVar.Name
                 if (!($parentVars.Contains($varName)) -and !($thisDeclaredVars.Contains($varName))) {
