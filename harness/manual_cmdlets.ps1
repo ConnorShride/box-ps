@@ -40,6 +40,17 @@ function curl ($url, $o) {
 	RecordAction $([Action]::new($behaviors, $subBehaviors, "curl.exe", $behaviorProps, $MyInvocation, ""))
 }
 
+function mshta ($url) {
+
+	$behaviors = @("network")
+	$subBehaviors = @()
+	$behaviorProps = @{
+		"uri" = $url
+	}
+
+	RecordAction $([Action]::new($behaviors, $subBehaviors, "mshta.exe", $behaviorProps, $MyInvocation, ""))
+}
+
 function Invoke-Expression {
     param(
 		[Parameter(ValueFromPipeline=$true,Position=0,Mandatory=$true)]

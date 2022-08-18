@@ -9,8 +9,8 @@ import shutil
 import argparse
 import sys
 
-import errors
-import boxps_report
+import pyboxps.errors
+import pyboxps.boxps_report
 
 ####################################################################################################
 class BoxPS:

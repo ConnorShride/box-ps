@@ -1,5 +1,5 @@
 import json
-import errors
+import pyboxps.errors
 from enum import Enum
 
 ####################################################################################################
