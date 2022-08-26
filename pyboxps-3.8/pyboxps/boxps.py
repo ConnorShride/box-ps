@@ -10,7 +10,7 @@ import argparse
 import sys
 
 import pyboxps.errors
-import pyboxps.boxps_report
+import pyboxps.boxps_report as boxps_report
 
 ####################################################################################################
 class BoxPS:

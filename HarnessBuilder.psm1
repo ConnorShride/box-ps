@@ -58,7 +58,9 @@ function CmdletParamsCode {
         }
 
         # check if it has a non-default parameter set that we need to support
-        if ($helpParam.parameterSetName -ne "(All)" -and $helpParam.parameterSetName -ne "Default") {
+        if ($helpParam.parameterSetName -ne $null -and
+            $helpParam.parameterSetName -ne "(All)" -and
+            $helpParam.parameterSetName -ne "Default") {
             $setNames = $helpParam.parameterSetName.Split(",")
 
             foreach ($setName in $setNames) {
