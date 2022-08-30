@@ -9,7 +9,7 @@ import shutil
 import argparse
 import sys
 
-import errors
+import errors as boxps_errors
 import boxps_report
 
 ####################################################################################################
@@ -65,21 +65,21 @@ class BoxPS:
             boxps_path = os.getenv("BOXPS")
 
             if boxps_path is None:
-                raise errors.BoxPSNoEnvVarError()
+                raise boxps_errors.BoxPSNoEnvVarError()
 
         if not os.path.isdir(boxps_path):
-            raise errors.BoxPSBadEnvVarError()
+            raise boxps_errors.BoxPSBadEnvVarError()
 
         if not os.path.exists(boxps_path + os.sep + "box-ps.ps1"):
-            raise errors.BoxPSBadInstallError("box-ps.ps1 not present in install directory: " + 
+            raise boxps_errors.BoxPSBadInstallError("box-ps.ps1 not present in install directory: " + 
                 boxps_path)
 
         if not os.path.exists(boxps_path + os.sep + "config.json"):
-            raise errors.BoxPSBadInstallError("config.json not present in install directory: " +
+            raise boxps_errors.BoxPSBadInstallError("config.json not present in install directory: " +
                 boxps_path)
 
         if docker and not os.path.exists(boxps_path + os.sep + "docker-box-ps.sh"):
-            raise errors.BoxPSBadInstallError("docker-box-ps.sh not present in install directory:" +
+            raise boxps_errors.BoxPSBadInstallError("docker-box-ps.sh not present in install directory:" +
                 " " + boxps_path)
 
         if docker:
@@ -87,13 +87,13 @@ class BoxPS:
                 subprocess.check_call(boxps_path + os.sep + "docker-box-ps.sh", 
                     stderr=subprocess.PIPE)
             except OSError as e:
-                raise errors.BoxPSBadInstallError("cannot execute docker-box-ps.sh: " + str(e))
+                raise boxps_errors.BoxPSBadInstallError("cannot execute docker-box-ps.sh: " + str(e))
 
         # validate that the system has enough memory (4GB) or powershell core can't run
         # Thanks Microsoft!
         memory_gb = int((os.sysconf('SC_PAGE_SIZE') * os.sysconf('SC_PHYS_PAGES'))/(1024**3))
         if memory_gb < 4:
-            raise errors.BoxPSMemError()
+            raise boxps_errors.BoxPSMemError()
 
         # we want to run docker. validate we can
         if docker:
@@ -101,7 +101,7 @@ class BoxPS:
             try:
                 subprocess.check_call(["docker"], stdout=subprocess.PIPE, stderr=subprocess.PIPE)
             except OSError as e:
-                raise errors.BoxPSDependencyError("docker: " + str(e))
+                raise boxps_errors.BoxPSDependencyError("docker: " + str(e))
 
         # we want to run pwsh. validate we can
         else:
@@ -112,7 +112,7 @@ class BoxPS:
                 subprocess.check_call(["pwsh", "-v"], stdout=subprocess.PIPE, 
                     stderr=subprocess.PIPE)
             except OSError as e:
-                raise errors.BoxPSDependencyError("pwsh: " + str(e))
+                raise boxps_errors.BoxPSDependencyError("pwsh: " + str(e))
 
             self._reset_soft_vmem_limit(limit)
 
@@ -254,7 +254,7 @@ class BoxPS:
                         f.write(json.dumps(env_vars))
 
                 except Exception as e:
-                    raise errors.BoxPSError("failed to write temp file for environment variables: " + 
+                    raise boxps_errors.BoxPSError("failed to write temp file for environment variables: " + 
                         str(e))
 
                 cmd += ["-EnvFile", env_file]
@@ -297,7 +297,7 @@ class BoxPS:
 
         # raise timeout error
         if timeout is not None and proc.returncode == 124:
-            raise errors.BoxPSTimeoutError("failed to sandbox within " + str(timeout) + 
+            raise boxps_errors.BoxPSTimeoutError("failed to sandbox within " + str(timeout) + 
                 " second(s)")
 
         # not stderr on the sandboxing sub-process. this means a critical error running the sandbox
@@ -306,9 +306,9 @@ class BoxPS:
 
             # raise invalid syntax error
             if proc.returncode == 6:
-                raise errors.BoxPSScriptSyntaxError(error)
+                raise boxps_errors.BoxPSScriptSyntaxError(error)
 
-            raise errors.BoxPSSandboxError(error)
+            raise boxps_errors.BoxPSSandboxError(error)
 
         # no report is also a critical error
         if not os.path.exists(report_path):
@@ -321,7 +321,7 @@ class BoxPS:
                 with open(sandbox_stderr, "r") as f:
                     msg += "...\n" + f.read()
 
-            raise errors.BoxPSSandboxError(msg)
+            raise boxps_errors.BoxPSSandboxError(msg)
 
         # logic is just cleaner this way since docker-box-ps.sh doesn't support putting report and 
         # analysis dir in two different spots
