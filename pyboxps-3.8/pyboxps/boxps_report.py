@@ -144,7 +144,7 @@ class BoxPSReport:
             action = Action(boxps_config, actions_pool.pop(0))
             action_ndx = 0
 
-            while action_ndx < len(self.actions) and action.id > self.actions[action_ndx]:
+            while (action_ndx < len(self.actions)) and (action.id > self.actions[action_ndx].id):
                 action_ndx += 1
 
             self.actions.insert(action_ndx, action)
