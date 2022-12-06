@@ -1,4 +1,4 @@
-#!/usr/bin/env python2
+#!/usr/bin/env python3
 
 import subprocess
 import os
@@ -9,8 +9,54 @@ import shutil
 import argparse
 import sys
 
-import pyboxps.errors
+import pyboxps.errors as errors
 import pyboxps.boxps_report as boxps_report
+
+####################################################################################################
+def safe_str_convert(s):
+    """
+    Convert something to an ASCII str without throwing a unicode decode error.
+
+    @param s (any) The thing to convert to a string.
+
+    @return (str) The thing as an ASCII str.
+    """
+
+    # Sanity check.
+    if (s is None):
+        return s
+    
+    # Handle bytes-like objects (python3).
+    was_bytes = isinstance(s, bytes)
+    try:
+        if isinstance(s, bytes):
+            s = s.decode('latin-1')
+    except (UnicodeDecodeError, UnicodeEncodeError, SystemError):
+        # python3
+        if isinstance(s, bytes):
+            from core.curses_ascii import isprint
+            r = ""
+            for c in s:
+                curr_char = chr(c)
+                if (isprint(curr_char)):
+                    r += curr_char
+            return r
+            
+    # Do the actual string conversion.
+    r = None
+    try:
+        r = str(s)
+    except UnicodeEncodeError:
+        import string
+        try:
+            r = s.encode("latin-1")
+        except UnicodeDecodeError:
+            r = ''.join(filter(lambda x:x in string.printable, s))
+        except UnicodeEncodeError:
+            r = ''.join(filter(lambda x:x in string.printable, s))
+        except SystemError:
+            r = ''.join(filter(lambda x:x in string.printable, s))
+    return r
 
 ####################################################################################################
 class BoxPS:
@@ -85,7 +131,7 @@ class BoxPS:
         if docker:
             try:
                 subprocess.check_call(boxps_path + os.sep + "docker-box-ps.sh", 
-                    stderr=subprocess.PIPE)
+                                      stderr=subprocess.PIPE)
             except OSError as e:
                 raise errors.BoxPSBadInstallError("cannot execute docker-box-ps.sh: " + str(e))
 
@@ -110,7 +156,7 @@ class BoxPS:
 
             try:
                 subprocess.check_call(["pwsh", "-v"], stdout=subprocess.PIPE, 
-                    stderr=subprocess.PIPE)
+                                      stderr=subprocess.PIPE)
             except OSError as e:
                 raise errors.BoxPSDependencyError("pwsh: " + str(e))
 
@@ -289,7 +335,7 @@ class BoxPS:
             # in-memory script content. no input script file is written outside the docker container
             if script:
                 proc = subprocess.Popen(cmd, stdin=subprocess.PIPE, stdout=subprocess.PIPE, 
-                            stderr=subprocess.PIPE)
+                                        stderr=subprocess.PIPE)
                 stdout, stderr = proc.communicate(input=script)
             else:
                 proc = subprocess.Popen(cmd, stdout=subprocess.PIPE, stderr=subprocess.PIPE)
@@ -302,7 +348,7 @@ class BoxPS:
 
         # not stderr on the sandboxing sub-process. this means a critical error running the sandbox
         if stderr:
-            error = stderr.replace("[-] ", "")
+            error = safe_str_convert(stderr).replace("[-] ", "")
 
             # raise invalid syntax error
             if proc.returncode == 6:
