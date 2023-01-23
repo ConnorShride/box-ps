@@ -1,5 +1,5 @@
 import json
-import pyboxps.errors
+import pyboxps.errors as errors
 from enum import Enum
 
 ####################################################################################################
@@ -36,6 +36,7 @@ class Behaviors(Enum):
     environment_probe = 9
     binary_import = 10
     code_create = 11
+    task = 12
 
 ####################################################################################################
 class SubBehaviors(Enum):
@@ -60,7 +61,8 @@ class SubBehaviors(Enum):
     get_path = 19
     import_dotnet_binary = 20
     init_code_block = 21
-
+    new_task = 22
+    
 ####################################################################################################
 class Action:
 

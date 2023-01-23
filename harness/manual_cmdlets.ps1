@@ -513,3 +513,112 @@ function ConvertTo-Json {
 
     return Microsoft.PowerShell.Utility\ConvertTo-Json @PSBoundParameters
 }
+
+function New-ScheduledTaskAction {
+
+    [cmdletbinding(DefaultParameterSetName="FromSource")]    
+    param(
+        $Execute,
+        $Argument,
+        $WorkingDirectory,
+        $CimSession,
+        $ThrottleLimit,
+        $AsJob
+    )
+
+    $scrapeIOCsCode = Microsoft.PowerShell.Management\Get-Content -Raw $CODE_DIR/harness/find_in_mem_iocs.ps1
+    Microsoft.PowerShell.Utility\Invoke-Expression $scrapeIOCsCode
+
+    $behaviors = @("task")
+    $subBehaviors = @("new_task")
+
+    $behaviorProps = @{
+        "execute" = $Execute;
+        "argument" = $Argument;
+        "working_directory" = $WorkingDirectory
+    }
+
+    RecordAction $([Action]::new($behaviors, $subBehaviors, "New-ScheduledTaskAction", $behaviorProps, $MyInvocation, ""))
+}
+
+function New-ScheduledTaskPrincipal {
+
+    [cmdletbinding(DefaultParameterSetName="FromSource")]    
+    param(
+        $RunLevel,
+        $ProcessTokenSidType,
+        $RequiredPrivilege,
+        $UserId,
+        $LogonType,
+        $CimSession,
+        $ThrottleLimit,
+        $AsJob
+    )
+
+    $scrapeIOCsCode = Microsoft.PowerShell.Management\Get-Content -Raw $CODE_DIR/harness/find_in_mem_iocs.ps1
+    Microsoft.PowerShell.Utility\Invoke-Expression $scrapeIOCsCode
+
+    $behaviors = @("task")
+    $subBehaviors = @("new_task")
+
+    $behaviorProps = @{
+        "run_level" = $RunLevel;
+        "user_id" = $UserId;
+        "logon_type" = $LogonType
+    }
+
+    RecordAction $([Action]::new($behaviors, $subBehaviors, "New-ScheduledTaskPrincipal", $behaviorProps, $MyInvocation, ""))
+}
+
+function New-ScheduledTaskTrigger {
+
+    [cmdletbinding(DefaultParameterSetName="FromSource")]    
+    param(
+        [switch] $AsJob,
+        $At,
+        [switch] $AtLogOn,
+        [switch] $AtStartup,
+        $CimSession,
+        [switch] $Daily,
+        $DaysInterval,
+        $DaysOfWeek,
+        [switch] $Once,
+        $RandomDelay,
+        $RepetitionDuration,
+        $RepetitionInterval,
+        $ThrottleLimit,
+        $User,
+        [switch] $Weekly,
+        $WeeksInterval
+    )
+
+    $scrapeIOCsCode = Microsoft.PowerShell.Management\Get-Content -Raw $CODE_DIR/harness/find_in_mem_iocs.ps1
+    Microsoft.PowerShell.Utility\Invoke-Expression $scrapeIOCsCode
+
+    # Convert flags to bools for tracking results.
+    $Trigger = "??"
+    if ($AtLogon) { $Trigger = "At Logon" }
+    if ($AtStartup) { $Trigger = "At Startup" }
+    if ($Daily) { $Trigger = "Daily" }
+    if ($Once ) { $Trigger = "Once" }
+    if ($Weekly) { $Trigger = "Weekly" }
+    
+    $behaviors = @("task")
+    $subBehaviors = @("new_task")
+
+    $behaviorProps = @{
+        "random_delay" = $RandomDelay;
+        "at" = $At;
+        "trigger" = $Trigger;
+        "days_interval" = $DaysInterval;
+        "days_of_week" = $DaysOfWeek;
+        "user" = $User;
+    }
+
+    RecordAction $([Action]::new($behaviors, $subBehaviors, "New-ScheduledTaskTrigger", $behaviorProps, $MyInvocation, ""))
+}
+
+# Placeholder. Fill in as needed.
+function New-ScheduledTaskSettingsSet {}
+# Placeholder. Fill in as needed.
+function Register-ScheduledTask {}
