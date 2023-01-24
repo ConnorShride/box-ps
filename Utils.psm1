@@ -111,4 +111,39 @@ function ListDifference {
     return $list1 | Microsoft.PowerShell.Core\Where-object { $list2 -notcontains $_ }
 }
 
+# Functions for rewriting powershell code prior to sandboxing.
+
+function StripWindowsPrincipal {
+
+    # WindowsPrincipal class only really supported under Windows, not
+    # linux, so strip it if possible.
+    
+    param (
+        [String] $code
+    )
+
+    ForEach ($line in $code.Split("`n")) {
+        If ($line.Contains("Security.Principal.WindowsPrincipal")) {
+            continue
+        }
+        $r += $line + "`n"
+    }
+
+    # Done. Return the modified code.
+    $r
+}
+
+function RewriteCode {
+
+    # Top level function for all code rewrites. Add additional calls
+    # to specific code rewriting functions here.
+    
+    param (
+        [String] $code
+    )
+
+    $r = StripWindowsPrincipal($code)
+    $r
+}
+
 Export-ModuleMember -Function *
