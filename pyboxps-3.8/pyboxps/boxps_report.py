@@ -157,7 +157,8 @@ class BoxPSReport:
         self.confident_net_iocs = [network_action.uri for network_action in network_actions]
         self.confident_fs_iocs = []
         for fs_action in file_system_actions:
-            self.confident_fs_iocs += fs_action.paths
+            if (isinstance(fs_action.paths, list)):
+                self.confident_fs_iocs += fs_action.paths
 
         # aggressive IOCs
         try:
