@@ -31,8 +31,6 @@ function curl ($url, $o) {
 	"uri" = $url
     }
 
-    Write-Host $o
-    Write-Host $url
     if ($o) {
 	$behaviors += @("file_system")
 	$subBehaviors += @("file_write")
@@ -40,7 +38,6 @@ function curl ($url, $o) {
     }
     
     RecordAction $([Action]::new($behaviors, $subBehaviors, "curl.exe", $behaviorProps, $MyInvocation, ""))
-    Write-Host "CURL!!"
     return "Write-Host ""fake curl results"""
 }
 
@@ -622,3 +619,15 @@ function New-ScheduledTaskTrigger {
 function New-ScheduledTaskSettingsSet {}
 # Placeholder. Fill in as needed.
 function Register-ScheduledTask {}
+
+# Don't want to actually run wget ever.
+function wget ($url) {
+
+    $behaviors = @("network")
+    $subBehaviors = @()
+    $behaviorProps = @{
+	"uri" = $url
+    }    
+    RecordAction $([Action]::new($behaviors, $subBehaviors, "wget", $behaviorProps, $MyInvocation, ""))
+    return "";
+}
