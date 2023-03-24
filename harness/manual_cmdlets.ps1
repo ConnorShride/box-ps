@@ -675,3 +675,35 @@ function wget ($url) {
     RecordAction $([Action]::new($behaviors, $subBehaviors, "wget", $behaviorProps, $MyInvocation, ""))
     return "";
 }
+
+function Invoke-RestMethod {
+
+    param(
+        [Parameter(
+             Mandatory=$True,
+             ValueFromRemainingArguments=$true,
+             Position = 1
+         )][string[]]
+        $listArgs
+    )
+
+    # Pull out the URL. We're ignoring all other arguments for now.
+    $url = ""
+    $pos = 0
+    foreach ($arg in $listArgs) {
+        $pos += 1
+        if (($arg -like "-uri*") -and ($pos -lt $listArgs.length)) {
+            $url = $listArgs[$pos]
+            break
+        }
+    }
+
+    $behaviors = @("network")
+    $subBehaviors = @()
+    $behaviorProps = @{
+	"uri" = $url
+    }    
+
+    RecordAction $([Action]::new($behaviors, $subBehaviors, "Invoke-RestMethod", $behaviorProps, $MyInvocation, ""))
+    return "1.2.3.4"
+}
