@@ -34,24 +34,34 @@ function curl {
         $listArgs
     )
 
-    # Strip out flags from parameters.
+    # Strip out flags from parameters. Also see if we have the
+    # -usebasicparsing option.
+    $useBasic = $false
     $realArgs = @()
     foreach ($arg in $listArgs) {
         if (-not ($arg -like "-*")) {
             $realArgs += $arg
+        }
+        if ($arg -like "-useb*") {
+            $useBasic = $true
         }
     }
     
     # Pull out URL and maybe output file. This assumes arguments go in
     # a certain order.
     $o = $false
-    $url = $false
+    $url = ""
     if ($realArgs.length -ge 2) {
         $o = $realArgs[-1]
         $url = $realArgs[-2]
     }
     elseif ($realArgs.length -eq 1) {
         $url = $realArgs[-1]
+    }
+
+    # Fix the URL if -usebasicparsing option given.
+    if ($useBasic -and (-not ($url -like "http*"))) {
+        $url = ("http://" + $url)
     }
     
     $behaviors = @("network")

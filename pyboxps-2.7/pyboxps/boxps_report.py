@@ -111,7 +111,17 @@ class Action:
         except KeyError as e:
             raise errors.BoxPSReportError("field in action data not present: " + str(e))
 
-
+    ################################################################################################
+    def __repr__(self):
+        r = ""
+        r += "BEHAVIORS: " + str(self.behaviors) + "\n"
+        r += "SUB_BEHAVIORS: " + str(self.sub_behaviors) + "\n"
+        if (self.extra_info is not None):
+            r += "EXTRA_INFO: " + str(self.extra_info) + "\n"
+        r += "ACTOR: " + str(self.actor) + "\n"
+        r += "LINE: " + str(self.line) + "\n"
+        return r
+        
 ####################################################################################################
 class BoxPSReport:
 
@@ -187,6 +197,16 @@ class BoxPSReport:
         except KeyError:
             raise errors.BoxPSReportError("no artifacts field in report")
 
+    ################################################################################################
+    def __repr__(self):
+        r = ""
+        for action in self.actions:
+            r += "------------\n" + str(action)
+        r += "AGGRESSIVE_NET_IOCS: " + str(self.aggressive_net_iocs) + "\n"
+        r += "AGGRESSIVE_FS_IOCS: " + str(self.aggressive_fs_iocs) + "\n"
+        r += "AGGRESSIVE_ARTIFACTS: " + str(self.aggressive_artifacts) + "\n"
+        return r
+        
     ################################################################################################
     @property
     def layers(self):
