@@ -217,7 +217,6 @@ function HandleCmdInvocation {
 
     # matches if the powershell.exe call is right up front and it's all on a single line
     $cmdInvokePat = "^\s*[Pp][Oo][Ww][Ee][Rr][Ss][Hh][Ee][Ll][Ll](\.exe)?\s+.+$"
-
     if (!($OrigScript | Select-String -Pattern $cmdInvokePat)) {
         return $OrigScript
     }
@@ -237,7 +236,7 @@ function HandleCmdInvocation {
     else {
 
         # see if the script was given with the -Command option explicitely. (Must be the last argument)
-        $match = ($OrigScript | Select-String -Pattern "^\s*[Pp][Oo][Ww][Ee][Rr][Ss][Hh][Ee][Ll][Ll](?:\.exe)?\s+.*?-[Cc]?[Oo]?[Mm]?[Mm]?[Aa]?[Nn]?[Dd]?\s+(.+)$")
+        $match = ($OrigScript | Select-String -Pattern "^\s*[Pp][Oo][Ww][Ee][Rr][Ss][Hh][Ee][Ll][Ll](?:\.exe)?\s+.*?-[Cc][Oo]?[Mm]?[Mm]?[Aa]?[Nn]?[Dd]?\s+(.+)$")
         if ($match) {
             $invokedScript = $match.Matches[0].Groups[1].Value
         }
