@@ -23,8 +23,37 @@ function mkdir {
     RecordAction $([Action]::new($behaviors, $subBehaviors, "Microsoft.PowerShell.Core\mkdir", $behaviorProps, $MyInvocation, ""))
 }
 
-function curl ($url, $o) {
+function curl {
 
+    param(
+        [Parameter(
+             Mandatory=$True,
+             ValueFromRemainingArguments=$true,
+             Position = 1
+         )][string[]]
+        $listArgs
+    )
+
+    # Strip out flags from parameters.
+    $realArgs = @()
+    foreach ($arg in $listArgs) {
+        if (-not ($arg -like "-*")) {
+            $realArgs += $arg
+        }
+    }
+    
+    # Pull out URL and maybe output file. This assumes arguments go in
+    # a certain order.
+    $o = $false
+    $url = $false
+    if ($realArgs.length -ge 2) {
+        $o = $realArgs[-1]
+        $url = $realArgs[-2]
+    }
+    elseif ($realArgs.length -eq 1) {
+        $url = $realArgs[-1]
+    }
+    
     $behaviors = @("network")
     $subBehaviors = @()
     $behaviorProps = @{
@@ -36,7 +65,7 @@ function curl ($url, $o) {
 	$subBehaviors += @("file_write")
 	$behaviorProps["paths"] = @($o)
     }
-    
+
     RecordAction $([Action]::new($behaviors, $subBehaviors, "curl.exe", $behaviorProps, $MyInvocation, ""))
     return "Write-Host ""fake curl results"""
 }
@@ -57,7 +86,7 @@ function Invoke-Expression {
 	[Parameter(ValueFromPipeline=$true,Position=0,Mandatory=$true)]
 	[string] $Command
     )
-    
+
     Begin {}
     Process {
 
@@ -83,6 +112,7 @@ function Invoke-Expression {
             $scrapeIOCsCode = Microsoft.PowerShell.Management\Get-Content -Raw $CODE_DIR/harness/find_in_mem_iocs.ps1
             Microsoft.PowerShell.Utility\Invoke-Expression $scrapeIOCsCode
 
+            $gotEnclosingScope = $true
             try{
                 $parentVars = Microsoft.PowerShell.Utility\Get-Variable -Scope 1
             }
@@ -90,6 +120,7 @@ function Invoke-Expression {
             {
                 # No enclosing scope.
                 $parentVars = @()
+                $gotEnclosingScope = $false
             }
             $localVars = Microsoft.PowerShell.Utility\Get-Variable -Scope 0
             $localVars = $localVars | Microsoft.PowerShell.Core\ForEach-Object { $_.Name }
@@ -119,14 +150,17 @@ function Invoke-Expression {
             $thisDeclaredVars = @("Command", "behaviorProps", "parentVars", "localVars", "parentVar", 
                                   "invokeRes", "localVar", "varName", "foreach", "PSCmdlet")
             
-            # pick out the variables the Invoke-Expression defined, export them to the parent scope
+            # pick out the variables the Invoke-Expression defined,
+            # export them to the parent scope (if we have one).
             if ($parentVars -eq $null) {
                 $parentVars = @()
             }
-            foreach ($localVar in $localVars) {
-                $varName = $localVar.Name
-                if (!($parentVars.Contains($varName)) -and !($thisDeclaredVars.Contains($varName))) {
-                    Microsoft.PowerShell.Utility\Set-Variable -Name $varName -Value $localVar.Value -Scope 1
+            if ($gotEnclosingScope) {
+                foreach ($localVar in $localVars) {
+                    $varName = $localVar.Name
+                    if (!($parentVars.Contains($varName)) -and !($thisDeclaredVars.Contains($varName))) {
+                        Microsoft.PowerShell.Utility\Set-Variable -Name $varName -Value $localVar.Value -Scope 1
+                    }
                 }
             }
             
