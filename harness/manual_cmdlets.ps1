@@ -707,3 +707,22 @@ function Invoke-RestMethod {
     RecordAction $([Action]::new($behaviors, $subBehaviors, "Invoke-RestMethod", $behaviorProps, $MyInvocation, ""))
     return "1.2.3.4"
 }
+
+function GetAsyncKeyState {
+
+    param(
+        [Parameter(
+             Mandatory=$True,
+             ValueFromRemainingArguments=$true,
+             Position = 1
+         )][string[]]
+        $listArgs
+    )
+
+    $behaviors = @("keyboard")
+    $subBehaviors = @()
+    $behaviorProps = @{}    
+
+    RecordAction $([Action]::new($behaviors, $subBehaviors, "GetAsyncKeyState", $behaviorProps, $MyInvocation, ""))
+    return 123
+}

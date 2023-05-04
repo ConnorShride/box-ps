@@ -7,3 +7,7 @@ Set-Alias -Name "C:\WINDOWS\syswow64\WindowsPowershell\v1.0\powershell.exe" -Val
 Set-Alias -Name "C:\Windows\System32\WindowsPowerShell\v1.0\powershell.exe" -Value powershell.exe
 Set-Alias -Name "C:\WINDOWS\syswow64\WindowsPowershell\v1.0\powershell" -Value powershell.exe
 Set-Alias -Name "C:\Windows\System32\WindowsPowerShell\v1.0\powershell" -Value powershell.exe
+
+# Default ls command name is case sensitive. For some reason this kind
+# of fixes that.
+Set-Alias -Name ls -Value Get-ChildItem
