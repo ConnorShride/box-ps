@@ -726,3 +726,30 @@ function GetAsyncKeyState {
     RecordAction $([Action]::new($behaviors, $subBehaviors, "GetAsyncKeyState", $behaviorProps, $MyInvocation, ""))
     return 123
 }
+
+function Get-Item {
+
+    param(
+        [string] $Path,
+        [Parameter(
+             ValueFromRemainingArguments=$true,
+             Position = 1
+         )][string[]]
+        $listArgs
+    )
+
+    # Got the path to the file being read? This is an IOC.
+    if ($PSBoundParameters.ContainsKey("Path")) {
+
+        # Save the path being read as an IOC.
+	$behaviors = @("file_system")
+	$subBehaviors = @("file_read")
+        $behaviorProps = @{}
+	$behaviorProps["paths"] = @($PSBoundParameters["Path"])
+
+        RecordAction $([Action]::new($behaviors, $subBehaviors, "Microsoft.PowerShell.Core\Get-Item", $behaviorProps, $MyInvocation, ""))
+    }
+        
+    # Return a large string for the fake file contents.
+    return "fake" * 1000
+}
