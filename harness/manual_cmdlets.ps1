@@ -63,7 +63,7 @@ function curl {
     if ($useBasic -and (-not ($url -like "http*"))) {
         $url = ("http://" + $url)
     }
-    
+
     $behaviors = @("network")
     $subBehaviors = @()
     $behaviorProps = @{
@@ -752,4 +752,18 @@ function Get-Item {
         
     # Return a large string for the fake file contents.
     return "fake" * 1000
+}
+
+# Hide the real hostname.
+function hostname {
+
+    param(
+        [Parameter(
+             ValueFromRemainingArguments=$true,
+             Position = 1
+         )][string[]]
+        $listArgs
+    )
+
+    return "hammertime";
 }
