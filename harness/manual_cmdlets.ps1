@@ -767,3 +767,40 @@ function hostname {
 
     return "hammertime";
 }
+
+function Start-BitsTransfer {
+
+    param(
+        [Parameter(
+             Mandatory=$True,
+             ValueFromRemainingArguments=$true,
+             Position = 1
+         )][string[]]
+        $listArgs
+    )
+
+    # Pull out the URL and where to write the downloaded file.
+    $url = ""
+    $dest = $null
+    $pos = 0
+    foreach ($arg in $listArgs) {
+        $pos += 1
+        if (($arg -like "-so*") -and ($pos -lt $listArgs.length)) {
+            $url = $listArgs[$pos]
+        }
+        if (($arg -like "-de*") -and ($pos -lt $listArgs.length)) {
+            $dest = $listArgs[$pos]
+        }	
+    }
+
+    $behaviors = @("network")
+    $subBehaviors = @()
+    $behaviorProps = @{
+	"uri" = $url
+    }
+    if ($dest -ne $null) {
+	$behaviorProps["dst"] = $dest
+    }
+
+    RecordAction $([Action]::new($behaviors, $subBehaviors, "Start-BitsTransfer", $behaviorProps, $MyInvocation, ""))
+}
