@@ -804,3 +804,24 @@ function Start-BitsTransfer {
 
     RecordAction $([Action]::new($behaviors, $subBehaviors, "Start-BitsTransfer", $behaviorProps, $MyInvocation, ""))
 }
+
+function fakecmdexe {
+
+    param(
+        [Parameter(
+             Mandatory=$True,
+             ValueFromRemainingArguments=$true,
+             Position = 1
+         )][string[]]
+        $listArgs
+    )
+
+    # record the full cmd.exe command.
+    $behaviors = @("script_exec")
+    $subBehaviors = @()
+    $behaviorProps = @{
+	"args" = "" + $listArgs
+    }
+    
+    RecordAction $([Action]::new($behaviors, $subBehaviors, "cmd.exe", $behaviorProps, $MyInvocation, ""))
+}

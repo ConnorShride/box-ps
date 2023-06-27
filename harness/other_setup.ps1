@@ -11,3 +11,6 @@ Set-Alias -Name "C:\Windows\System32\WindowsPowerShell\v1.0\powershell" -Value p
 # Default ls command name is case sensitive. For some reason this kind
 # of fixes that.
 Set-Alias -Name ls -Value Get-ChildItem
+
+# Override cmd.exe.
+Set-Alias -Name "cmd.exe" -Value fakecmdexe
