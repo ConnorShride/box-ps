@@ -59,6 +59,18 @@ function curl {
         $url = $realArgs[-1]
     }
 
+    # A malware campaign has a mistake in their obfuscation and spaces
+    # can wind up in the URL argument. Try to fix this.
+    $realUrl = $url
+    if ($url.Contains(" ")) {
+        ForEach ($piece in $url.Split(" ")) {
+            if ($piece.Contains(".") -and $piece.Contains("/")) {
+                $realUrl = $piece
+            }
+        }
+    }
+    $url = $realUrl
+    
     # Fix the URL if -usebasicparsing option given.
     if ($useBasic -and (-not ($url -like "http*"))) {
         $url = ("http://" + $url)
