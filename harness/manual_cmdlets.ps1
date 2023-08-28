@@ -837,3 +837,24 @@ function fakecmdexe {
     
     RecordAction $([Action]::new($behaviors, $subBehaviors, "cmd.exe", $behaviorProps, $MyInvocation, ""))
 }
+
+function fakemv {
+
+    param(
+        [Parameter(
+             Mandatory=$True,
+             ValueFromRemainingArguments=$true,
+             Position = 1
+         )][string[]]
+        $listArgs
+    )
+
+    # record the full cmd.exe command.
+    $behaviors = @("file_system")
+    $subBehaviors = @()
+    $behaviorProps = @{
+	"args" = "" + $listArgs
+    }
+    
+    RecordAction $([Action]::new($behaviors, $subBehaviors, "mv", $behaviorProps, $MyInvocation, ""))
+}
