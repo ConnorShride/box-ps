@@ -849,11 +849,11 @@ function fakemv {
         $listArgs
     )
 
-    # record the full cmd.exe command.
+    # record the full mv command.
     $behaviors = @("file_system")
     $subBehaviors = @()
     $behaviorProps = @{
-	"args" = "" + $listArgs
+	"paths" = "" + $listArgs
     }
     
     RecordAction $([Action]::new($behaviors, $subBehaviors, "mv", $behaviorProps, $MyInvocation, ""))

@@ -184,7 +184,12 @@ function ScrapeUrls {
     $matchRes = $str | Microsoft.Powershell.Utility\Select-String -Pattern $regex -AllMatches
 
     if ($matchRes) {
-        $matchRes.Matches | Microsoft.PowerShell.Core\ForEach-Object { $urls += $_.Value }
+        $matchRes.Matches | Microsoft.PowerShell.Core\ForEach-Object {
+            $currVal = $_.Value
+            if (($currVal -ne "https://") -and ($currVal -ne "http://")) {
+                $urls += $currVal
+            }
+        }
     }
 
     return $urls
