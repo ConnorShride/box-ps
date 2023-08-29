@@ -378,7 +378,7 @@ function HarvestArtifacts {
 
                 # compute sha256 hash, move to artifact directory
                 $sha256 = $(Get-FileHash -Path $outPath -Algorithm SHA256).Hash
-                Move-Item -Path $outPath -Destination ($outDir + $sha256)
+                Move-Item -Path $outPath -Destination ($outDir + $sha256) -Force
 
                 # check if the bytes indicate a PE file
                 if ($artifactIsArray -and $artifactContent[0] -eq 77 -and $artifactContent[1] -eq 90) {
