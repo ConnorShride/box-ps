@@ -702,7 +702,9 @@ function Invoke-RestMethod {
     # Pull out the URL. We're ignoring all other arguments for now.
     $url = ""
     $pos = 0
+    $maybe = ""
     foreach ($arg in $listArgs) {
+        $maybe = $arg
         $pos += 1
         if (($arg -like "-uri*") -and ($pos -lt $listArgs.length)) {
             $url = $listArgs[$pos]
@@ -710,6 +712,16 @@ function Invoke-RestMethod {
         }
     }
 
+    # If we have just a single argument, assume it is a URL.
+    if (($pos -eq 1) -and ($url -eq "")) {
+        $url = $maybe
+    }
+
+    # Looks like you can leave the http: off. Fix that.
+    if (-not ($url -like "http*")) {
+        $url = ("http://" + $url)
+    }
+    
     $behaviors = @("network")
     $subBehaviors = @()
     $behaviorProps = @{
