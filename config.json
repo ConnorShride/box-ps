@@ -27,7 +27,7 @@
         "$env:userprofile": "\\C_DRIVE\\Users\\victim",
         "$bhome": "\\C_DRIVE\\Users\\victim",
         "$env:windir": "\\C_DRIVE\\WINDOWS",
-        "$bshome": "\\C_DRIVE\\Windows\\System32\\WindowsPowerShell\\v1.0",
+        "$bshome": "C:\\Windows\\System32\\WindowsPowerShell\\v1.0",
         "$MaximumDriveCount": 4096
     },
     "BehaviorPropFlexibleTypes": [
