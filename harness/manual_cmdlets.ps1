@@ -378,6 +378,7 @@ function powershell.exe {
         [string] $EncodedCommand,
 	[string] $File,
 	[string] $WindowStyle,
+        [string] $ExecutionPolicy,
         [switch] $NoLogo,
         [switch] $NoProfile,
         [switch] $NonInteractive
