@@ -394,13 +394,20 @@ function powershell.exe {
     if ($PSBoundParameters.ContainsKey("Command")) {
 
 	# command was given arg list style like "powershell Write-Host foo". join the list into a single string
+        Write-Host $Command
 	if ($Command.Count -gt 1) {
+            Write-Host "PS: 1"
 	    foreach ($token in $Command) {
 		$behaviorProps["script"] += $token + " "
 	    }
 	}
 	else {
-	    $behaviorProps["script"] = $Command[0].ToString()
+            if ($Command -is [array]) {
+	        $behaviorProps["script"] = $Command[0].ToString()
+            }
+            else {
+                $behaviorProps["script"] = $Command.ToString()
+            }
 	}
     }
     # command is given as a b64 encoded string, decode it

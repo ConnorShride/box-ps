@@ -125,10 +125,12 @@ class BoxPSReport:
             raise ValueError("must give either a report dict or report file path")
 
         # read the report from a path
+        self.gloss = "??? NOT LOADED ???"
         if report_path:
             try:
                 with open(report_path, "r") as f:
                     report_dict = json.loads(f.read())
+                    self.gloss = str(report_dict)
             except Exception as e:
                 raise errors.BoxPSReportError("failed to read box-ps report file: " + str(e))
 
@@ -143,7 +145,8 @@ class BoxPSReport:
         # basically selection sort the actions list
         while len(actions_pool) != 0:
 
-            action = Action(boxps_config, actions_pool.pop(0))
+            curr_act_dict = actions_pool.pop(0)
+            action = Action(boxps_config, curr_act_dict)
             action_ndx = 0
 
             while (action_ndx < len(self.actions)) and (action.id > self.actions[action_ndx].id):
@@ -243,6 +246,10 @@ class BoxPSReport:
         """
         return filter_actions(self.actions, behaviors, sub_behaviors, actors, parameters)
 
+    ################################################################################################
+    def __repr__(self):
+        return self.gloss
+    
     ################################################################################################
     def actions_by_behavior(self):
         """
