@@ -386,7 +386,7 @@ function powershell.exe {
     
     $scrapeIOCsCode = Microsoft.PowerShell.Management\Get-Content -Raw $CODE_DIR/harness/find_in_mem_iocs.ps1 
     Microsoft.PowerShell.Utility\Invoke-Expression $scrapeIOCsCode
-
+    
     $behaviors = @("script_exec")
     $subBehaviors = @("start_process")
     $behaviorProps = @{}
@@ -394,7 +394,6 @@ function powershell.exe {
     if ($PSBoundParameters.ContainsKey("Command")) {
 
 	# command was given arg list style like "powershell Write-Host foo". join the list into a single string
-        Write-Host $Command
 	if ($Command.Count -gt 1) {
             Write-Host "PS: 1"
 	    foreach ($token in $Command) {
