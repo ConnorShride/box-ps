@@ -15,5 +15,5 @@ setuptools.setup(
     packages=["pyboxps"],
     install_requires=["enum34"],
     entry_points={"console_scripts": ["boxps=pyboxps.boxps:main_cli"]},
-    python_requires=">=3.8.*",
+    python_requires=">=3.8",
 )
