@@ -1,15 +1,14 @@
 import json
-import pyboxps.errors as errors
 from enum import Enum
+
+import pyboxps.errors as errors
+
 
 ####################################################################################################
 class Artifact:
-
     ################################################################################################
     def __init__(self, action_id, artifact_dict):
-
         try:
-
             self.action_id = action_id
             self.sha256 = artifact_dict["sha256"]
             self.file_type = artifact_dict["fileType"]
@@ -17,11 +16,13 @@ class Artifact:
         except KeyError as e:
             raise errors.BoxPSReportError("bad artifact data in report: " + str(e))
 
+
 # TODO deserialize environment probes
 ####################################################################################################
 class EnvironmentProbe:
     def __init__(self, env_probes_dict):
         pass
+
 
 ####################################################################################################
 class Behaviors(Enum):
@@ -37,6 +38,7 @@ class Behaviors(Enum):
     binary_import = 10
     code_create = 11
     task = 12
+
 
 ####################################################################################################
 class SubBehaviors(Enum):
@@ -62,15 +64,13 @@ class SubBehaviors(Enum):
     import_dotnet_binary = 20
     init_code_block = 21
     new_task = 22
-    
+
+
 ####################################################################################################
 class Action:
-
     ################################################################################################
     def __init__(self, boxps_config, action_dict):
-
         try:
-
             # build a list of enum objects for behaviors and subbehaviors
             self.behaviors = [Behaviors[behavior] for behavior in action_dict["Behaviors"]]
             self.sub_behaviors = [SubBehaviors[behavior] for behavior in action_dict["SubBehaviors"]]
@@ -93,11 +93,9 @@ class Action:
             raise errors.BoxPSReportError("field not present in config: " + str(e))
 
         try:
-
             # add the behavior properties as members too for when users know what behavior properties
             # they're looking for
             for behavior_property in action_dict["BehaviorProps"].keys():
-
                 property_value = action_dict["BehaviorProps"][behavior_property]
                 self.behavior_properties[behavior_property] = property_value
 
@@ -114,13 +112,11 @@ class Action:
 
 ####################################################################################################
 class BoxPSReport:
-
     ################################################################################################
     def __init__(self, boxps_config, report_dict=None, report_path=None):
-
         if report_dict is not None and report_path is not None:
             raise ValueError("can't give both a report dict and report file path")
-        
+
         if report_dict is None and report_path is None:
             raise ValueError("must give either a report dict or report file path")
 
@@ -144,7 +140,6 @@ class BoxPSReport:
 
         # basically selection sort the actions list
         while len(actions_pool) != 0:
-
             curr_act_dict = actions_pool.pop(0)
             action = Action(boxps_config, curr_act_dict)
             action_ndx = 0
@@ -160,7 +155,7 @@ class BoxPSReport:
         self.confident_net_iocs = [network_action.uri for network_action in network_actions]
         self.confident_fs_iocs = []
         for fs_action in file_system_actions:
-            if (isinstance(fs_action.paths, list)):
+            if isinstance(fs_action.paths, list):
                 self.confident_fs_iocs += fs_action.paths
 
         # aggressive IOCs
@@ -176,13 +171,10 @@ class BoxPSReport:
 
         # deserialize artifacts, separate out hashes for convenience
         try:
-
             for id_to_artifacts in report_dict["Artifacts"].items():
-
                 action_id = int(id_to_artifacts[0])
 
                 for artifact_dict in id_to_artifacts[1]:
-
                     artifact = Artifact(action_id, artifact_dict)
                     self.artifact_hashes.append(artifact.sha256.lower())
                     self.artifacts.append(artifact)
@@ -204,12 +196,9 @@ class BoxPSReport:
         filtered = self.filter_actions(behaviors=[Behaviors.script_exec, Behaviors.code_import])
 
         for action in filtered:
-
             layer = ""
 
-            if ((Behaviors.script_exec in action.behaviors) and
-                hasattr(action, "script") and
-                (action.script != "")):
+            if (Behaviors.script_exec in action.behaviors) and hasattr(action, "script") and (action.script != ""):
                 layer = action.script
             elif Behaviors.code_import in action.behaviors and action.code != "":
                 layer = action.code
@@ -225,16 +214,16 @@ class BoxPSReport:
         Gets an action by action ID
 
         @param action_id (int) action ID
-        
+
         @return (Action)
         """
-        return get_action(self.actions, action_id)    
+        return get_action(self.actions, action_id)
 
     ################################################################################################
     def filter_actions(self, behaviors=[], sub_behaviors=[], actors=[], parameters=[]):
         """
-        Filter the list of actions by behaviors, actors, or parameters used. An action that has any 
-        of the values you give will be present in the filtered list, which will still be sorted in 
+        Filter the list of actions by behaviors, actors, or parameters used. An action that has any
+        of the values you give will be present in the filtered list, which will still be sorted in
         order of their execution in the script.
 
         @param behaviors (list) of Behavior enum values
@@ -249,7 +238,7 @@ class BoxPSReport:
     ################################################################################################
     def __repr__(self):
         return self.gloss
-    
+
     ################################################################################################
     def actions_by_behavior(self):
         """
@@ -268,7 +257,7 @@ def get_action(actions, action_id):
 
     @param actions (list) of Action objects
     @param action_id (int) action ID
-    
+
     @return (Action)
     """
 
@@ -278,11 +267,12 @@ def get_action(actions, action_id):
 
     return None
 
+
 ################################################################################################
 def filter_actions(actions, behaviors=[], sub_behaviors=[], actors=[], parameters=[]):
     """
-    Filter the list of actions by behaviors, actors, or parameters used. An action that has any 
-    of the values you give will be present in the filtered list, which will still be sorted in 
+    Filter the list of actions by behaviors, actors, or parameters used. An action that has any
+    of the values you give will be present in the filtered list, which will still be sorted in
     order of their execution in the script.
 
     @param actions (list) of Action objects
@@ -299,7 +289,6 @@ def filter_actions(actions, behaviors=[], sub_behaviors=[], actors=[], parameter
     sub_behavior_filter = set(sub_behaviors)
 
     for action in actions:
-
         # check for a desired behavior
         if set(action.behaviors) & behavior_filter:
             filtered.append(action)
@@ -324,6 +313,7 @@ def filter_actions(actions, behaviors=[], sub_behaviors=[], actors=[], parameter
 
     return filtered
 
+
 ################################################################################################
 def actions_by_behavior(actions):
     """
@@ -339,7 +329,6 @@ def actions_by_behavior(actions):
 
     for action in actions:
         for behavior in action.behaviors:
-
             if behavior.name not in split:
                 split[behavior.name] = []
 

@@ -6,7 +6,7 @@
 # USAGE
 # For the first argument, either give a path to a powershell script file, or the -p option to tell
 # this script to read the powershell from stdin. Then, either give a path to put the output JSON
-# file only or give "-d <path>" to give a path to an output directory containing the full analysis  
+# file only or give "-d <path>" to give a path to an output directory containing the full analysis
 # results. If a timeout for sandboxing is desired, give that last.
 
 # return codes: see README.md
@@ -163,7 +163,7 @@ then
 		fi
 
 		docker cp "$container_id:/opt/box-ps/outdir" $3
-		
+
 		if [[ $? != 0 ]]
 		then
 			return_code=5

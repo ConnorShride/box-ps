@@ -10,7 +10,7 @@ foreach ($checkedPath in $routineArg) {
     if ($checkedPath -ne "env:__SuppressAnsiEscapeSequences" -and $pretendPaths -notcontains $checkedPath) {
         $exists = $false
         break
-    } 
+    }
 }
 
 $exists

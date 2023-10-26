@@ -1,5 +1,5 @@
 $utils = Microsoft.PowerShell.Core\Import-Module -Name $PSScriptRoot/Utils.psm1 -AsCustomObject -Scope Local
-$config = Microsoft.PowerShell.Management\Get-Content $PSScriptRoot/config.json | 
+$config = Microsoft.PowerShell.Management\Get-Content $PSScriptRoot/config.json |
     Microsoft.PowerShell.Utility\ConvertFrom-Json -AsHashtable
 
 # Use the current PID to give each box-ps run a unique working directory.
@@ -15,7 +15,7 @@ function StaticParamsCode {
     $Signature = TranslateClassFuncSignature $Signature
     $paramsReg = "\((.+)\)"
     $code = "param(`r`n"
-    
+
     $Signature -match $paramsReg > $null
     $params = $Matches[1].Replace(", ", ",`r`n")
     $code += $utils.TabPad($params)
@@ -89,7 +89,7 @@ function CmdletParamsCode {
             $paramOptLine += "Position=$($helpParam.position),"
         }
 
-        $paramOptLine = $paramOptLine.TrimEnd(',') 
+        $paramOptLine = $paramOptLine.TrimEnd(',')
 
         if ($paramOptLine -ne "`t[Parameter(") {
             $code += $paramOptLine + ")]`r`n"
@@ -116,14 +116,14 @@ function CmdletParamsCode {
 
 # build the code to initialize an array of strings given the strings
 function BuildStringArrayCode {
-    
+
     param (
         [string[]] $Strings
     )
 
     $array = "@("
     if ($null -ne $Strings) {
-        $Strings | ForEach-Object { $array += "`"" + $_ + "`"," } 
+        $Strings | ForEach-Object { $array += "`"" + $_ + "`"," }
     }
     return $array.Trim(",") + ")"
 }
@@ -167,7 +167,7 @@ function SubBehaviorsCode {
     }
     $code = $code.TrimEnd(", ")
     $code += ")`r`n"
-    
+
     return $code
 }
 
@@ -313,7 +313,7 @@ function TranslateClassFuncSignature {
     $Signature = $Signature.Insert($firstArgTypeNdx, "[")
     $firstArgNdx = $Signature.IndexOf(' ', $firstArgTypeNdx) + 2
     $Signature = $Signature.Insert($firstArgNdx - 2, "]").Insert($firstArgNdx, "$")
-    
+
     # same thing for subsequent argument types and variables
     $scanNdx = $firstArgNdx
     while ($Signature.IndexOf(',', $scanNdx) -ne -1) {
@@ -344,7 +344,7 @@ function ClassConstructors {
     # build each public constructor
     foreach ($constructor in ([type]$ParentClass).GetConstructors()) {
         $code += "BoxPS$shortName ("
-        
+
         # add constructor parameters to function signature
         foreach ($parameter in $constructor.GetParameters()) {
             $code += ("[" + $parameter.ParameterType + "]`$" + $parameter.Name + ", ")
@@ -356,13 +356,13 @@ function ClassConstructors {
 
             # TODO assign the property to the corresponding parameter if the name matches
 
-            # get the value of the property we're wanting to create an override for from our guinea pig 
+            # get the value of the property we're wanting to create an override for from our guinea pig
             # object to see how the actual .Net constructor assigns values to the property
             Microsoft.PowerShell.Utility\Invoke-Expression "`$realProperty = `$guineaPig.$property"
 
             # assign the property to it's empty value, or leave it null if it is that IRL
             if ($null -ne $realProperty) {
-                
+
                 # get the actual runtime type
                 Microsoft.PowerShell.Utility\Invoke-Expression "`$runtimeType = `$realProperty.GetType().FullName"
                 if ($runtimeType.Contains("+")) {
@@ -380,7 +380,7 @@ function ClassConstructors {
                 catch {}
             }
         }
-        
+
         $code += "}`r`n"
     }
 
@@ -396,7 +396,7 @@ function GetPropertyTypes {
     $guineaPig = Microsoft.PowerShell.Utility\New-Object $ObjectType
 
     # get all the advertised properties from the guineapig object
-    $properties = Microsoft.PowerShell.Utility\Get-Member -InputObject $guineaPig | 
+    $properties = Microsoft.PowerShell.Utility\Get-Member -InputObject $guineaPig |
                     Microsoft.PowerShell.Core\Where-Object MemberType -eq property
 
     $res = @{}
@@ -442,7 +442,7 @@ function GetFunctionSignatures {
         $signature -match "\((.*)\)" > $null
         $sigAndArgs[$signature] = @($Matches[1].Split(", ") | Microsoft.PowerShell.Core\ForEach-Object { $_.Split()[-1]})
     }
-    
+
     return $sigAndArgs
 }
 
@@ -482,7 +482,7 @@ function ClassFunctionOverrides {
 
         # build static function signatures we're excluding from the info in config
         $excludeSignatures = @()
-        foreach ($namespaceAndName in $Exclude.Keys) { 
+        foreach ($namespaceAndName in $Exclude.Keys) {
             $functionName = $utils.GetUnqualifiedName($namespaceAndName)
             foreach ($returnType in $Exclude[$namespaceAndName].Keys) {
                 foreach ($parameters in $Exclude[$namespaceAndName][$returnType]) {
@@ -507,7 +507,7 @@ function ClassFunctionOverrides {
         if (!$Exclude.Contains($signature)) {
 
             $sigAndArgs = [Tuple]::Create($signature, $sigArgs)
-    
+
             # if the signature does not take an argument that we listed in the config file, then we aren't supporting it
             $BehaviorPropInfo = $OverrideInfo["BehaviorPropInfo"]
             $supportedArgs = @()
@@ -518,7 +518,7 @@ function ClassFunctionOverrides {
             }
 
             $intersection = $utils.ListIntersection($sigAndArgs[1], $supportedArgs)
-    
+
             # this signature contains a parameter we're wanting to track as a behavior property
             if ($intersection) {
 
@@ -547,22 +547,22 @@ function ClassFunctionOverrides {
                 else {
                     $code += "`tRecordAction `$([Action]::new(`$behaviors, `$subBehaviors, `"$ParentClass`.$FuncName`", `$behaviorProps, `$PSBoundParameters, `$MyInvocation.Line, `$extraInfo))`r`n"
                 }
-        
+
                 # if the method actually has a return value
                 if (!$signature.Contains("[void]")) {
-        
+
                     # build a call to the real function to return the actual result from the override
                     if ($OverrideInfo["Flags"] -and $OverrideInfo["Flags"].Contains("call_parent")) {
-        
+
                         $code += "`treturn "
-        
+
                         if ($Static) {
                             $code += "$FuncName("
                         }
                         else {
                             $code += "([$ParentClass]`$this).$FuncName("
                         }
-        
+
                         # build arguments to the function
                         $args = ""
                         foreach ($arg in $sigArgs) {
@@ -579,7 +579,7 @@ function ClassFunctionOverrides {
                         $code += "`treturn `$null`r`n"
                     }
                 }
-        
+
                 $code += "}`r`n`r`n"
             }
         }
@@ -650,7 +650,7 @@ function StaticOverrides {
 }
 
 function CmdletOverride {
-    
+
     param (
         [string] $CmdletName,
         [hashtable] $CmdletInfo
@@ -658,7 +658,7 @@ function CmdletOverride {
 
     $shortName = $utils.GetUnqualifiedName($CmdletName)
     $code = "function $shortName {`r`n"
-    
+
     # if the override does not have a behaviors member, it's not an action the user cares about
     # tracking, just a cmdlet we want to intercept for other reasons
     if (!$CmdletInfo["Behaviors"]) {

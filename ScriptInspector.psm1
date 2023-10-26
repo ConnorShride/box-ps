@@ -1,5 +1,5 @@
 $utils = Microsoft.PowerShell.Core\Import-Module -Name $PSScriptRoot/Utils.psm1 -AsCustomObject -Scope Local
-$config = Microsoft.PowerShell.Management\Get-Content $PSScriptRoot/config.json | 
+$config = Microsoft.PowerShell.Management\Get-Content $PSScriptRoot/config.json |
     Microsoft.PowerShell.Utility\ConvertFrom-Json -AsHashtable
 
 # replace static function calls that we are overriding for a call to our function
@@ -124,7 +124,7 @@ function BoxifyScript {
     param(
         [String] $Script
     )
-    
+
     $Script = ReplaceBadEscapes($Script)
     $Script = EnvReplacement($Script)
     # too inefficient for too little benefit
@@ -154,7 +154,7 @@ function ScrapeFilePaths {
 }
 
 function ScrapeNetworkIOCs {
-    
+
     param(
         [String] $str,
         [Switch] $Aggressive
@@ -202,7 +202,7 @@ function ScrapeDomains {
     )
 
     $domains = @()
-    
+
     $regex = "(([a-zA-Z0-9_\-]+[a-zA-Z][a-zA-Z0-9_\-]*\.){1,2}(?!(D|d)(L|l)(L|l))[a-zA-Z0-9_\-]+[a-zA-Z][a-zA-Z0-9_\-]*)"
     $matchRes = $matchRes = $str | Microsoft.Powershell.Utility\Select-String -Pattern $regex -AllMatches
 
@@ -223,12 +223,12 @@ function ScrapeIPs {
     $ips = @()
 
     $regex = "\d{1,3}\.\d{1,3}\.\d{1,3}\.\d{1,3}"
-    
+
     $matchRes = $str | Microsoft.Powershell.Utility\Select-String -Pattern $regex -AllMatches
 
     if ($matchRes) {
-        $matchRes.Matches | Microsoft.PowerShell.Core\ForEach-Object { 
-            
+        $matchRes.Matches | Microsoft.PowerShell.Core\ForEach-Object {
+
             # validate that each octet is less than 255 (lazy regex)
             $valid = $true
             $octets = $_.Value.Split(".")
@@ -238,7 +238,7 @@ function ScrapeIPs {
                 }
             }
             if ($valid) {
-                $ips += $_.Value 
+                $ips += $_.Value
             }
         }
     }
@@ -362,8 +362,8 @@ function PreProcessScript {
 
     # Do any rewrites of the initial script to help sandboxing.
     $script = $utils.RewriteCode($script)
-    
-    ScrapeNetworkIOCs $Script | Microsoft.PowerShell.Utility\Out-File -Append "./working_$BoxPSPID/scraped_network.txt" 
+
+    ScrapeNetworkIOCs $Script | Microsoft.PowerShell.Utility\Out-File -Append "./working_$BoxPSPID/scraped_network.txt"
     ScrapeFilePaths $Script | Microsoft.PowerShell.Utility\Out-File -Append "./working_$BoxPSPID/scraped_paths.txt"
     ScrapeEnvironmentProbes $Script | Microsoft.PowerShell.Utility\Out-File -Append "./working_$BoxPSPID/scraped_probes.txt"
 

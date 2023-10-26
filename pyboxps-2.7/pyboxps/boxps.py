@@ -27,10 +27,10 @@ class BoxPS:
 
         # validate environment first
         self._boxps_path = self._validate_env(boxps_path, docker)
-        
+
         self._install_dir = os.getenv("BOXPS")
         self._docker = docker
-        
+
         # TODO write a class for ingesting the config in python and within box-ps
         with open(self._boxps_path + os.sep + "config.json", "r") as f:
             self._config = json.loads(f.read())
@@ -38,11 +38,11 @@ class BoxPS:
     ################################################################################################
     def _validate_env(self, boxps_path, docker):
         """
-        Validate that there is a valid box-ps installation and a valid and accessible docker 
-        installation if the user wants to use it. If boxps_path is None, will look for an 
+        Validate that there is a valid box-ps installation and a valid and accessible docker
+        installation if the user wants to use it. If boxps_path is None, will look for an
         environment variable named "BOXPS" to conatin the path. Will also validate that the system
-        has at least 4GB of memory available to the process, and we can open a pwsh subprocess if 
-        not using docker. Checks are done in the following order and exceptions are raised if any 
+        has at least 4GB of memory available to the process, and we can open a pwsh subprocess if
+        not using docker. Checks are done in the following order and exceptions are raised if any
         fail, short-cicuiting the rest of the checks.
 
         1. is BOXPS env variable present (if boxps_path is None)
@@ -71,7 +71,7 @@ class BoxPS:
             raise boxps_errors.BoxPSBadEnvVarError()
 
         if not os.path.exists(boxps_path + os.sep + "box-ps.ps1"):
-            raise boxps_errors.BoxPSBadInstallError("box-ps.ps1 not present in install directory: " + 
+            raise boxps_errors.BoxPSBadInstallError("box-ps.ps1 not present in install directory: " +
                 boxps_path)
 
         if not os.path.exists(boxps_path + os.sep + "config.json"):
@@ -84,7 +84,7 @@ class BoxPS:
 
         if docker:
             try:
-                subprocess.check_call(boxps_path + os.sep + "docker-box-ps.sh", 
+                subprocess.check_call(boxps_path + os.sep + "docker-box-ps.sh",
                     stderr=subprocess.PIPE)
             except OSError as e:
                 raise boxps_errors.BoxPSBadInstallError("cannot execute docker-box-ps.sh: " + str(e))
@@ -109,7 +109,7 @@ class BoxPS:
             limit = self._unset_soft_vmem_limit()
 
             try:
-                subprocess.check_call(["pwsh", "-v"], stdout=subprocess.PIPE, 
+                subprocess.check_call(["pwsh", "-v"], stdout=subprocess.PIPE,
                     stderr=subprocess.PIPE)
             except OSError as e:
                 raise boxps_errors.BoxPSDependencyError("pwsh: " + str(e))
@@ -153,31 +153,31 @@ class BoxPS:
         """
         Sandbox powershell to produce a BoxPSReport and other script artifacts if desired. Unlimits
         any soft memory limits on processes during the sanboxing, then resets them.
-        
+
         INPUT...
         Must take either raw script content or a path to an input script, but not both. Environment
         variables that the script expects to be set may be given in a dict to env_vars. A timeout
         for the sandboxing may be given in seconds. A BoxPSTimeoutError is raised on timeout.
-        
+
         DOCKER..
         Will use the docker-box-ps.sh bash script to containerize the sandbox if the BoxPS object
         was initialized with the docker flag set. docker-box-ps.sh will always pull the latest
         box-ps docker container to do the sandboxing. If giving raw script content, this method will
         pipe the script into a file within the docker container through docker-box-ps.sh, so the
         script is never written to disk outside the container.
-        
+
         OUTPUT FILES/DIRECTORIES...
         This method will always produce a full analysis output directory on disk unless using docker
         AND the report_only flag is given. The location of the analysis directory can be customized
         with the out_dir argument, but this cannot be done while giving the report_only flag, and if
         out_dir is not given the analysis directory will be placed in a temp directory named
         <random>-boxps.
-        
+
         This method will also always produce a "working" directory in the current working directory
         that contains all the files the full analysis directory would contain, regardless of your
         out_dir and report_only preferences, unless you're using docker in which case that directory
         will be written in the container only.
-        
+
         The JSON report will always be written to disk somewhere named either report.json in the
         full analysis directory, in a temp folder named <random>-boxps.json, or at the path given in
         report_file.
@@ -235,7 +235,7 @@ class BoxPS:
                 with open(in_file, "w") as f:
                     f.write(script)
 
-            cmd = ["pwsh", "-noni", self._install_dir + os.sep + "box-ps.ps1", "-InFile", 
+            cmd = ["pwsh", "-noni", self._install_dir + os.sep + "box-ps.ps1", "-InFile",
                 in_file]
 
             if report_only:
@@ -254,7 +254,7 @@ class BoxPS:
                         f.write(json.dumps(env_vars))
 
                 except Exception as e:
-                    raise boxps_errors.BoxPSError("failed to write temp file for environment variables: " + 
+                    raise boxps_errors.BoxPSError("failed to write temp file for environment variables: " +
                         str(e))
 
                 cmd += ["-EnvFile", env_file]
@@ -266,7 +266,7 @@ class BoxPS:
 
             proc = subprocess.Popen(cmd, stdout=subprocess.PIPE, stderr=subprocess.PIPE)
             stdout, stderr = proc.communicate()
-            
+
             self._reset_soft_vmem_limit(limit)
 
         # sandbox within docker container. Use docker-box-ps.sh so we can pipe directly into it
@@ -288,7 +288,7 @@ class BoxPS:
 
             # in-memory script content. no input script file is written outside the docker container
             if script:
-                proc = subprocess.Popen(cmd, stdin=subprocess.PIPE, stdout=subprocess.PIPE, 
+                proc = subprocess.Popen(cmd, stdin=subprocess.PIPE, stdout=subprocess.PIPE,
                             stderr=subprocess.PIPE)
                 stdout, stderr = proc.communicate(input=script)
             else:
@@ -297,7 +297,7 @@ class BoxPS:
 
         # raise timeout error
         if timeout is not None and proc.returncode == 124:
-            raise boxps_errors.BoxPSTimeoutError("failed to sandbox within " + str(timeout) + 
+            raise boxps_errors.BoxPSTimeoutError("failed to sandbox within " + str(timeout) +
                 " second(s)")
 
         # not stderr on the sandboxing sub-process. this means a critical error running the sandbox
@@ -323,14 +323,14 @@ class BoxPS:
 
             raise boxps_errors.BoxPSSandboxError(msg)
 
-        # logic is just cleaner this way since docker-box-ps.sh doesn't support putting report and 
+        # logic is just cleaner this way since docker-box-ps.sh doesn't support putting report and
         # analysis dir in two different spots
         if not report_only and report_file:
             shutil.copyfile(report_path, report_file)
 
         # deserialize the JSON report into a BoxPSReport
         report = boxps_report.BoxPSReport(self._config, report_path=report_path)
-    
+
         return report if report_only else (out_dir, report)
 
 ####################################################################################################
@@ -340,103 +340,103 @@ def main_cli():
 
     description = """
 
-Python CLI for box-ps. 
+Python CLI for box-ps.
 
 DISCLAIMER
 
-Designed for use on a linux machine. Using this on Windows systems has not been tested and is 
-strongly advised against. Box-ps will run powershell core on input scripts and attempt to intercept 
+Designed for use on a linux machine. Using this on Windows systems has not been tested and is
+strongly advised against. Box-ps will run powershell core on input scripts and attempt to intercept
 malicious behavior but this is by no means guaranteed. In any case box-ps and this module will place
-potentially malicious artifacts of some kind onto disk, be they embedded PEs or JSON formatted 
+potentially malicious artifacts of some kind onto disk, be they embedded PEs or JSON formatted
 malicious strings of code, regardless of the options used. This module will remove any soft limits
 on memory during the sandboxing operation but reinstate them directly afterwards. Limits on virtual
 memory don't seem to work well with PowerShell core on certain systems.
 
 DOCKER
 
-This module is capable of using docker to sandbox malicious scripts to strip the networking 
-capabilities of the script and constrain it's access to your file system. Options can be given to 
-prevent malicious artifacts (extracted embedded files) from being written to disk outside the 
+This module is capable of using docker to sandbox malicious scripts to strip the networking
+capabilities of the script and constrain it's access to your file system. Options can be given to
+prevent malicious artifacts (extracted embedded files) from being written to disk outside the
 container. You can also pipe in the malicious script content to docker thereby preventing the script
 from being written to disk as docker well. At a minimum, a JSON report of the scripts execution will
-always be written to disk outside the container somewhere, either in a temp directory or the 
-directory you specify. !!NOTE!! The latest box-ps container is pulled from DockerHub if necessary on 
-each run, and I don't have structured releases yet, so you should update this module often to keep 
+always be written to disk outside the container somewhere, either in a temp directory or the
+directory you specify. !!NOTE!! The latest box-ps container is pulled from DockerHub if necessary on
+each run, and I don't have structured releases yet, so you should update this module often to keep
 it in sync with the box-ps installation in the latest container.
 
 OUTPUT
 
-If you haven't given the report_only option, the path to a full analysis directory will be printed 
+If you haven't given the report_only option, the path to a full analysis directory will be printed
 where you can retrieve any artifacts that may have been produced from analysis. The location of the
 output directory can be dictated by --boxed-dir or --out-dir. Otherwise if report_only is not given
-it will be placed in a temp directory named <random>-boxps. You can customize the path to the JSON 
-report with --report-file, which will duplicate the report if it's already in the analysis 
+it will be placed in a temp directory named <random>-boxps. You can customize the path to the JSON
+report with --report-file, which will duplicate the report if it's already in the analysis
 directory. If not using the docker option, this will temporarily create a 'working' directory in the
-current working directory necessary to run box-ps which contains all the stuff in the full analysis 
-directories, but will be deleted after running. If you pipe in script content to sandbox and are not 
+current working directory necessary to run box-ps which contains all the stuff in the full analysis
+directories, but will be deleted after running. If you pipe in script content to sandbox and are not
 using docker, the script will be written to disk in a temp directory named <random>-boxps.ps1.
- 
+
 """
 
     usages = """
 
- 
+
 EXAMPLES
 
 To sandbox a script on disk outside a container, produce an analysis directory in temp...
 
 python ./boxps.py --file ./example-script.ps1
- 
+
 
 to produce only a JSON report in temp (but still temporarily write artifacts to disk in the
 working directory)...
 
 python ./boxps.py --file ./example-script.ps1 --report-only
- 
+
 
 to produce an analysis directory called "example-script.ps1.boxed" in the current working directory
 and another JSON report somewhere else...
 
 python ./boxps.py --file ./example-script.ps1 --boxed-dir --report-file ./report.json
- 
+
 
 to pipe in script content, produce an analysis directory and the script content written to temp...
 
 cat ./example-script.ps1 | python ./boxps.py --piped
- 
+
 
 to pipe in script content to a docker container and only produce a JSON report in temp...
 
 cat ./example-script.ps1 | python ./boxps.py --piped --docker --report-only
- 
 
-to pipe in script content to a docker container and produce an analysis directory called 
+
+to pipe in script content to a docker container and produce an analysis directory called
 "script.boxed"...
 
 cat ./example-script.ps1 | python ./boxps.py --piped --docker --boxed-dir
- 
+
 
 to show the most possible information from analysis...
 
 cat ./example-script.ps1 | python ./boxps.py --piped --all
- 
 
-to show layers and parameter values from actions but snip the values, and produce an analysis 
+
+to show layers and parameter values from actions but snip the values, and produce an analysis
 directory called "analysis"...
 
 python ./boxps.py --file ./example-script.ps1 --layers --parameter-values --out-dir ./analysis
- 
+
 """
 
-    parser= argparse.ArgumentParser(description=description, epilog=usages, 
+    parser= argparse.ArgumentParser(description=description, epilog=usages,
         formatter_class=argparse.RawDescriptionHelpFormatter)
 
     parser.add_argument("-i", "--install-path", required=False, action="store", help="path to " +
         "box-ps installation. Will otherwise look for env variable BOXPS.")
-    parser.add_argument("-d", "--docker", required=False, action="store_true", default=False, 
+    parser.add_argument("-d", "--docker", required=False, action="store_true", default=False,
         help="run box-ps from within a docker container that has networking disconnected. " +
         "Conatiner is killed after each run.")
-    parser.add_argument("-o", "--out-dir", required=False, action="store", 
+    parser.add_argument("-o", "--out-dir", required=False, action="store",
         help="create a full analysis results output directory (artifacts, JSON report file, " +
         "stdout, etc.) at the given path.")
     parser.add_argument("-bd" , "--boxed-dir", required=False, default=False, action="store_true",
@@ -455,10 +455,10 @@ python ./boxps.py --file ./example-script.ps1 --layers --parameter-values --out-
     parser.add_argument("-e", "--env-file", required=False, action="store", help="path to JSON " +
         "formatted file mapping the names of environment variables that should be set in the " +
         "sandbox to their string values.")
-    parser.add_argument("-p", "--piped", required=False, default=False, action="store_true", 
+    parser.add_argument("-p", "--piped", required=False, default=False, action="store_true",
         help="read the powershell script content in from STDIN. The script is still written to " +
         "disk in temp unless using docker.")
-    parser.add_argument("-pv", "--parameter-values", required=False, default=False, 
+    parser.add_argument("-pv", "--parameter-values", required=False, default=False,
         action="store_true", help="print all parameter values from actions, not just behavior " +
         "property values.")
     parser.add_argument("-ns", "--no-snip", required=False, default=False,
@@ -476,7 +476,7 @@ python ./boxps.py --file ./example-script.ps1 --layers --parameter-values --out-
     args = parser.parse_args()
 
     # further arg validation
-    
+
     # must give either a script or an input file
     if not args.piped and args.file is None:
         print("[-] must give either piped script contents or an input file path")
@@ -508,7 +508,7 @@ python ./boxps.py --file ./example-script.ps1 --layers --parameter-values --out-
     if args.stderr and args.report_only:
         print("[-] printing standard error is not available with the report only option")
 
-    # give the analysis directory a default .boxed dir 
+    # give the analysis directory a default .boxed dir
     if args.boxed_dir:
         args.out_dir = "script.boxed" if args.piped else os.path.basename(args.file) + ".boxed"
 
@@ -530,16 +530,16 @@ python ./boxps.py --file ./example-script.ps1 --layers --parameter-values --out-
     if args.report_only:
         report = boxps.sandbox(script=script,
                                 in_file=args.file,
-                                out_dir=None, 
-                                env_vars=env_vars, 
+                                out_dir=None,
+                                env_vars=env_vars,
                                 timeout=args.timeout,
                                 report_only=True,
                                 report_file=args.report_file)
     else:
         out_dir, report = boxps.sandbox(script=script,
-                                        in_file=args.file, 
-                                        out_dir=args.out_dir, 
-                                        env_vars=env_vars, 
+                                        in_file=args.file,
+                                        out_dir=args.out_dir,
+                                        env_vars=env_vars,
                                         timeout=args.timeout,
                                         report_only=False,
                                         report_file=args.report_file)
@@ -631,7 +631,7 @@ python ./boxps.py --file ./example-script.ps1 --layers --parameter-values --out-
             print("[+] SCRIPT STDERR...\n")
             with open(out_dir + os.sep + "stderr.txt") as f:
                 print(f.read())
-    
+
     if args.layers:
         print("[+] LAYERS...\n")
         layers = report.layers
@@ -649,7 +649,7 @@ python ./boxps.py --file ./example-script.ps1 --layers --parameter-values --out-
         print("[-] NO ACTIONS\n")
 
     if report.confident_net_iocs:
-        print("[+] CONFIDENT NETWORK IOCs...\n") 
+        print("[+] CONFIDENT NETWORK IOCs...\n")
         for ioc in report.confident_net_iocs:
             print(ioc)
         print("")
@@ -657,7 +657,7 @@ python ./boxps.py --file ./example-script.ps1 --layers --parameter-values --out-
         print("[-] NO CONFIDENT NETWORK IOCS\n")
 
     if report.aggressive_net_iocs:
-        print("[+] AGGRESSIVE NETWORK IOCs...\n") 
+        print("[+] AGGRESSIVE NETWORK IOCs...\n")
         for ioc in report.aggressive_net_iocs:
             print(ioc)
         print("")
@@ -665,7 +665,7 @@ python ./boxps.py --file ./example-script.ps1 --layers --parameter-values --out-
         print("[-] NO AGGRESSIVE NETWORK IOCS\n")
 
     if report.confident_fs_iocs:
-        print("[+] CONFIDENT FILE SYSTEM IOCs...\n") 
+        print("[+] CONFIDENT FILE SYSTEM IOCs...\n")
         for ioc in report.aggressive_fs_iocs:
             print(ioc)
         print("")
@@ -673,7 +673,7 @@ python ./boxps.py --file ./example-script.ps1 --layers --parameter-values --out-
         print("[-] NO CONFIDENT FILE SYSTEM IOCS\n")
 
     if report.aggressive_fs_iocs:
-        print("[+] AGGRESSIVE FILE SYSTEM IOCs...\n") 
+        print("[+] AGGRESSIVE FILE SYSTEM IOCs...\n")
         for ioc in report.aggressive_fs_iocs:
             print(ioc)
         print("")

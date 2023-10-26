@@ -1,7 +1,7 @@
 using namespace System.Collections
 
 function TabPad {
-    
+
     param (
         [string] $block
     )
@@ -11,7 +11,7 @@ function TabPad {
     foreach ($line in $block.Split("`n")) {
         $newBlock += "`t" + $line + "`n"
     }
-    
+
     return $newBlock
 }
 
@@ -37,7 +37,7 @@ function GetUnqualifiedName {
 }
 
 function SquashStaticName {
-    
+
     param(
         [string] $StaticName
     )
@@ -62,7 +62,7 @@ function SeparateLines
 
         # if the character is not inside a string literal or parentheses
         if (!$inLiteral -and !$inParentheses) {
-            
+
             # if this is the start of a string literal, record the quote used to start it
             if ($char -contains $quotes) {
                 $quotingChar = $char
@@ -92,7 +92,7 @@ function SeparateLines
 }
 
 function ListIntersection {
-    
+
     param(
         [ArrayList] $list1,
         [ArrayList] $list2
@@ -102,7 +102,7 @@ function ListIntersection {
 }
 
 function ListDifference {
-    
+
     param(
         [ArrayList] $list1,
         [ArrayList] $list2
@@ -117,7 +117,7 @@ function StripWindowsPrincipal {
 
     # WindowsPrincipal class only really supported under Windows, not
     # linux, so strip it if possible.
-    
+
     param (
         [String] $code
     )
@@ -137,7 +137,7 @@ function RewriteCode {
 
     # Top level function for all code rewrites. Add additional calls
     # to specific code rewriting functions here.
-    
+
     param (
         [String] $code
     )

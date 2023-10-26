@@ -47,56 +47,108 @@
     "Cmdlets": {
         "Microsoft.PowerShell.Core\\Set-StrictMode": {},
         "Microsoft.PowerShell.Utility\\Invoke-WebRequest": {
-            "Behaviors": ["network"],
+            "Behaviors": [
+                "network"
+            ],
             "SubBehaviors": [],
             "BehaviorPropInfo": {
-                "uri": ["Uri"]
+                "uri": [
+                    "Uri"
+                ]
             }
         },
         "Microsoft.PowerShell.Management\\Get-Item": {
-            "Behaviors": ["file_system"],
-            "SubBehaviors": ["get_file_info"],
+            "Behaviors": [
+                "file_system"
+            ],
+            "SubBehaviors": [
+                "get_file_info"
+            ],
             "BehaviorPropInfo": {
-                "paths": ["Path", "LiteralPath"]
+                "paths": [
+                    "Path",
+                    "LiteralPath"
+                ]
             },
-            "Flags": ["call_parent"]
+            "Flags": [
+                "call_parent"
+            ]
         },
         "Microsoft.PowerShell.Management\\Set-Content": {
-            "Behaviors": ["file_system"],
-            "SubBehaviors": ["file_write"],
+            "Behaviors": [
+                "file_system"
+            ],
+            "SubBehaviors": [
+                "file_write"
+            ],
             "BehaviorPropInfo": {
-                "paths": ["Path", "LiteralPath"],
-                "content": ["Value"]
+                "paths": [
+                    "Path",
+                    "LiteralPath"
+                ],
+                "content": [
+                    "Value"
+                ]
             }
         },
         "Microsoft.PowerShell.Management\\Set-Location": {
-            "Behaviors": ["file_system"],
-            "SubBehaviors": ["change_directory"],
+            "Behaviors": [
+                "file_system"
+            ],
+            "SubBehaviors": [
+                "change_directory"
+            ],
             "BehaviorPropInfo": {
-                "paths": ["Path", "LiteralPath"]
+                "paths": [
+                    "Path",
+                    "LiteralPath"
+                ]
             }
         },
         "Microsoft.PowerShell.Management\\New-Item": {
-            "Behaviors": ["file_system"],
-            "SubBehaviors": ["file_write"],
+            "Behaviors": [
+                "file_system"
+            ],
+            "SubBehaviors": [
+                "file_write"
+            ],
             "BehaviorPropInfo": {
-                "paths": ["Path", "Name"],
-                "content": ["Value"]
+                "paths": [
+                    "Path",
+                    "Name"
+                ],
+                "content": [
+                    "Value"
+                ]
             }
         },
         "Microsoft.PowerShell.Management\\Get-ChildItem": {
-            "Behaviors": ["file_system"],
-            "SubBehaviors": ["list_directory_contents"],
+            "Behaviors": [
+                "file_system"
+            ],
+            "SubBehaviors": [
+                "list_directory_contents"
+            ],
             "BehaviorPropInfo": {
-                "paths": ["Path"]
+                "paths": [
+                    "Path"
+                ]
             },
-            "Flags": ["call_parent"]
+            "Flags": [
+                "call_parent"
+            ]
         },
         "Microsoft.PowerShell.Management\\Test-Path": {
-            "Behaviors": ["file_system"],
-            "SubBehaviors": ["check_for_file"],
+            "Behaviors": [
+                "file_system"
+            ],
+            "SubBehaviors": [
+                "check_for_file"
+            ],
             "BehaviorPropInfo": {
-                "paths": ["Path"]
+                "paths": [
+                    "Path"
+                ]
             },
             "Routine": {
                 "pretend_paths_exist": "Path"
@@ -104,196 +156,365 @@
             "Return": "$routineReturn"
         },
         "Microsoft.PowerShell.Management\\Get-Content": {
-            "Behaviors": ["file_system"],
-            "SubBehaviors": ["file_read"],
+            "Behaviors": [
+                "file_system"
+            ],
+            "SubBehaviors": [
+                "file_read"
+            ],
             "BehaviorPropInfo": {
-                "paths": ["Path", "LiteralPath"]
+                "paths": [
+                    "Path",
+                    "LiteralPath"
+                ]
             },
-            "Flags": ["call_parent"]
+            "Flags": [
+                "call_parent"
+            ]
         },
         "Microsoft.PowerShell.Management\\Remove-Item": {
-            "Behaviors": ["file_system"],
-            "SubBehaviors": ["file_delete"],
+            "Behaviors": [
+                "file_system"
+            ],
+            "SubBehaviors": [
+                "file_delete"
+            ],
             "BehaviorPropInfo": {
-                "paths": ["Path", "LiteralPath"]
+                "paths": [
+                    "Path",
+                    "LiteralPath"
+                ]
             }
         },
         "Microsoft.PowerShell.Management\\Get-Process": {
-            "Behaviors": ["process"],
-            "SubBehaviors": ["get_process_info"],
+            "Behaviors": [
+                "process"
+            ],
+            "SubBehaviors": [
+                "get_process_info"
+            ],
             "BehaviorPropInfo": {
-                "processes": ["Name", "Id", "InputObject"]
+                "processes": [
+                    "Name",
+                    "Id",
+                    "InputObject"
+                ]
             },
             "ArgModifications": {
-                "InputObject": ["FlattenProcessObjects <arg>"]
+                "InputObject": [
+                    "FlattenProcessObjects <arg>"
+                ]
             },
-            "Flags": ["call_parent"]
+            "Flags": [
+                "call_parent"
+            ]
         },
         "Microsoft.PowerShell.Management\\Stop-Process": {
-            "Behaviors": ["process"],
-            "SubBehaviors": ["kill_process"],
+            "Behaviors": [
+                "process"
+            ],
+            "SubBehaviors": [
+                "kill_process"
+            ],
             "BehaviorPropInfo": {
-                "processes": ["Name", "Id", "InputObject"]
+                "processes": [
+                    "Name",
+                    "Id",
+                    "InputObject"
+                ]
             },
             "ArgModifications": {
-                "InputObject": ["FlattenProcessObjects <arg>"]
+                "InputObject": [
+                    "FlattenProcessObjects <arg>"
+                ]
             }
         },
         "Microsoft.PowerShell.Utility\\Start-Sleep": {
-            "Behaviors": ["process"],
-            "SubBehaviors": ["pause_process"],
+            "Behaviors": [
+                "process"
+            ],
+            "SubBehaviors": [
+                "pause_process"
+            ],
             "BehaviorPropInfo": {
                 "processes": null,
-                "duration": ["Seconds"]
+                "duration": [
+                    "Seconds"
+                ]
             }
         },
         "Microsoft.PowerShell.Management\\Start-Process": {
-            "Behaviors": ["file_exec"],
-            "SubBehaviors": ["start_process"],
+            "Behaviors": [
+                "file_exec"
+            ],
+            "SubBehaviors": [
+                "start_process"
+            ],
             "BehaviorPropInfo": {
-                "files": ["FilePath"]
+                "files": [
+                    "FilePath"
+                ]
             }
         },
         "Microsoft.PowerShell.Management\\Invoke-Item": {
-            "Behaviors": ["file_exec"],
-            "SubBehaviors": ["start_process"],
+            "Behaviors": [
+                "file_exec"
+            ],
+            "SubBehaviors": [
+                "start_process"
+            ],
             "BehaviorPropInfo": {
-                "files": ["Path", "LiteralPath"]
+                "files": [
+                    "Path",
+                    "LiteralPath"
+                ]
             }
         },
         "Microsoft.PowerShell.Utility\\Get-Host": {
-            "Behaviors": ["environment_probe"],
-            "SubBehaviors": ["probe_os"],
-            "Flags": ["call_parent"]
+            "Behaviors": [
+                "environment_probe"
+            ],
+            "SubBehaviors": [
+                "probe_os"
+            ],
+            "Flags": [
+                "call_parent"
+            ]
         },
         "Microsoft.Powershell.Utility\\Get-Culture": {
-            "Behaviors": ["environment_probe"],
-            "SubBehaviors": ["probe_language"],
-            "Flags": ["call_parent"]
+            "Behaviors": [
+                "environment_probe"
+            ],
+            "SubBehaviors": [
+                "probe_language"
+            ],
+            "Flags": [
+                "call_parent"
+            ]
         },
         "Microsoft.Powershell.Utility\\Get-UICulture": {
-            "Behaviors": ["environment_probe"],            
-            "SubBehaviors": ["probe_language"],
-            "Flags": ["call_parent"]
+            "Behaviors": [
+                "environment_probe"
+            ],
+            "SubBehaviors": [
+                "probe_language"
+            ],
+            "Flags": [
+                "call_parent"
+            ]
         },
         "Microsoft.PowerShell.Utility\\Get-Date": {
-            "Behaviors": ["environment_probe"],
-            "SubBehaviors": ["probe_date"],
-            "Flags": ["call_parent"]
+            "Behaviors": [
+                "environment_probe"
+            ],
+            "SubBehaviors": [
+                "probe_date"
+            ],
+            "Flags": [
+                "call_parent"
+            ]
         },
         "Microsoft.PowerShell.Security\\Set-ExecutionPolicy": {
-            "Behaviors": ["other"]
+            "Behaviors": [
+                "other"
+            ]
         }
     },
     "Classes": {
         "System.Net.WebClient": {
             "DownloadFile": {
-                "Behaviors": ["network", "file_system"],
-                "SubBehaviors": ["file_write"],
+                "Behaviors": [
+                    "network",
+                    "file_system"
+                ],
+                "SubBehaviors": [
+                    "file_write"
+                ],
                 "BehaviorPropInfo": {
-                    "uri": ["address"],
-                    "paths": ["fileName"],
+                    "uri": [
+                        "address"
+                    ],
+                    "paths": [
+                        "fileName"
+                    ],
                     "content": null
-                }                
+                }
             },
             "DownloadString": {
-                "Behaviors": ["network"],
+                "Behaviors": [
+                    "network"
+                ],
                 "SubBehaviors": [],
                 "BehaviorPropInfo": {
-                    "uri": ["address"]
+                    "uri": [
+                        "address"
+                    ]
                 }
             },
             "DownloadData": {
-                "Behaviors": ["network"],
+                "Behaviors": [
+                    "network"
+                ],
                 "SubBehaviors": [],
                 "BehaviorPropInfo": {
-                    "uri": ["address"]
+                    "uri": [
+                        "address"
+                    ]
                 }
             },
             "OpenRead": {
-                "Behaviors": ["network"],
+                "Behaviors": [
+                    "network"
+                ],
                 "SubBehaviors": [],
                 "BehaviorPropInfo": {
-                    "uri": ["address"]
+                    "uri": [
+                        "address"
+                    ]
                 }
             },
             "UploadString": {
-                "Behaviors": ["network"],
+                "Behaviors": [
+                    "network"
+                ],
                 "SubBehaviors": [],
                 "BehaviorPropInfo": {
-                    "uri": ["address"]                    
-                }   
+                    "uri": [
+                        "address"
+                    ]
+                }
             }
         },
         "Microsoft.CSharp.CSharpCodeProvider": {
             "CompileAssemblyFromSource": {
-                "Behaviors": ["code_import"],
-                "SubBehaviors": ["import_dotnet_code"],
+                "Behaviors": [
+                    "code_import"
+                ],
+                "SubBehaviors": [
+                    "import_dotnet_code"
+                ],
                 "BehaviorPropInfo": {
-                    "code": ["sources"]
+                    "code": [
+                        "sources"
+                    ]
                 }
             }
         }
     },
     "Statics": {
         "[System.IO.File]::WriteAllBytes": {
-            "Behaviors": ["file_system"],
-            "SubBehaviors": ["file_write"],
+            "Behaviors": [
+                "file_system"
+            ],
+            "SubBehaviors": [
+                "file_write"
+            ],
             "BehaviorPropInfo": {
-                "paths": ["path"],
-                "content": ["bytes"]
+                "paths": [
+                    "path"
+                ],
+                "content": [
+                    "bytes"
+                ]
             }
         },
         "[System.IO.File]::WriteAllText": {
-            "Behaviors": ["file_system"],
-            "SubBehaviors": ["file_write"],
+            "Behaviors": [
+                "file_system"
+            ],
+            "SubBehaviors": [
+                "file_write"
+            ],
             "BehaviorPropInfo": {
-                "paths": ["path"],
-                "content": ["contents"]
+                "paths": [
+                    "path"
+                ],
+                "content": [
+                    "contents"
+                ]
             }
         },
         "[System.Environment]::GetFolderPath": {
-            "Behaviors": ["file_system"],
-            "SubBehaviors": ["get_path"],
+            "Behaviors": [
+                "file_system"
+            ],
+            "SubBehaviors": [
+                "get_path"
+            ],
             "BehaviorPropInfo": {
-                "paths": ["folder"]
+                "paths": [
+                    "folder"
+                ]
             },
-            "Flags": ["call_parent"]
+            "Flags": [
+                "call_parent"
+            ]
         },
         "[System.IO.Directory]::CreateDirectory": {
-            "Behaviors": ["file_system"],
-            "SubBehaviors": ["new_directory"],
+            "Behaviors": [
+                "file_system"
+            ],
+            "SubBehaviors": [
+                "new_directory"
+            ],
             "BehaviorPropInfo": {
-                "paths": ["path"]
+                "paths": [
+                    "path"
+                ]
             }
         },
         "[System.Diagnostics.Process]::Start": {
-            "Behaviors": ["file_exec"],
-            "SubBehaviors": ["start_process"],
+            "Behaviors": [
+                "file_exec"
+            ],
+            "SubBehaviors": [
+                "start_process"
+            ],
             "BehaviorPropInfo": {
-                "files": ["fileName"]
+                "files": [
+                    "fileName"
+                ]
             }
         },
         "[System.Threading.Thread]::Sleep": {
-            "Behaviors": ["process"],
-            "SubBehaviors": ["pause_process"],
+            "Behaviors": [
+                "process"
+            ],
+            "SubBehaviors": [
+                "pause_process"
+            ],
             "BehaviorPropInfo": {
                 "processes": null,
-                "duration": ["millisecondsTimeout", "timeout"]
+                "duration": [
+                    "millisecondsTimeout",
+                    "timeout"
+                ]
             }
         },
         "[System.Reflection.Assembly]::Load": {
-            "Behaviors": ["binary_import"],
-            "SubBehaviors": ["import_dotnet_binary"],
+            "Behaviors": [
+                "binary_import"
+            ],
+            "SubBehaviors": [
+                "import_dotnet_binary"
+            ],
             "BehaviorPropInfo": {
-                "bytes": ["rawAssembly"]
+                "bytes": [
+                    "rawAssembly"
+                ]
             }
         },
         "[System.IO.File]::Exists": {
-            "Behaviors": ["file_system"],
-            "SubBehaviors": ["check_for_file"],
+            "Behaviors": [
+                "file_system"
+            ],
+            "SubBehaviors": [
+                "check_for_file"
+            ],
             "BehaviorPropInfo": {
-                "paths": ["path"]
+                "paths": [
+                    "path"
+                ]
             },
             "Routine": {
                 "pretend_paths_exist": "path"
@@ -301,10 +522,15 @@
             "Return": "$routineReturn"
         },
         "[System.Net.WebRequest]::Create": {
-            "Behaviors": ["network"],
+            "Behaviors": [
+                "network"
+            ],
             "SubBehaviors": [],
             "BehaviorPropInfo": {
-                "uri": ["requestUriString", "requestUri"]
+                "uri": [
+                    "requestUriString",
+                    "requestUri"
+                ]
             }
         }
     },
