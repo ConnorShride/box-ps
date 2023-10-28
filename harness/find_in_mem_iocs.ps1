@@ -21,7 +21,7 @@ if ($MyInvocation.InvocationName -ne "Test-Path") {
     # filter out built-in variables and variables we declare to leave only user declared vars
     $localVarNames = Microsoft.PowerShell.Utility\New-Object System.Collections.ArrayList
     $localVars | ForEach-Object { $localVarNames.Add($_.Name) > $null }
-    $declaredVars = $parentVars | Microsoft.PowerShell.Core\Where-object { 
+    $declaredVars = $parentVars | Microsoft.PowerShell.Core\Where-object {
         $localVarNames -notcontains $_.Name
     }
 
@@ -75,10 +75,10 @@ if ($MyInvocation.InvocationName -ne "Test-Path") {
             $value = $value -join ""
         }
 
-        $value | Out-String -Stream | ForEach-Object { 
+        $value | Out-String -Stream | ForEach-Object {
             $networkIOCs += ScrapeNetworkIOCs $_
         }
-        $value | Out-String -Stream | ForEach-Object { 
+        $value | Out-String -Stream | ForEach-Object {
             $fileSystemIOCs += ScrapeFilePaths $_
         }
         $value | Out-String -Stream | ForEach-Object {

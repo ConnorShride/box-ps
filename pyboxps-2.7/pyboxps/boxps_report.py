@@ -1,6 +1,8 @@
 import json
-import errors
 from enum import Enum
+
+import errors
+
 
 ####################################################################################################
 class Artifact:
@@ -37,7 +39,7 @@ class Behaviors(Enum):
     binary_import = 10
     code_create = 11
     task = 12
-    
+
 ####################################################################################################
 class SubBehaviors(Enum):
     file_write = 1
@@ -62,7 +64,7 @@ class SubBehaviors(Enum):
     import_dotnet_binary = 20
     init_code_block = 21
     new_task = 22
-    
+
 ####################################################################################################
 class Action:
 
@@ -121,7 +123,7 @@ class Action:
         r += "ACTOR: " + str(self.actor) + "\n"
         r += "LINE: " + str(self.line) + "\n"
         return r
-        
+
 ####################################################################################################
 class BoxPSReport:
 
@@ -130,7 +132,7 @@ class BoxPSReport:
 
         if report_dict is not None and report_path is not None:
             raise ValueError("can't give both a report dict and report file path")
-        
+
         if report_dict is None and report_path is None:
             raise ValueError("must give either a report dict or report file path")
 
@@ -206,7 +208,7 @@ class BoxPSReport:
         r += "AGGRESSIVE_FS_IOCS: " + str(self.aggressive_fs_iocs) + "\n"
         r += "AGGRESSIVE_ARTIFACTS: " + str(self.aggressive_artifacts) + "\n"
         return r
-        
+
     ################################################################################################
     @property
     def layers(self):
@@ -242,16 +244,16 @@ class BoxPSReport:
         Gets an action by action ID
 
         @param action_id (int) action ID
-        
+
         @return (Action)
         """
-        return get_action(self.actions, action_id)    
+        return get_action(self.actions, action_id)
 
     ################################################################################################
     def filter_actions(self, behaviors=[], sub_behaviors=[], actors=[], parameters=[]):
         """
-        Filter the list of actions by behaviors, actors, or parameters used. An action that has any 
-        of the values you give will be present in the filtered list, which will still be sorted in 
+        Filter the list of actions by behaviors, actors, or parameters used. An action that has any
+        of the values you give will be present in the filtered list, which will still be sorted in
         order of their execution in the script.
 
         @param behaviors (list) of Behavior enum values
@@ -281,7 +283,7 @@ def get_action(actions, action_id):
 
     @param actions (list) of Action objects
     @param action_id (int) action ID
-    
+
     @return (Action)
     """
 
@@ -294,8 +296,8 @@ def get_action(actions, action_id):
 ################################################################################################
 def filter_actions(actions, behaviors=[], sub_behaviors=[], actors=[], parameters=[]):
     """
-    Filter the list of actions by behaviors, actors, or parameters used. An action that has any 
-    of the values you give will be present in the filtered list, which will still be sorted in 
+    Filter the list of actions by behaviors, actors, or parameters used. An action that has any
+    of the values you give will be present in the filtered list, which will still be sorted in
     order of their execution in the script.
 
     @param actions (list) of Action objects

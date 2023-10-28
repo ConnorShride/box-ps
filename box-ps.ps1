@@ -54,7 +54,7 @@ if ($EnvVar -and $EnvFile) {
     exit 1
 }
 
-# give OutDir a default value if the user hasn't specified they don't want artifacts 
+# give OutDir a default value if the user hasn't specified they don't want artifacts
 if (!$ReportOnly -and !$OutDir) {
 
     if ($ScriptContent) {
@@ -77,7 +77,7 @@ class Report {
     [string[]] $PotentialArtifacts
     [string] $WorkingDir
 
-    Report([object[]] $actions, [string[]] $scrapedNetwork, [string[]] $scrapedPaths, 
+    Report([object[]] $actions, [string[]] $scrapedNetwork, [string[]] $scrapedPaths,
            [string[]] $scrapedEnvProbes, [hashtable] $artifactMap, [string[]] $potentialArtifacts,
            [string] $workingDir) {
 
@@ -92,7 +92,7 @@ class Report {
         $this.EnvironmentProbes = $this.GenerateEnvProbeReport($scrapedEnvProbes)
         $this.Artifacts = $artifactMap
         $this.PotentialArtifacts = $potentialArtifacts
-        $this.WorkingDir = $workingDir           
+        $this.WorkingDir = $workingDir
     }
 
     [hashtable] GenerateEnvProbeReport([string[]] $scrapedEnvProbes) {
@@ -202,10 +202,10 @@ class Report {
     }
 }
 
-# Isolates the script being executed in a powershell invocation. It may be written to be interpreted 
-# with a cmd.exe shell and therefore does not play well with our PowerShell-interpreted 
-# powershell.exe override (unquoted for the -Command flag or even cmd.exe obfuscation). Records the 
-# initial action as a script execution of the code we come up with here (decoded if it was b64 
+# Isolates the script being executed in a powershell invocation. It may be written to be interpreted
+# with a cmd.exe shell and therefore does not play well with our PowerShell-interpreted
+# powershell.exe override (unquoted for the -Command flag or even cmd.exe obfuscation). Records the
+# initial action as a script execution of the code we come up with here (decoded if it was b64
 # encoded).
 function HandleCmdInvocation {
 
@@ -240,7 +240,7 @@ function HandleCmdInvocation {
         if ($match) {
             $invokedScript = $match.Matches[0].Groups[1].Value
         }
-        # the command used the -Command option implicitely. Scrub anything that looks like an argument 
+        # the command used the -Command option implicitely. Scrub anything that looks like an argument
         # flag to leave only the command
         else {
             $invokedScript = $OrigScript -replace "^\s*[Pp][Oo][Ww][Ee][Rr][Ss][Hh][Ee][Ll][Ll](\.exe)?\s+((-[\w``]+\s+([\w\d``]+ )?)?)*"
@@ -248,12 +248,12 @@ function HandleCmdInvocation {
 
         # trim whitespace and unwrap any quotes around the command
         $invokedScript = $invokedScript.Trim()
-        if (($invokedScript.StartsWith("`"") -and $invokedScript.EndsWith("`"")) -or 
+        if (($invokedScript.StartsWith("`"") -and $invokedScript.EndsWith("`"")) -or
             ($invokedScript.StartsWith("'") -and $invokedScript.EndsWith("'"))) {
             $invokedScript = $invokedScript.SubString(1,$invokedScript.Length-2)
         }
 
-        # remove wrapping curly braces just in case this script was meant to be executed under 
+        # remove wrapping curly braces just in case this script was meant to be executed under
         # PowerShell and is interpreting a scriptblock
         if ($invokedScript.StartsWith("{") -and $invokedScript.EndsWith("}")) {
             $invokedScript = $invokedScript.SubString(1,$invokedScript.Length-2)
@@ -402,7 +402,7 @@ function HarvestArtifacts {
 
 # clean up working directory if desired, remove imported modules, and exit with a code
 function CleanExit {
-    
+
     param(
         [bool] $NoCleanUp,
         [int] $ExitCode,
@@ -455,7 +455,7 @@ if ($Docker) {
 
     Write-Host "[+] pulling latest docker image"
     docker pull connorshride/box-ps:latest > $null
-    #docker pull connorshride/box-ps:develop > $null 
+    #docker pull connorshride/box-ps:develop > $null
     Write-Host "[+] starting docker container"
     docker run -td --network none connorshride/box-ps:latest > $null
     #docker run -td --network none connorshride/box-ps:develop > $null
@@ -478,7 +478,7 @@ if ($Docker) {
     }
     # given script contents instead
     else {
-        
+
         # pipe the script contents into a file in the container
         $ScriptContent | docker exec -i $containerId /bin/bash -c "cat - > /opt/box-ps/infile.ps1"
         $PSBoundParameters.Remove("ScriptContent") > $null
@@ -662,7 +662,7 @@ else {
         $actions = @()
     }
     $actions = $(StripBugActions $actions)
-    
+
     # go gather the IOCs we may have scraped
     $scrapedNetwork = Get-Content $WORK_DIR/scraped_network.txt -ErrorAction SilentlyContinue
     $scrapedPaths = Get-Content $WORK_DIR/scraped_paths.txt -ErrorAction SilentlyContinue
@@ -680,7 +680,7 @@ else {
     }
 
     # create the report and convert to JSON
-    $report = [Report]::new($actions, $scrapedNetwork, $scrapedPaths, 
+    $report = [Report]::new($actions, $scrapedNetwork, $scrapedPaths,
         $scrapedEnvProbes, $artifactMap, $potentialArtifacts, $WORK_DIR)
     $reportJson = $report | ConvertTo-Json -Depth 10
 

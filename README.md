@@ -1,7 +1,15 @@
 # box-ps
 Powershell sandboxing utility
 
-BehaviorProps": {
+## Installation
+```
+python -m pip install -e /<path to box-ps download>/pyboxps-<2.7|3.11>
+export BOXPS=/<path to box-ps download>/
+```
+
+## Environment
+```json
+"BehaviorProps": {
     "code_import": ["code"],
     "code_create": ["code"],
     "binary_import": ["bytes"],
@@ -38,9 +46,11 @@ BehaviorProps": {
     "import_dotnet_binary": [],
     "init_code_block": []
 }
+```
 
-Error return codes...
+## Error return codes
 
+```
 argument error - 1
 environment error - 2
 bad input file - 3
@@ -48,3 +58,4 @@ sandboxing failure - 4
 docker container operation error - 5
 sandboxing timeout - 124
 invalid script syntax - 6
+```

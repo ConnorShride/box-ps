@@ -3,7 +3,7 @@
 static [string] GetScriptFromArguments([string] $arguments) {
 
     $script = ""
-    
+
     if (($flagNdx = $arguments.ToLower().IndexOf("-e")) -ne -1) {
         $cmdNdx = $arguments.IndexOf(' ', $flagNdx) + 1
         $encodedScript = $arguments.SubString($cmdNdx)
@@ -54,7 +54,7 @@ static [ScriptBlock] ScriptBlockCreate([string] $script) {
 
     $behaviorProps = @{"code" = $script}
     RecordAction $([Action]::new($behaviors, $subBehaviors, "[ScriptBlock]::Create", $behaviorProps, $PSBoundParameters, $MyInvocation.Line, ""))
-    
+
     return [scriptblock]::Create((PreProcessScript $script "<PID>"))
 }
 
@@ -90,7 +90,7 @@ static [System.Diagnostics.Process] SystemDiagnosticsProcessStart([string] $file
 
     $subBehaviors = @("start_process")
     $behaviorProps = @{}
-    
+
     # if powershell, treat this now as a script_exec rather than file_exec and sandbox the script
     if ($fileName.ToLower().Contains("powershell") -and $arguments) {
 
@@ -115,7 +115,7 @@ static [System.Diagnostics.Process] SystemDiagnosticsProcessStart([string] $file
 }
 
 static [System.Diagnostics.Process] SystemDiagnosticsProcessStart([string] $fileName, [string] $arguments, [string] $userName, [securestring] $password, [string] $domain) {
-    
+
     $subBehaviors = @("start_process")
     $behaviorProps = @{}
 
@@ -137,7 +137,7 @@ static [System.Diagnostics.Process] SystemDiagnosticsProcessStart([string] $file
         $behaviorProps["files"] = @($fileName)
         RecordAction $([Action]::new($behaviors, $subBehaviors, "[System.Diagnostics.Process]::Start", $behaviorProps, $PSBoundParameters, $MyInvocation.Line, ""))
     }
-    
+
     return $null
 }
 
@@ -147,7 +147,7 @@ static [void] SystemRuntimeInteropServicesMarshalCopy([byte[]] $source, [object]
     $WORK_DIR = "./working_<PID>"
     $behaviorProps = @{}
     $behaviorProps["bytes"] = [Int32[]]$source
-    
+
     $extraInfo = ""
     $routineArg = $source
     $routineReturn = ""
@@ -169,7 +169,7 @@ static [void] SystemRuntimeInteropServicesMarshalCopy([long[]] $source, [object]
     $WORK_DIR = "./working_<PID>"
     $behaviorProps = @{}
     $behaviorProps["bytes"] = [Int32[]]$source
-    
+
     $extraInfo = ""
     $routineArg = $source
     $routineReturn = ""
@@ -191,7 +191,7 @@ static [void] SystemRuntimeInteropServicesMarshalCopy([char[]] $source, [object]
     $WORK_DIR = "./working_<PID>"
     $behaviorProps = @{}
     $behaviorProps["bytes"] = [Int32[]]$source
-    
+
     $extraInfo = ""
     $routineArg = $source
     $routineReturn = ""
@@ -203,7 +203,7 @@ static [void] SystemRuntimeInteropServicesMarshalCopy([char[]] $source, [object]
 
     $behaviors = @("memory")
     $subBehaviors = @("write_to_memory")
-    
+
     RecordAction $([Action]::new($behaviors, $subBehaviors, "[System.Runtime.InteropServices.Marshal]::Copy", $behaviorProps, $PSBoundParameters, $MyInvocation.Line, $extraInfo))
 }
 
@@ -213,7 +213,7 @@ static [void] SystemRuntimeInteropServicesMarshalCopy([short[]] $source, [object
     $WORK_DIR = "./working_<PID>"
     $behaviorProps = @{}
     $behaviorProps["bytes"] = [Int32[]]$source
-    
+
     $extraInfo = ""
     $routineArg = $source
     $routineReturn = ""

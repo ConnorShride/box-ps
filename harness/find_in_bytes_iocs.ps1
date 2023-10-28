@@ -1,4 +1,4 @@
-# HarnessBuilder will prepend a variable named $routineArg that contains the value of the byte array 
+# HarnessBuilder will prepend a variable named $routineArg that contains the value of the byte array
 # we want to scrape through
 
 $ascii = $null

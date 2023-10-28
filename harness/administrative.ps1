@@ -26,7 +26,7 @@ class Action <# lawsuit... I'll be here all week #> {
     [int] $Id
     [string] $BehaviorId
 
-    Action ([String[]] $Behaviors, [String[]] $SubBehaviors, [String] $Actor, 
+    Action ([String[]] $Behaviors, [String[]] $SubBehaviors, [String] $Actor,
         [hashtable] $BehaviorProps, [InvocationInfo] $Invocation, [string] $ExtraInfo) {
 
         $this.Behaviors = $Behaviors
@@ -51,7 +51,7 @@ class Action <# lawsuit... I'll be here all week #> {
     # e.g. System.Net.WebClient.DownloadFile
     #   These are guaranteed not to have switches, and the MyInvocation variable does not
     #   contain boundparameters, so callers need to be able to pass the PSBoundParameters variable
-    Action ([String[]] $Behaviors, [String[]] $SubBehaviors, [String] $Actor, 
+    Action ([String[]] $Behaviors, [String[]] $SubBehaviors, [String] $Actor,
         [hashtable] $BehaviorProps, [hashtable] $BoundParams, [String] $Line, [String] $ExtraInfo) {
 
         $this.Behaviors = $Behaviors
@@ -88,7 +88,7 @@ class Action <# lawsuit... I'll be here all week #> {
 
         $bound = @{}
         $localSwitches = @() # not allowed to name this $switches (thanks for the help, pwsh)
-        
+
         foreach ($paramName in $allParams.Keys) {
 
             if ($allParams[$paramName].SwitchParameter -and $Invocation.BoundParameters.Keys -eq `
@@ -129,7 +129,7 @@ function RecordAction {
     param(
         [Action] $Action
     )
-    
+
     # read and update the running action id on disk
     $Action.Id = [int](Microsoft.PowerShell.Management\Get-Content -Raw "$WORK_DIR/action_id.txt")
     ($Action.Id + 1) | Out-File "$WORK_DIR/action_id.txt"
@@ -152,10 +152,10 @@ function GetOverridedClasses {
     return $BOXPS_CONFIG["Classes"].Keys | ForEach-Object { $_.ToLower() -replace "^system." }
 }
 
-<# 
+<#
 process objects make the output huge and it's not that useful
 just keep the string representation
-#> 
+#>
 function FlattenProcessObjects {
 
     param(

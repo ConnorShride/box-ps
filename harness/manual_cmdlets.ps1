@@ -46,7 +46,7 @@ function curl {
             $useBasic = $true
         }
     }
-    
+
     # Pull out URL and maybe output file. This assumes arguments go in
     # a certain order.
     $o = $false
@@ -70,7 +70,7 @@ function curl {
         }
     }
     $url = $realUrl
-    
+
     # Fix the URL if -usebasicparsing option given.
     if ($useBasic -and (-not ($url -like "http*"))) {
         $url = ("http://" + $url)
@@ -146,7 +146,7 @@ function Invoke-Expression {
             }
             $localVars = Microsoft.PowerShell.Utility\Get-Variable -Scope 0
             $localVars = $localVars | Microsoft.PowerShell.Core\ForEach-Object { $_.Name }
-            
+
             # import all the variables from the parent scope so the invoke expression has them to work with
             foreach ($parentVar in $parentVars) {
                 if (!($localVars.Contains($parentVar.Name))) {
@@ -167,11 +167,11 @@ function Invoke-Expression {
             # defined in this local scope
             $localVars = Microsoft.PowerShell.Utility\Get-Variable -Scope 0
             $parentVars = $parentVars | Microsoft.PowerShell.Core\ForEach-Object { $_.Name }
-            
+
             # yes... foreach is indeed a variable
-            $thisDeclaredVars = @("Command", "behaviorProps", "parentVars", "localVars", "parentVar", 
+            $thisDeclaredVars = @("Command", "behaviorProps", "parentVars", "localVars", "parentVar",
                                   "invokeRes", "localVar", "varName", "foreach", "PSCmdlet")
-            
+
             # pick out the variables the Invoke-Expression defined,
             # export them to the parent scope (if we have one).
             if ($parentVars -eq $null) {
@@ -185,7 +185,7 @@ function Invoke-Expression {
                     }
                 }
             }
-            
+
             $invokeRes
         }
 
@@ -263,7 +263,7 @@ function Start-Job {
     $behaviors = @("script_exec")
     $subBehaviors = @("start_process")
     $behaviorProps = @{}
-    
+
     # read in the script from the file to sandbox
     # just try to on the off chance they put it in the current dir so this will actually work (no windows paths)
     if ($FilePath) {
@@ -273,14 +273,14 @@ function Start-Job {
     # script executed in the job is given with a scriptblock, implement as a function
     else {
 
-	# pass down an argument list variable if present with a 
+	# pass down an argument list variable if present with a
 	if ($ArgumentList) {
 	    $script += "`$arglist = @`'`r`n$ArgumentList`r`n'@`r`n"
 	}
 
 	$script += "function boxpsjob {`r`n"
 
-	# if the scriptblock starts with a parameter block, Start-Job seems to treat this like 
+	# if the scriptblock starts with a parameter block, Start-Job seems to treat this like
 	# a function, taking in an argument list through it, so write one with it
 	$match = [Regex]::Match($ScriptBlock, "^\s*(param\(.*\)).*")
 	if ($match.Success) {
@@ -296,7 +296,7 @@ function Start-Job {
 	    $script += "`t$paramBlock`r`n"
 	    $script += "`t$functionBlock`r`n"
 	}
-	# the scriptblock is not defining a parameter block, so if it's taking in an argument list, 
+	# the scriptblock is not defining a parameter block, so if it's taking in an argument list,
 	# it's going to be input with the $args automatic variable
 	else {
 	    $script += "`t$ScriptBlock`r`n"
@@ -333,7 +333,7 @@ function New-Object {
 	[string] $TypeName,
 	[string] $COMObject
     )
-    
+
     $scrapeIOCsCode = Microsoft.PowerShell.Management\Get-Content -Raw $CODE_DIR/harness/find_in_mem_iocs.ps1
     Microsoft.PowerShell.Utility\Invoke-Expression $scrapeIOCsCode
 
@@ -344,22 +344,22 @@ function New-Object {
 	$TypeName = $PSBoundParameters["TypeName"].ToLower()
 	$PSBoundParameters["TypeName"] = $PSBoundParameters["TypeName"].ToLower()
     }
-    
+
     if ($PSBoundParameters.ContainsKey("COMObject")) {
 	$COMObject = $PSBoundParameters["COMObject"].ToLower()
 	$PSBoundParameters["COMObject"] = $PSBoundParameters["COMObject"].ToLower()
     }
-    
+
     $behaviorProps = @{}
-    
+
     if ($PSBoundParameters.ContainsKey("COMObject")) {
 	$behaviorProps["object"] = $COMObject
     }
-    
+
     elseif ($PSBoundParameters.ContainsKey("TypeName")) {
 	$behaviorProps["object"] = $TypeName
     }
-    
+
     # too noisy and not valuable except for debugging
     #RecordAction $([Action]::new($behaviors, $subBehaviors, "Microsoft.PowerShell.Utility\New-Object", $behaviorProps, $MyInvocation, ""))
 
@@ -383,10 +383,10 @@ function powershell.exe {
         [switch] $NoProfile,
         [switch] $NonInteractive
     )
-    
-    $scrapeIOCsCode = Microsoft.PowerShell.Management\Get-Content -Raw $CODE_DIR/harness/find_in_mem_iocs.ps1 
+
+    $scrapeIOCsCode = Microsoft.PowerShell.Management\Get-Content -Raw $CODE_DIR/harness/find_in_mem_iocs.ps1
     Microsoft.PowerShell.Utility\Invoke-Expression $scrapeIOCsCode
-    
+
     $behaviors = @("script_exec")
     $subBehaviors = @("start_process")
     $behaviorProps = @{}
@@ -499,7 +499,7 @@ Don't support importing from a path
 
     $scrapeIOCsCode = Microsoft.PowerShell.Management\Get-Content -Raw $CODE_DIR/harness/find_in_mem_iocs.ps1
     Microsoft.PowerShell.Utility\Invoke-Expression $scrapeIOCsCode
-    
+
     $behaviorProps = @{}
     if ($PSBoundParameters.ContainsKey("TypeDefinition")) {
 	$behaviorProps["code"] = [string]$TypeDefinition
@@ -507,7 +507,7 @@ Don't support importing from a path
     elseif ($PSBoundParameters.ContainsKey("MemberDefinition")) {
 	$behaviorProps["code"] = [string]$MemberDefinition
     }
-    
+
     $behaviors = @("code_import")
     $subBehaviors = @("import_dotnet_code")
     $extraInfo = ""
@@ -576,7 +576,7 @@ function ConvertTo-Json {
 
 function New-ScheduledTaskAction {
 
-    [cmdletbinding(DefaultParameterSetName="FromSource")]    
+    [cmdletbinding(DefaultParameterSetName="FromSource")]
     param(
         $Execute,
         $Argument,
@@ -603,7 +603,7 @@ function New-ScheduledTaskAction {
 
 function New-ScheduledTaskPrincipal {
 
-    [cmdletbinding(DefaultParameterSetName="FromSource")]    
+    [cmdletbinding(DefaultParameterSetName="FromSource")]
     param(
         $RunLevel,
         $ProcessTokenSidType,
@@ -632,7 +632,7 @@ function New-ScheduledTaskPrincipal {
 
 function New-ScheduledTaskTrigger {
 
-    [cmdletbinding(DefaultParameterSetName="FromSource")]    
+    [cmdletbinding(DefaultParameterSetName="FromSource")]
     param(
         [switch] $AsJob,
         $At,
@@ -662,7 +662,7 @@ function New-ScheduledTaskTrigger {
     if ($Daily) { $Trigger = "Daily" }
     if ($Once ) { $Trigger = "Once" }
     if ($Weekly) { $Trigger = "Weekly" }
-    
+
     $behaviors = @("task")
     $subBehaviors = @("new_task")
 
@@ -690,7 +690,7 @@ function wget ($url) {
     $subBehaviors = @()
     $behaviorProps = @{
 	"uri" = $url
-    }    
+    }
     RecordAction $([Action]::new($behaviors, $subBehaviors, "wget", $behaviorProps, $MyInvocation, ""))
     return "";
 }
@@ -728,12 +728,12 @@ function Invoke-RestMethod {
     if (-not ($url -like "http*")) {
         $url = ("http://" + $url)
     }
-    
+
     $behaviors = @("network")
     $subBehaviors = @()
     $behaviorProps = @{
 	"uri" = $url
-    }    
+    }
 
     RecordAction $([Action]::new($behaviors, $subBehaviors, "Invoke-RestMethod", $behaviorProps, $MyInvocation, ""))
     return "1.2.3.4"
@@ -752,7 +752,7 @@ function GetAsyncKeyState {
 
     $behaviors = @("keyboard")
     $subBehaviors = @()
-    $behaviorProps = @{}    
+    $behaviorProps = @{}
 
     RecordAction $([Action]::new($behaviors, $subBehaviors, "GetAsyncKeyState", $behaviorProps, $MyInvocation, ""))
     return 123
@@ -780,7 +780,7 @@ function Get-Item {
 
         RecordAction $([Action]::new($behaviors, $subBehaviors, "Microsoft.PowerShell.Core\Get-Item", $behaviorProps, $MyInvocation, ""))
     }
-        
+
     # Return a large string for the fake file contents.
     return "fake" * 1000
 }
@@ -821,7 +821,7 @@ function Start-BitsTransfer {
         }
         if (($arg -like "-de*") -and ($pos -lt $listArgs.length)) {
             $dest = $listArgs[$pos]
-        }	
+        }
     }
 
     $behaviors = @("network")
@@ -853,7 +853,7 @@ function fakecmdexe {
     $behaviorProps = @{
 	"args" = "" + $listArgs
     }
-    
+
     RecordAction $([Action]::new($behaviors, $subBehaviors, "cmd.exe", $behaviorProps, $MyInvocation, ""))
 }
 
@@ -874,6 +874,6 @@ function fakemv {
     $behaviorProps = @{
 	"paths" = "" + $listArgs
     }
-    
+
     RecordAction $([Action]::new($behaviors, $subBehaviors, "mv", $behaviorProps, $MyInvocation, ""))
 }
