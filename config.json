@@ -6,7 +6,7 @@
         "${env:commonprogramfiles}": "\\C_DRIVE\\Program Files (x86)\\Common Files",
         "$env:commonprogramw6432": "\\C_DRIVE\\Program Files\\Common Files",
         "$env:computername": "victimbox",
-        "$env:comspec": "\\C_DRIVE\\WINDOWS\\system32\\cmd.exe",
+        "$env:comspec": "C:\\WINDOWS\\system32\\cmd.exe",
         "$env:homedrive": "\\C_DRIVE",
         "$env:homepath": "\\Users\\victim",
         "$env:localappdata": "\\C_DRIVE\\Users\\victim\\AppData\\Local",
