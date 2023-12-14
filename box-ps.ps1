@@ -223,10 +223,18 @@ function HandleCmdInvocation {
 
     $invokedScript = $null
 
-    # if the invocation uses an encoded command, we need to decode that
-    # is encoded if there's an "-e" or "-en" and there's a base64 string in the invocation, but not
-    # one of the other flags that also start with EN
-    if ($OrigScript -match ".*\-[Ee][Nn]?[^qQnXxPp].*") {
+    # if the invocation uses an encoded command, we need to decode
+    # that is encoded if there's an "-e" or "-en" and there's a base64
+    # string in the invocation, but not one of the other flags that
+    # also start with EN.  Note that we are only interested in
+    # -enc... showing up at the beginning of the pwsh, not as part of
+    # a pwsh invocation run by the code to analyze later.
+    $i = 100
+    if ($i -gt $OrigScript.length) {
+        $i = $OrigScript.length
+    }
+    $StartScript = $OrigScript.substring(0, $i)
+    if ($StartScript -match ".*\-[Ee][Nn][^qQnXxPp].*") {
 
         $match = [Regex]::Match($OrigScript, ".*?([A-Za-z0-9+/=]{40,}).*").captures
         if ($match -ne $null) {
