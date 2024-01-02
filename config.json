@@ -244,6 +244,13 @@
                 "content": ["bytes"]
             }
         },
+        "[System.Net.HttpWebRequest]::Create": {
+            "Behaviors": ["network"],
+            "SubBehaviors": [],
+            "BehaviorPropInfo": {
+                "uri": ["requestUriString"]
+            }                
+        },
         "[System.IO.File]::WriteAllText": {
             "Behaviors": ["file_system"],
             "SubBehaviors": ["file_write"],
