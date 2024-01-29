@@ -908,12 +908,6 @@ function Invoke-WebRequest ($url) {
 	"uri" = $url
     }
 
-    if ($o) {
-	$behaviors += @("file_system")
-	$subBehaviors += @("file_write")
-	$behaviorProps["paths"] = @($o)
-    }
-
     RecordAction $([Action]::new($behaviors, $subBehaviors, "Invoke-WebRequest", $behaviorProps, $MyInvocation, ""))
     # Return Write-Host so we can see if this is executed by IEX.
     return [PSCustomObject]@{
