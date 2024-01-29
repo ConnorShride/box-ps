@@ -46,13 +46,6 @@
     },
     "Cmdlets": {
         "Microsoft.PowerShell.Core\\Set-StrictMode": {},
-        "Microsoft.PowerShell.Utility\\Invoke-WebRequest": {
-            "Behaviors": ["network"],
-            "SubBehaviors": [],
-            "BehaviorPropInfo": {
-                "uri": ["Uri"]
-            }
-        },
         "Microsoft.PowerShell.Management\\Get-Item": {
             "Behaviors": ["file_system"],
             "SubBehaviors": ["get_file_info"],
