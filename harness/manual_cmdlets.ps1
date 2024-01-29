@@ -914,3 +914,41 @@ function Invoke-WebRequest ($url) {
         "content"="Write-Host ""EXECUTED DOWNLOADED PAYLOAD"""
     }
 }
+
+##############################################
+##############################################
+# TYPE ACCELERATOR DEFINITIONS
+##############################################
+##############################################
+
+# Ex: $c = [WMICLASS]"\\$computer\root\cimv2:WIn32_Process";
+class WMICLASS {
+
+    # Optionally, add attributes to prevent invalid values
+    [ValidateNotNullOrEmpty()][string]$WMIItem
+
+    # Constructor.
+    WMICLASS($v) {
+        # Save the WMI class in case we need it for future work.
+        $this.WMIItem = $v
+    }
+
+    Create($proc, $arg2, $arg3) {
+
+        # record the full process creation command.
+        $behaviors = @("script_exec")
+        $subBehaviors = @("start_process")
+        $behaviorProps = @{
+	    "wmi_process" = $proc
+        }
+        
+        RecordAction $([Action]::new($behaviors, $subBehaviors, "WMI", $behaviorProps, $MyInvocation, ""))
+    }
+
+    [PSCustomObject] CreateInstance() {
+        return [PSCustomObject]@{
+            "ShowWindow"=0
+        }
+    }
+}
+
