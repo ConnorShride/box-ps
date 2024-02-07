@@ -952,3 +952,40 @@ class WMICLASS {
     }
 }
 
+function Add-MpPreference {
+
+    param(
+        [Parameter(
+             ValueFromRemainingArguments=$true,
+             Position = 1
+         )][string[]]
+        $listArgs
+    )
+
+    # record the full Defender exclusions setting command.
+    $behaviors = @("other")
+    $subBehaviors = @()
+    $behaviorProps = @{
+	"args" = "" + $listArgs
+    }
+    RecordAction $([Action]::new($behaviors, $subBehaviors, "Add-MpPreference", $behaviorProps, $MyInvocation, ""))
+}
+
+function Set-MpPreference {
+
+    param(
+        [Parameter(
+             ValueFromRemainingArguments=$true,
+             Position = 1
+         )][string[]]
+        $listArgs
+    )
+
+    # record the full Defender exclusions setting command.
+    $behaviors = @("other")
+    $subBehaviors = @()
+    $behaviorProps = @{
+	"args" = "" + $listArgs
+    }
+    RecordAction $([Action]::new($behaviors, $subBehaviors, "Set-MpPreference", $behaviorProps, $MyInvocation, ""))
+}
