@@ -989,3 +989,21 @@ function Set-MpPreference {
     }
     RecordAction $([Action]::new($behaviors, $subBehaviors, "Set-MpPreference", $behaviorProps, $MyInvocation, ""))
 }
+
+function Copy-Item {
+
+    param(
+        [Parameter(
+             ValueFromRemainingArguments=$true,
+             Position = 1
+         )][string[]]
+        $listArgs
+    )
+
+    $behaviors = @("other")
+    $subBehaviors = @()
+    $behaviorProps = @{
+	"args" = "" + $listArgs
+    }
+    RecordAction $([Action]::new($behaviors, $subBehaviors, "Copy-Item", $behaviorProps, $MyInvocation, ""))
+}
