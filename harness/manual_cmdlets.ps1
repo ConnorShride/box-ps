@@ -100,7 +100,7 @@ function mshta ($url) {
 	"uri" = $url
     }
 
-    RecordAction $([Action]::new($behaviors, $subBehaviors, "mshta.exe", $behaviorProps, $MyInvocation, ""))
+    RecordAction $([Action]::new($behaviors, $subBehaviors, "mshta", $behaviorProps, $MyInvocation, ""))
 }
 
 function Invoke-Expression {
