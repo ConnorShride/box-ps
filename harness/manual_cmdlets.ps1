@@ -433,12 +433,9 @@ function powershell.exe {
 function Add-Type {
     [cmdletbinding(DefaultParameterSetName="FromSource")]
     param(
-	<#
-Don't support importing from a path
-	[Parameter(ParameterSetName="FromAssemblyName",Mandatory=$true)]
+	[Parameter(ParameterSetName="FromAssemblyName")]
 	[Alias("AN")]
 	[string[]] $AssemblyName,
-	#>
 	[Parameter(ParameterSetName="FromPath")]
 	[Parameter(ParameterSetName="FromMember")]
 	[Parameter(ParameterSetName="FromSource")]
@@ -512,12 +509,21 @@ Don't support importing from a path
     $subBehaviors = @("import_dotnet_code")
     $extraInfo = ""
 
-    $separator = ("*" * 100 + "`r`n")
-    $layerOut = $separator + $behaviorProps["code"] + "`r`n" + $separator
-    $layerOut | Microsoft.PowerShell.Utility\Out-File -Append -Path $WORK_DIR/layers.ps1
+    # Not sure what new functionality the assembly will give, so just
+    # record the Add-Type but don't add the assembly as a type.
+    if (-not $PSBoundParameters.ContainsKey('AssemblyName')) {
+        $separator = ("*" * 100 + "`r`n")
+        $layerOut = $separator + $behaviorProps["code"] + "`r`n" + $separator
+        $layerOut | Microsoft.PowerShell.Utility\Out-File -Append -Path $WORK_DIR/layers.ps1
+    }
 
     RecordAction $([Action]::new($behaviors, $subBehaviors, "Microsoft.PowerShell.Utility\Add-Type", $behaviorProps, $MyInvocation, $extraInfo))
-    return Microsoft.PowerShell.Utility\Add-Type @PSBoundParameters
+
+    # Not sure what new functionality the assembly will give, so just
+    # record the Add-Type but don't add the assembly as a type.        
+    if (-not $PSBoundParameters.ContainsKey('AssemblyName')) {
+        return Microsoft.PowerShell.Utility\Add-Type @PSBoundParameters
+    }
 }
 
 # not for sandboxing. I need this to compensate for a bug in this function which
