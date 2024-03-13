@@ -124,9 +124,9 @@ Function RewriteIndirectFuncCalls($code) {
     #$ErrorActionPreference = 'Stop';
     
     # Find all functions/methods called using the $VAR(...)
-    # technique. Note that we are only hadling the simple case of
-    # $VAR1($VAR2).
-    $indirectPat = ([regex]'(\$\w+)\( *\$\w+ *\)');
+    # technique. Note that we are only handling the simple case of
+    # $VAR1(....
+    $indirectPat = ([regex]'(\$\w+)\(');
 
     # Do we need to do anything?
     if (-not ($code -match $indirectPat)) {
