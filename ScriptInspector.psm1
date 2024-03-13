@@ -79,6 +79,22 @@ function ScrubCmdletNamespaces {
     return $Script
 }
 
+# Hide multiline @'...'@ strings.  Returns the modified code and a map
+# from marker strings back to original multi-line string.
+Function hideStrings($code) {
+    $pat = ([regex]"(?s)@'.+?'@")
+    $r = $code;
+    $map = @{};
+    $pos = 1000;
+    ForEach ($s in $pat.Matches($code)) {
+        $repl = "__BIG_STR__" + $pos + "__";
+        $pos++;
+        $r = $r.Replace($s.Value, $repl);
+        $map[$repl] = $s.Value;
+    }
+    return $r, $map;
+}
+
 # Check to see if a given line of powershell looks like it could do
 # something dangerous if run.
 Function isSafe($line) {
@@ -122,6 +138,10 @@ Function RewriteIndirectFuncCalls($code) {
 
     # Please please please show us when the code fails.
     #$ErrorActionPreference = 'Stop';
+
+    # Don't want to rewrite things in big multi-line strings. Hide
+    # those.
+    $code, $strMap = hideStrings($code);
     
     # Find all functions/methods called using the $VAR(...)
     # technique. Note that we are only handling the simple case of
@@ -130,6 +150,9 @@ Function RewriteIndirectFuncCalls($code) {
 
     # Do we need to do anything?
     if (-not ($code -match $indirectPat)) {
+        ForEach ($k in $strMap.Keys) {
+            $code = $code.Replace($k, $strMap[$k]);
+        }
         return $code
     }
 
@@ -241,6 +264,11 @@ Function RewriteIndirectFuncCalls($code) {
         catch {}
     }
 
+    # Unhide big strings.
+    ForEach ($k in $strMap.Keys) {
+        $r = $r.Replace($k, $strMap[$k]);
+    }
+    
     # Done.
     return $r;
 }
