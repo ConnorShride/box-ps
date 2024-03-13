@@ -79,6 +79,172 @@ function ScrubCmdletNamespaces {
     return $Script
 }
 
+# Check to see if a given line of powershell looks like it could do
+# something dangerous if run.
+Function isSafe($line) {
+
+    # Trivial check for now.
+
+    # Probable method call?
+    if ($line.Contains("::")) {
+        return $false;
+    }
+
+    # Calling some cmdlet?
+    if ($line -match '\w+\-\w+') {
+        return $false;
+    }
+
+    # Shorthand invoke expression?
+    if ($line -match '[Ii][Ee][Xx]') {
+        return $false;
+    }
+
+    # Shorthand invoke web request?
+    if ($line -match '[Ii][Ww][Rr]') {
+        return $false;
+    }
+
+    # Might be safe.
+    return $true;
+}
+
+# Rewrite code like:
+#
+# $HM = "Load"
+# $Fu = [Reflection.Assembly]::$HM($pe)
+#
+# to:
+#
+# $HM = "Load"
+# $Fu = [Reflection.Assembly]::Load($pe)
+Function RewriteIndirectFuncCalls($code) {
+
+    # Please please please show us when the code fails.
+    #$ErrorActionPreference = 'Stop';
+    
+    # Find all functions/methods called using the $VAR(...)
+    # technique. Note that we are only hadling the simple case of
+    # $VAR1($VAR2).
+    $indirectPat = ([regex]'(\$\w+)\( *\$\w+ *\)');
+
+    # Do we need to do anything?
+    if (-not ($code -match $indirectPat)) {
+        return $code
+    }
+
+    # If we get here we have $VAR1($VAR2) function calls. Pull them
+    # out.
+    $indirectCalls = $indirectPat.Matches($code);
+    #Write-Host $indirectCalls;
+
+    # Now pull out the initial variables containing the funtion/method
+    # name(s).
+    $varNames = @();
+    ForEach ($indirectCall in $indirectCalls) {
+        $currName = $indirectCall.Groups[1].Value;
+        # Not handling multiple indirect calls with same variable name
+        # containing the function.
+        if ($varNames.Contains($currName)) {
+            continue;
+        }
+        $varNames += ($currName);
+    }
+    #Write-Host $varNames;
+
+    # We have the variables that directly hold the names of the
+    # functions/methods. Now we need to work back through variable
+    # dependency chains and find all of the lines that assign other
+    # variables used to finally compute the function name variables.
+    $r = $code;
+    ForEach ($varName in $varNames) {
+
+        # Look for assignments to the current function variable.
+        $currLines = @();
+        $workingSet = @($varName);
+        $addedLine = $true;
+        While ($addedLine) {
+
+            # Look at each variable in the working set and see if we
+            # can find lines assigning to that variable.
+            $addedLine = $false;
+            ForEach ($workingVar in $workingSet) {
+
+                # Make a regex specifically looking for assignments to
+                # the current variable.
+                $assignPat = ([regex]('\' + $workingVar + ' *=.+?[;\n]'));
+                if (-not ($code -match $assignPat)){
+                    continue;
+                }
+
+                # If we have multiple assignments to the variable
+                # things will be too complicated for us to resolve, so
+                # skip it.
+                $lineMatches = $assignPat.Matches($code);
+                if ($lineMatches.Count -gt 1) {
+                    continue;
+                }
+                ForEach ($line in $lineMatches) {
+                    $lineVal = $line.Value.Trim();
+                    if ($lineVal.Length -eq 0) {
+                        continue;
+                    }
+                    if ((-not ($currLines.Contains($lineVal))) -and
+                        (isSafe($lineVal))) {
+
+                        # We have a new assignment line. Save it.
+                        $addedLine = $true;
+                        $currLines = @($lineVal) + $currLines;
+                    }
+                }
+            }
+
+            # Now update the working set of variables that we need to
+            # track down assignments for. This will add in any new
+            # variables from the added lines.
+            $varPat = ([regex]'\$\w+');
+            ForEach ($line in $currLines) {
+
+                # Only look in the RHS of the assignment.
+                $line = ($line -Split "=")[1];
+
+                # Pull out all the variables on the RHS of the
+                # assignment and add them to the set of variables we
+                # need to track down assignments for.
+                ForEach ($var in $varPat.Matches($line)) {
+                    if (-not ($workingSet.Contains($var))) {
+                        $workingSet += $var;
+                    }
+                }
+            }
+        }
+
+        # We now probably have all the variable assignments we need to
+        # attempt to resolve the value of the function name var.
+        #
+        # Make some PWSH to compute the value.
+        $resolveCode = "`$ErrorActionPreference = 'Stop';`n";
+        ForEach ($l in $currLines) {
+            $resolveCode += $l + "`n";
+        }
+        $resolveCode += ("Write-Output " + $varName);
+        
+        try {
+            # Run the PWSH to try to resolve the function name.
+            $funcName = (Invoke-Expression $resolveCode);
+
+            # Replace the indirect function call with the resolved
+            # name.
+            $expr = ($varName + '(');
+            $r = ($r.Replace($expr, ($funcName + '(')));
+        }
+        catch {}
+    }
+
+    # Done.
+    return $r;
+}
+
 # find and remove fully qualified namespace from cmdlet and function calls
 # ensures that our overrides are called instead of the real ones
 function HandleNamespaces {
@@ -87,9 +253,10 @@ function HandleNamespaces {
         [string] $Script
     )
 
+    $Script = RewriteIndirectFuncCalls($Script)    
     $Script = ReplaceStaticFunctions $Script
     $Script = ScrubCmdletNamespaces $Script
-
+    
     return $Script
 }
 

@@ -289,6 +289,13 @@
                 "bytes": ["rawAssembly"]
             }
         },
+        "[Reflection.Assembly]::Load": {
+            "Behaviors": ["binary_import"],
+            "SubBehaviors": ["import_dotnet_binary"],
+            "BehaviorPropInfo": {
+                "bytes": ["rawAssembly"]
+            }
+        },        
         "[System.IO.File]::Exists": {
             "Behaviors": ["file_system"],
             "SubBehaviors": ["check_for_file"],

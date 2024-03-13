@@ -646,7 +646,8 @@ function StaticOverrides {
     $code += $utils.TabPad($commentSep + "`r`n#MANUAL STATICS`r`n" + $commentSep + "`r`n")
     $code += $utils.TabPad($(Microsoft.PowerShell.Management\Get-Content -Raw $PSScriptRoot/harness/manual_statics.ps1))
 
-    return $code + "}`r`n"
+    $code += "}`r`n"
+    return $code
 }
 
 function CmdletOverride {
