@@ -111,6 +111,26 @@ class Action:
         except KeyError as e:
             raise errors.BoxPSReportError("field in action data not present: " + str(e))
 
+    ################################################################################################
+    def __repr__(self):
+        r = "--- ACTION ---"
+        if self.behaviors:
+            r += "\nbehaviors = " + str(self.behaviors)
+        if self.sub_behaviors:
+            r += "\nsub_behaviors = " + str(self.sub_behaviors)
+        if self.actor:
+            r += "\nactor = " + str(self.actor)
+        if self.line:
+            r += "\nline = " + str(self.line)
+        if self.id:
+            r += "\nid = " + str(self.id)
+        if self.behavior_id:
+            r += "\nbehavior_id = " + str(self.behavior_id)
+        if self.extra_info:
+            r += "\nextra_info = " + str(self.extra_info)
+        if self.behavior_properties:
+            r += "\nbehavior_properties = " + str(self.behavior_properties)
+        return r
 
 ####################################################################################################
 class BoxPSReport:
