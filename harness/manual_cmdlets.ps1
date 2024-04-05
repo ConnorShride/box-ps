@@ -908,9 +908,32 @@ function VirtualAlloc {
     RecordAction $([Action]::new($behaviors, $subBehaviors, "VirtualAlloc", $behaviorProps, $MyInvocation, ""))
 }
 
-function Invoke-WebRequest ($url) {
+function Invoke-WebRequest {
 
+    param(
+        [Parameter(
+             Mandatory=$True,
+             ValueFromRemainingArguments=$true,
+             Position = 1
+         )][string[]]
+        $listArgs
+    )
 
+    # Pull out the URL being hit from the arguments.
+    $uriFlag = $false
+    $url = ""
+    foreach ($arg in $listArgs) {
+        if ($arg -eq "-uri") {
+            $uriFlag = $true
+            continue
+        }
+        if ($uriFlag -or ($arg -like "http*")) {
+            $url = $arg;
+        }
+        $uriFlag = $false
+    }
+
+    # Save the behavior.
     $behaviors = @("network")
     $subBehaviors = @()
     $behaviorProps = @{
