@@ -383,7 +383,7 @@ function powershell.exe {
         [switch] $NoProfile,
         [switch] $NonInteractive
     )
-    
+
     $scrapeIOCsCode = Microsoft.PowerShell.Management\Get-Content -Raw $CODE_DIR/harness/find_in_mem_iocs.ps1 
     Microsoft.PowerShell.Utility\Invoke-Expression $scrapeIOCsCode
     
@@ -395,7 +395,6 @@ function powershell.exe {
 
 	# command was given arg list style like "powershell Write-Host foo". join the list into a single string
 	if ($Command.Count -gt 1) {
-            Write-Host "PS: 1"
 	    foreach ($token in $Command) {
 		$behaviorProps["script"] += $token + " "
 	    }
@@ -405,7 +404,7 @@ function powershell.exe {
 	        $behaviorProps["script"] = $Command[0].ToString()
             }
             else {
-                $behaviorProps["script"] = $Command.ToString()
+                $behaviorProps["script"] = (("" + $Command).ToString())
             }
 	}
     }
@@ -417,14 +416,12 @@ function powershell.exe {
     # read the script from a file
     # TODO test this with a windows style path (should work I think)
     elseif ($PSBoundParameters.ContainsKey("File")) {
-
 	$behaviors += @("file_system")
 	$subBehaviors += @("file_read")
 
 	$behaviorProps["paths"] = @($File)
         $behaviorProps["script"] = $(Microsoft.PowerShell.Management\Get-Content -Raw $File | Out-String)
     }
-
     RecordAction $([Action]::new($behaviors, $subBehaviors, "powershell.exe", $behaviorProps, $MyInvocation, ""))
 
     [BoxPSStatics]::SandboxScript($behaviorProps["script"])
