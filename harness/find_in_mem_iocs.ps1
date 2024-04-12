@@ -30,24 +30,24 @@ if ($MyInvocation.InvocationName -ne "Test-Path") {
 
     foreach ($declaredVar in $declaredVars) {
 
-        $value = $declaredVar.Value
+        $__value = $declaredVar.Value
 
         # look for PEs
-        if ($null -eq $value -or $value.GetType() -eq [int[]] -or $value.GetType() -eq [byte[]]) {
+        if ($null -eq $__value -or $__value.GetType() -eq [int[]] -or $__value.GetType() -eq [byte[]]) {
 
             $MIN_PE_SIZE = 20 * 1024
 
             # sanity check on the size of the array
-            if ($value.Length -ge $MIN_PE_SIZE) {
+            if ($__value.Length -ge $MIN_PE_SIZE) {
 
                 # see if the array probably contains a PE
-                if ($value -and $value[0] -eq 77 -and $value[1] -eq 90) {
+                if ($__value -and $__value[0] -eq 77 -and $__value[1] -eq 90) {
 
                     # write the PE to disk
                     Microsoft.PowerShell.Management\New-Item -Path $WORK_DIR/artifacts -ItemType "directory" > /dev/null 2>&1
                     $outDir = $WORK_DIR + "/artifacts/"
                     $outPath = $outDir + "tmp.bin"
-                    [System.IO.File]::WriteAllBytes($outPath, $value)
+                    [System.IO.File]::WriteAllBytes($outPath, $__value)
                     $sha256 = $(Get-FileHash -Path $outPath -Algorithm SHA256).Hash
                     $destPath = $outDir + $sha256
 
@@ -72,16 +72,16 @@ if ($MyInvocation.InvocationName -ne "Test-Path") {
         }
 
         if ($declaredVar.Value.GetType() -eq [string[]]) {
-            $value = $value -join ""
+            $__value = $__value -join ""
         }
 
-        $value | Out-String -Stream | ForEach-Object { 
+        $__value | Out-String -Stream | ForEach-Object { 
             $networkIOCs += ScrapeNetworkIOCs $_
         }
-        $value | Out-String -Stream | ForEach-Object { 
+        $__value | Out-String -Stream | ForEach-Object { 
             $fileSystemIOCs += ScrapeFilePaths $_
         }
-        $value | Out-String -Stream | ForEach-Object {
+        $__value | Out-String -Stream | ForEach-Object {
             $environmentProbes += ScrapeEnvironmentProbes -Variable $_
         }
     }

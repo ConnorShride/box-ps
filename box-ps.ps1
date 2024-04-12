@@ -420,6 +420,9 @@ function CleanExit {
     if (!$NoCleanUp) {
         Remove-Item -Recurse $WorkDir -ErrorAction SilentlyContinue
     }
+    else {
+        Write-Host "[+] Keeping working dir $WorkDir ..."
+    }
 
     Remove-Module HarnessBuilder -ErrorAction SilentlyContinue
     Remove-Module ScriptInspector -ErrorAction SilentlyContinue
