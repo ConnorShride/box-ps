@@ -104,7 +104,13 @@ function CmdletParamsCode {
             $code = $code.TrimEnd(",") + ")]`r`n"
         }
 
-        $code += "`t[$($helpParam.type.name)] `$$($helpParam.Name),`r`n"
+	# Byte encoding not supported in Linux PWSH, so replace
+	# Encoding type with string.
+	$typeName = $helpParam.type.name
+	if ($typeName -eq "Encoding") {
+	    $typeName = "string"
+	}
+        $code += "`t[$($typeName)] `$$($helpParam.Name),`r`n"
 
         $doneParams += $helpParam.Name
     }

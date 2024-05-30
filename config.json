@@ -42,7 +42,8 @@
         "code": "[string]",
         "bytes": "[Int32[]]",
         "script": "[string]",
-        "duration": "[string]"
+        "duration": "[string]",
+	"encoding": "[string]"
     },
     "Cmdlets": {
         "Microsoft.PowerShell.Core\\Set-StrictMode": {},
@@ -59,7 +60,8 @@
             "SubBehaviors": ["file_write"],
             "BehaviorPropInfo": {
                 "paths": ["Path", "LiteralPath"],
-                "content": ["Value"]
+                "content": ["Value"],
+		"encoding": ["Encoding"]
             }
         },
         "Microsoft.PowerShell.Management\\Set-Location": {
