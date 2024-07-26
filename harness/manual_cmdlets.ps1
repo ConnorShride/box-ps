@@ -150,7 +150,10 @@ function Invoke-Expression {
             # import all the variables from the parent scope so the invoke expression has them to work with
             foreach ($parentVar in $parentVars) {
                 if (!($localVars.Contains($parentVar.Name))) {
-                    Microsoft.PowerShell.Utility\Set-Variable -Name $parentVar.Name -Value $parentVar.Value
+                    try {
+                        Microsoft.PowerShell.Utility\Set-Variable -Name $parentVar.Name -Value $parentVar.Value
+                    }
+                    catch {}
                 }
             }
 
