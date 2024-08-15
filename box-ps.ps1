@@ -251,6 +251,12 @@ function HandleCmdInvocation {
         # the command used the -Command option implicitely. Scrub anything that looks like an argument 
         # flag to leave only the command
         else {
+
+            # Delete pwsh arguments that take no parameters, they
+            # confuse things.
+            $OrigScript = ($OrigScript -ireplace " \-nopr?o?f?i?l?e?", "")
+
+            # Scrub pwsh flags with arguments.
             $invokedScript = $OrigScript -replace "^\s*[Pp][Oo][Ww][Ee][Rr][Ss][Hh][Ee][Ll][Ll](\.exe)?\s+((-[\w``]+\s+([\w\d``]+ )?)?)*"
         }
 
