@@ -1059,3 +1059,26 @@ function Get-WmiObject {
     RecordAction $([Action]::new($behaviors, $subBehaviors, "Get-WmiObject", $behaviorProps, $MyInvocation, ""))
     return @("1", "2", "3")
 }
+
+# gcm "i*x" returns more than just "iex" under Linux. Fix that.
+$_origGetCommand = (Get-Command Get-Command)
+function Get-Command {
+
+    param(
+        [Parameter(
+             Mandatory=$True,
+             ValueFromRemainingArguments=$true,
+             Position = 1
+         )][string[]]
+        $listArgs
+    )
+
+    $cmds = (&($_origGetCommand) $listArgs)
+    foreach ($cmd in $cmds) {
+        if ($cmd.Name -eq "iex") {
+            return @($cmd)
+        }
+    }
+
+    return $cmds
+}
