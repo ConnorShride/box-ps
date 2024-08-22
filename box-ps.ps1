@@ -234,7 +234,7 @@ function HandleCmdInvocation {
         $i = $OrigScript.length
     }
     $StartScript = $OrigScript.substring(0, $i)
-    if ($StartScript -match ".*\-[Ee][Nn][^qQnXxPp].*") {
+    if ($StartScript -match ".*\-[Ee][NnCc][^qQnXxPp].*") {
 
         $match = [Regex]::Match($OrigScript, ".*?([A-Za-z0-9+/=]{40,}).*").captures
         if ($match -ne $null) {
