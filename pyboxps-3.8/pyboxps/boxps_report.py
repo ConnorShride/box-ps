@@ -177,7 +177,12 @@ class BoxPSReport:
         # confident network and file_system IOCs from action behavior properties
         network_actions = self.filter_actions(behaviors=[Behaviors.network])
         file_system_actions = self.filter_actions(behaviors=[Behaviors.file_system])
-        self.confident_net_iocs = [network_action.uri for network_action in network_actions]
+        self.confident_net_iocs = []
+        for network_action in network_actions:
+            if (hasattr(network_action, "uri")):
+                self.confident_net_iocs.append(network_action.uri)
+            if (hasattr(network_action, "hostname")):
+                self.confident_net_iocs.append("http://" + network_action.hostname)
         self.confident_fs_iocs = []
         for fs_action in file_system_actions:
             if (isinstance(fs_action.paths, list)):
