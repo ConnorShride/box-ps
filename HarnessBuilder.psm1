@@ -339,7 +339,8 @@ function TranslateClassFuncSignature {
 function ClassConstructors {
 
     param(
-        [string] $ParentClass
+        [string] $ParentClass,
+        $ConstuctorInfo
     )
 
     $guineaPig = Microsoft.PowerShell.Utility\New-Object $ParentClass
@@ -386,7 +387,44 @@ function ClassConstructors {
                 catch {}
             }
         }
-        
+
+        # Are we tracking object creations of this class as actions?
+        if ($ConstuctorInfo -ne $null) {
+
+            # The Behaviors and Subbehavior designations must exist in
+            # the config.json file. Add code for those.            
+            
+            # Behaviors.
+            $code += "`r`n"
+            $code += "`t`$behaviors = @("
+            foreach ($sub in $ConstuctorInfo["Behaviors"]) {
+                $code += "`"" + $sub + "`", "
+            }
+            $code = $code.TrimEnd(", ")
+            $code += ")`r`n"
+
+            # Subbehaviors
+            $code += ""
+            $code += "`t`$subBehaviors = @("
+            foreach ($sub in $ConstuctorInfo["SuBehaviors"]) {
+                $code += "`"" + $sub + "`", "
+            }
+            $code = $code.TrimEnd(", ")
+            $code += ")`r`n"
+
+            # Track each parameter in a corresponding field in the
+            # saved action.
+            $code += "`t`$behaviorProps = @{}`r`n"            
+            foreach ($parameter in $constructor.GetParameters()) {
+                # $behaviorProps["code"] = [string]$sources
+                $code += ("`t`$behaviorProps[`"" + $parameter.Name + "`"] = [string]`$" + $parameter.Name + "`r`n")
+            }
+            # RecordAction $([Action]::new($behaviors, $subBehaviors, "Microsoft.CSharp.CSharpCodeProvider.CompileAssemblyFromSource", $behaviorProps, $PSBoundParameters, $MyInvocation.Line, $extraInfo))
+            $code += ("`tRecordAction `$([Action]::new(`$behaviors, `$subBehaviors, `"" + $ParentClass + "`", `$behaviorProps, `$PSBoundParameters, `$MyInvocation.Line, `"`"))")
+            
+        }
+
+        # Done with constructor.
         $code += "}`r`n"
     }
 
@@ -608,14 +646,31 @@ function ClassOverride {
     $shortName = $FullClassName.Split(".")[-1]
     $code = "class BoxPS$shortName : $FullClassName {`r`n"
 
+    # Add in required class fields.
     $code += $utils.TabPad($(ClassPropertiesCode -ParentClass $FullClassName))
-    $code += $utils.TabPad($(ClassConstructors -ParentClass $FullClassName))
+
+    # Add in constructors.
+
+    # Do we want to track all object constructions for this class as
+    # actions?
+    $constuctorInfo = $null
+    if ($Functions.Keys -Contains "Constructor") {
+        $constuctorInfo = $Functions["Constructor"]
+    }
+    $code += $utils.TabPad($(ClassConstructors -ParentClass $FullClassName -ConstuctorInfo $constuctorInfo))
 
     foreach ($functionName in $Functions.Keys) {
 
+        # Skip class constructors, already handled those when
+        # generating the constructor code.
+        if ($functionName -eq "Constructor") {
+            continue
+        }
+
+        # Regular method. Generate tracking code.
         $overrideInfo = $Functions[$functionName]
         $code += $utils.TabPad($(ClassFunctionOverrides -ParentClass $FullClassName `
-                -FuncName $functionName -OverrideInfo $overrideInfo -Exclude $excludes))
+          -FuncName $functionName -OverrideInfo $overrideInfo -Exclude $excludes))
     }
 
     return $code + "}`r`n"

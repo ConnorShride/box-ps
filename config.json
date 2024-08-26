@@ -228,6 +228,12 @@
                     "code": ["sources"]
                 }
             }
+        },
+        "System.Net.Sockets.TcpClient": {
+            "Constructor": {
+                "Behaviors": ["network"],
+                "SubBehaviors": []
+            }
         }
     },
     "Statics": {
