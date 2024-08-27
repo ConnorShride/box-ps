@@ -14,6 +14,7 @@ Set-Alias -Name ls -Value Get-ChildItem
 
 # Override cmd.exe.
 Set-Alias -Name "cmd.exe" -Value fakecmdexe
+Set-Alias -Name "cmd" -Value fakecmdexe
 
 # Don't want to actually move files.
 Set-Alias -Name "mv" -Value fakemv

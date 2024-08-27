@@ -864,6 +864,16 @@ function fakecmdexe {
     }
     
     RecordAction $([Action]::new($behaviors, $subBehaviors, "cmd.exe", $behaviorProps, $MyInvocation, ""))
+
+    # Echo commands could be run to return an array of strings back to
+    # the powershell script. Look for that case.
+    $echoPat = ([regex]"echo +([^&]+)")
+    $args = "" + $listArgs
+    $r = @()
+    foreach ($m in ($echoPat.Matches($args))) {
+        $r += $m.Groups[1]
+    }
+    return $r
 }
 
 function fakemv {
