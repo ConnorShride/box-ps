@@ -867,11 +867,20 @@ function fakecmdexe {
 
     # Echo commands could be run to return an array of strings back to
     # the powershell script. Look for that case.
-    $echoPat = ([regex]"echo +([^&]+)")
-    $args = "" + $listArgs
+    #
+    # Seems to split array based on '&' and ',' in the echo statement.
+    $args = ("" + $listArgs).Trim()
     $r = @()
-    foreach ($m in ($echoPat.Matches($args))) {
-        $r += $m.Groups[1]
+    if ($args.Contains("echo ")) {
+        $args = $args.SubString($args.IndexOf("echo ") + "echo ".Length).Trim()
+        $splitChar = ","
+        if ($args.Contains("&")) {
+            $splitChar = "&"
+        }
+        foreach ($f in $args.Split($splitChar)){
+            # Maybe just get the 1st char? CMD.exe is a mess...
+            $r += $f.Trim()[0]
+        }
     }
     return $r
 }
