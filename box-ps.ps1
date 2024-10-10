@@ -327,6 +327,39 @@ function StripBugActions {
     return $actions
 }
 
+function HandleDirectlyWrittenFiles {
+
+    # Find directly written files heuristically by looking for files
+    # in the current directory whose name starts with 'C:' (not
+    # expected for Linux files).
+    $outDir = $WORK_DIR + "/untracked_artifacts/"
+    foreach ($payloadFile in (Get-ChildItem -path "." -name "C:*")) {
+
+        # Does this look like a bogus "C:\foo\bar\baz" file we can
+        # move as an artifact?
+        $fileObj= ([type]"IO.File")
+        if ($payloadFile.contains("\")){
+
+            # Make the directory for saving the file writes that are
+            # not tracked in the regular analysis.
+            if (-not (Test-Path -Path $outDir)) {
+                New-Item -Path $outDir -ItemType "directory" > /dev/null 2>&1
+            }
+            
+            # Get the name (no path) of the file.
+            $fname = $payloadFile.SubString($payloadFile.lastIndexOf("\") + 1)
+
+            # Move the file to the artifact directory.
+            $fileObj::Move($payloadFile, ($outDir + $fname), $true)
+        }
+
+        # Not an obvious bogus C: file. Just delete it.
+        else {
+            Remove-Item $payloadFile
+        }
+    }
+}
+
 # runs through the actions writing artifacts we may care about to disk and returns a map of which
 # actions by ID produced which artifact hash
 function HarvestArtifacts {
@@ -348,6 +381,11 @@ function HarvestArtifacts {
     New-Item -Path $WORK_DIR/artifacts -ItemType "directory" > /dev/null 2>&1
     $outDir = $WORK_DIR + "/artifacts/"
 
+    # Hacky handling for files directly written via obfuscated .NET
+    # object calls (box-ps can't override these methods so they
+    # actually run).
+    HandleDirectlyWrittenFiles
+    
     # go through actions looking for behaviors that would give artifacts
     foreach ($action in $Actions) {
 
@@ -726,6 +764,9 @@ else {
 
         if ($(Test-Path $WORK_DIR/artifacts) -and $(Get-ChildItem $WORK_DIR/artifacts).Length -gt 0) {
             Move-Item $WORK_DIR/artifacts $OutDir
+        }
+        if ($(Test-Path $WORK_DIR/untracked_artifacts) -and $(Get-ChildItem $WORK_DIR/untracked_artifacts).Length -gt 0) {
+            Move-Item $WORK_DIR/untracked_artifacts $OutDir
         }
 
         $reportJson | Out-File $OutDir/report.json
