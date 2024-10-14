@@ -185,7 +185,7 @@ class BoxPSReport:
                 self.confident_net_iocs.append("http://" + network_action.hostname)
         self.confident_fs_iocs = []
         for fs_action in file_system_actions:
-            if (isinstance(fs_action.paths, list)):
+            if (hasattr(fs_action, "paths") and isinstance(fs_action.paths, list)):
                 self.confident_fs_iocs += fs_action.paths
 
         # aggressive IOCs
