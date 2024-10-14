@@ -87,17 +87,6 @@
             },
             "Flags": ["call_parent"]
         },
-        "Microsoft.PowerShell.Management\\Test-Path": {
-            "Behaviors": ["file_system"],
-            "SubBehaviors": ["check_for_file"],
-            "BehaviorPropInfo": {
-                "paths": ["Path"]
-            },
-            "Routine": {
-                "pretend_paths_exist": "Path"
-            },
-            "Return": "$routineReturn"
-        },
         "Microsoft.PowerShell.Management\\Get-Content": {
             "Behaviors": ["file_system"],
             "SubBehaviors": ["file_read"],
@@ -320,7 +309,11 @@
             "SubBehaviors": [],
             "BehaviorPropInfo": {
                 "uri": ["requestUriString", "requestUri"]
-            }
+            },
+            "Routine": {
+                "fake_webrequest_object": "behaviorProps[\"uri\"]"
+            },
+            "Return": "$routineReturn"
         }
     },
     "Manuals": {

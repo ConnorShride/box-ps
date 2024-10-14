@@ -1101,3 +1101,26 @@ function Get-Command {
 
     return $cmds
 }
+
+function Test-Path {
+
+    param(
+        [Parameter(
+             ValueFromRemainingArguments=$true,
+             ValueFromPipeline=$true,
+             Position = 1
+         )][string[]]
+        $listArgs
+    )
+
+    $behaviors = @("file_system")
+    $subBehaviors = @("check_for_file")
+    $behaviorProps = @{
+	"args" = "" + $listArgs
+    }
+    RecordAction $([Action]::new($behaviors, $subBehaviors, "Test-Path", $behaviorProps, $MyInvocation, ""))
+
+    # TODO: Need command line argument to make this return true or
+    # false.
+    return $false
+}
