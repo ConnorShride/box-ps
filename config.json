@@ -64,6 +64,12 @@
 		"encoding": ["Encoding"]
             }
         },
+        "Microsoft.PowerShell.Management\\Set-Clipboard": {
+            "Behaviors": ["other"],
+            "BehaviorPropInfo": {
+                "content": ["Value"]
+            }
+        },        
         "Microsoft.PowerShell.Management\\Set-Location": {
             "Behaviors": ["file_system"],
             "SubBehaviors": ["change_directory"],
