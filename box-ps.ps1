@@ -396,14 +396,19 @@ function HarvestArtifacts {
         foreach ($behavior in $behaviors) {
 
             $artifactProperty = $behaviorMap[$behavior]
-
             $artifactContent = $action.BehaviorProps."$artifactProperty"
-
+            
             if ($null -eq $artifactContent) {
                 continue
             }
 
+            # Could have a single element list where the content is
+            # actually the string in the list. Check for that.
             $artifactIsArray = $artifactContent.GetType().BaseType.Name -eq "Array"
+            if ($artifactIsArray -and ($artifactContent.Length -eq 1) -and ($artifactContent[0].GetType().Name -eq "String")) {
+                $artifactIsArray = $false
+                $artifactContent = $artifactContent[0]
+            }
             $actionId = ($action.Id | Out-String).Trim()
             $fileType = "unknown"
 
