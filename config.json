@@ -108,6 +108,13 @@
                 "paths": ["Path", "LiteralPath"]
             }
         },
+        "Microsoft.PowerShell.Archive\\Expand-Archive": {
+            "Behaviors": ["file_system"],
+            "SubBehaviors": ["file_write"],
+            "BehaviorPropInfo": {
+                "paths": ["Path", "LiteralPath"]
+            }
+        },
         "Microsoft.PowerShell.Management\\Get-Process": {
             "Behaviors": ["process"],
             "SubBehaviors": ["get_process_info"],
