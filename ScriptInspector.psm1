@@ -255,11 +255,14 @@ Function RewriteIndirectFuncCalls($code) {
         try {
             # Run the PWSH to try to resolve the function name.
             $funcName = (Invoke-Expression $resolveCode);
-
+            
             # Replace the indirect function call with the resolved
-            # name.
-            $expr = ($varName + '(');
-            $r = ($r.Replace($expr, ($funcName + '(')));
+            #  name. Only do this if we actually resolved the
+            # variable.
+            if ($funcName.Length -gt 0) {
+                $expr = ($varName + '(');
+                $r = ($r.Replace($expr, ($funcName + '(')));
+            }
         }
         catch {}
     }
