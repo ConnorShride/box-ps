@@ -232,3 +232,13 @@ static [void] SystemRuntimeInteropServicesMarshalCopy([short[]] $source, [object
 static [string] SystemRuntimeInteropServicesMarshalPtrToStringAuto([IntPtr] $ptr) {
     return [System.Runtime.InteropServices.Marshal]::PtrToStringBSTR($ptr)
 }
+
+static [void] SystemAppDomainCurrentDomainLoad([byte[]] $assembly) {
+    $behaviorProps = @{}
+    $behaviorProps["bytes"] = [Int32[]]$assembly
+    $behaviors = @("binary_import")
+    $subBehaviors = @("import_dotnet_binary")
+    $extraInfo = ""
+    
+    RecordAction $([Action]::new($behaviors, $subBehaviors, "[System.AppDomain]::CurrentDomain.Load", $behaviorProps, $PSBoundParameters, $MyInvocation.Line, $extraInfo))
+}

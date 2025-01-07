@@ -1,6 +1,6 @@
 $utils = Microsoft.PowerShell.Core\Import-Module -Name $PSScriptRoot/Utils.psm1 -AsCustomObject -Scope Local
 $config = Microsoft.PowerShell.Management\Get-Content $PSScriptRoot/config.json | 
-    Microsoft.PowerShell.Utility\ConvertFrom-Json -AsHashtable
+  Microsoft.PowerShell.Utility\ConvertFrom-Json -AsHashtable
 
 # Use the current PID to give each box-ps run a unique working directory.
 # This allows multiple box-ps instances to analyze samples in the same directory.
@@ -39,7 +39,7 @@ function CmdletParamsCode {
     if ($ArgAdditions) {
         foreach ($argAddition in $ArgAdditions.Keys) {
             $helpParams += $(Microsoft.PowerShell.Utility\New-Object `
-                                PSObject -Property $ArgAdditions[$argAddition])
+              PSObject -Property $ArgAdditions[$argAddition])
         }
     }
 
@@ -61,21 +61,21 @@ function CmdletParamsCode {
         if ($helpParam.parameterSetName -ne $null -and
             $helpParam.parameterSetName -ne "(All)" -and
             $helpParam.parameterSetName -ne "Default") {
-            $setNames = $helpParam.parameterSetName.Split(",")
+		$setNames = $helpParam.parameterSetName.Split(",")
 
-            foreach ($setName in $setNames) {
+		foreach ($setName in $setNames) {
 
-                $code += "`t[Parameter(ParameterSetName=`"$($setName.Trim())`""
+                    $code += "`t[Parameter(ParameterSetName=`"$($setName.Trim())`""
 
-                # parameters are mandatory with respect to the individual sets they're in,
-                # and if a parameter is in multiple sets and mandatory, it's mandatory for all sets
-                if ($helpParam.required -eq "true") {
-                    $code += ",Mandatory=`$true"
-                }
+                    # parameters are mandatory with respect to the individual sets they're in,
+                    # and if a parameter is in multiple sets and mandatory, it's mandatory for all sets
+                    if ($helpParam.required -eq "true") {
+			$code += ",Mandatory=`$true"
+                    }
 
-                $code += ")]`r`n"
+                    $code += ")]`r`n"
+		}
             }
-        }
 
         $paramOptLine = "`t[Parameter("
 
@@ -441,7 +441,7 @@ function GetPropertyTypes {
 
     # get all the advertised properties from the guineapig object
     $properties = Microsoft.PowerShell.Utility\Get-Member -InputObject $guineaPig | 
-                    Microsoft.PowerShell.Core\Where-Object MemberType -eq property
+      Microsoft.PowerShell.Core\Where-Object MemberType -eq property
 
     $res = @{}
     foreach ($property in $properties) {
@@ -463,22 +463,22 @@ function GetFunctionSignatures {
 
     $signatures = @()
 
-	# get the list of signatures
+    # get the list of signatures
     if ($Static) {
-		$signatures = $(Microsoft.PowerShell.Utility\Invoke-Expression $FuncName).OverloadDefinitions
-	}
+	$signatures = $(Microsoft.PowerShell.Utility\Invoke-Expression $FuncName).OverloadDefinitions
+    }
     elseif ($InstanceMember) {
         $guineaPig = Microsoft.PowerShell.Utility\New-Object $ParentClass
         $signatures = $guineaPig | Microsoft.PowerShell.Utility\Get-Member | Microsoft.PowerShell.Core\Where-Object Name -eq $FuncName
         $signatures = $signatures.Definition.Split("),") | Microsoft.PowerShell.Core\ForEach-Object {
-			if (!$_.EndsWith(")")) {
-				$_ += ")"
-			}
-			$_.Trim()
-		}
+	    if (!$_.EndsWith(")")) {
+		$_ += ")"
+	    }
+	    $_.Trim()
+	}
     }
 
-	$sigAndArgs = @{}
+    $sigAndArgs = @{}
 
     # parse out the arguments, parse out names of arguments only
     foreach ($signature in $signatures) {
@@ -516,7 +516,6 @@ function ClassFunctionOverrides {
         [hashtable] $OverrideInfo,
         [object] $Exclude  # hashtable if Static, list if not
     )
-
     $signatures = @{}
 
     # get all the function signatures
@@ -551,7 +550,7 @@ function ClassFunctionOverrides {
         if (!$Exclude.Contains($signature)) {
 
             $sigAndArgs = [Tuple]::Create($signature, $sigArgs)
-    
+	    
             # if the signature does not take an argument that we listed in the config file, then we aren't supporting it
             $BehaviorPropInfo = $OverrideInfo["BehaviorPropInfo"]
             $supportedArgs = @()
@@ -562,7 +561,7 @@ function ClassFunctionOverrides {
             }
 
             $intersection = $utils.ListIntersection($sigAndArgs[1], $supportedArgs)
-    
+	    
             # this signature contains a parameter we're wanting to track as a behavior property
             if ($intersection) {
 
@@ -591,22 +590,22 @@ function ClassFunctionOverrides {
                 else {
                     $code += "`tRecordAction `$([Action]::new(`$behaviors, `$subBehaviors, `"$ParentClass`.$FuncName`", `$behaviorProps, `$PSBoundParameters, `$MyInvocation.Line, `$extraInfo))`r`n"
                 }
-        
+		
                 # if the method actually has a return value
                 if (!$signature.Contains("[void]")) {
-        
+		    
                     # build a call to the real function to return the actual result from the override
                     if ($OverrideInfo["Flags"] -and $OverrideInfo["Flags"].Contains("call_parent")) {
-        
+			
                         $code += "`treturn "
-        
+			
                         if ($Static) {
                             $code += "$FuncName("
                         }
                         else {
                             $code += "([$ParentClass]`$this).$FuncName("
                         }
-        
+			
                         # build arguments to the function
                         $args = ""
                         foreach ($arg in $sigArgs) {
@@ -623,7 +622,7 @@ function ClassFunctionOverrides {
                         $code += "`treturn `$null`r`n"
                     }
                 }
-        
+		
                 $code += "}`r`n`r`n"
             }
         }
@@ -700,7 +699,7 @@ function StaticOverrides {
         $overrideInfo = $config["Statics"][$staticFunc]
 
         $code += $utils.TabPad($(ClassFunctionOverrides -Static -FuncName `
-            $staticFunc -OverrideInfo $overrideInfo -Exclude $excludes))
+          $staticFunc -OverrideInfo $overrideInfo -Exclude $excludes))
     }
 
     # tack on the manual overrides
