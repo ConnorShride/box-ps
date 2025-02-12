@@ -22,3 +22,5 @@ Set-Alias -Name "Move-Item" -Value fakemv
 
 # Override mshta.exe.
 Set-Alias -Name "mshta.exe" -Value mshta
+Set-Alias -Name "curl.exe" -Value fakecurl
+Set-Alias -Name "curl" -Value fakecurl

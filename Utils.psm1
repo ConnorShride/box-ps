@@ -141,7 +141,7 @@ function RewriteCode {
     param (
         [String] $code
     )
-
+    
     $r = StripWindowsPrincipal($code)
     $r
 }

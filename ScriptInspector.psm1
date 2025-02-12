@@ -559,8 +559,7 @@ function PreProcessScript {
     )
 
     # Do any rewrites of the initial script to help sandboxing.
-    $script = $utils.RewriteCode($script)
-    
+    $script = $utils.RewriteCode($script)    
     ScrapeNetworkIOCs $Script | Microsoft.PowerShell.Utility\Out-File -Append "./working_$BoxPSPID/scraped_network.txt" 
     ScrapeFilePaths $Script | Microsoft.PowerShell.Utility\Out-File -Append "./working_$BoxPSPID/scraped_paths.txt"
     ScrapeEnvironmentProbes $Script | Microsoft.PowerShell.Utility\Out-File -Append "./working_$BoxPSPID/scraped_probes.txt"

@@ -23,22 +23,22 @@ function mkdir {
     RecordAction $([Action]::new($behaviors, $subBehaviors, "Microsoft.PowerShell.Core\mkdir", $behaviorProps, $MyInvocation, ""))
 }
 
-function curl {
+function fakecurl {
 
-    param(
-        [Parameter(
-             Mandatory=$True,
-             ValueFromRemainingArguments=$true,
-             Position = 1
-         )][string[]]
-        $listArgs
-    )
+    #param(
+    #    [Parameter(
+    #         Mandatory=$True,
+    #         ValueFromRemainingArguments=$true,
+    #         Position = 1
+    #     )][string[]]
+    #    $listArgs
+    #)
 
     # Strip out flags from parameters. Also see if we have the
     # -usebasicparsing option.
     $useBasic = $false
     $realArgs = @()
-    foreach ($arg in $listArgs) {
+    foreach ($arg in $args) {
         if (-not ($arg -like "-*")) {
             $realArgs += $arg
         }
@@ -58,7 +58,7 @@ function curl {
     elseif ($realArgs.length -eq 1) {
         $url = $realArgs[-1]
     }
-
+    
     # A malware campaign has a mistake in their obfuscation and spaces
     # can wind up in the URL argument. Try to fix this.
     $realUrl = $url
@@ -164,7 +164,9 @@ function Invoke-Expression {
             try {
                 $invokeRes = Microsoft.PowerShell.Utility\Invoke-Expression $modifiedCommand
             }
-            catch { }
+            catch {
+                Write-Error "IEX Failed: $($_.Exception.Message)"
+            }
 
             # invoked command may have initialized more variables that are to be used later, that are now
             # defined in this local scope
