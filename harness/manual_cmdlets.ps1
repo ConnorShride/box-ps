@@ -25,15 +25,6 @@ function mkdir {
 
 function fakecurl {
 
-    #param(
-    #    [Parameter(
-    #         Mandatory=$True,
-    #         ValueFromRemainingArguments=$true,
-    #         Position = 1
-    #     )][string[]]
-    #    $listArgs
-    #)
-
     # Strip out flags from parameters. Also see if we have the
     # -usebasicparsing option.
     $useBasic = $false
@@ -1125,4 +1116,30 @@ function Test-Path {
     # TODO: Need command line argument to make this return true or
     # false.
     return $false
+}
+
+function Invoke-CimMethod {
+
+    param(
+        $ClassName,
+        $MethodName,
+        $Arguments
+    )
+
+    # Currently only handling running a process with Invoke-CimMethod.
+    # Invoke-CimMethod -ClassName Win32_Process -MethodName Create -Arguments @{CommandLine=('ms' + 'hta' + '.exe '+$l)}
+    if (($className -eq "Win32_Process") -and ($MethodName -eq "Create")) {
+        if ($Arguments.ContainsKey("CommandLine")) {
+
+            # Pull out the command being run.
+            $cmd = $Arguments["CommandLine"]
+
+            # Track box-ps behavior.
+            $behaviors = @("script_exec")
+            $subBehaviors = @("start_process")
+            $behaviorProps = @{}
+            $behaviorProps["script"] = $cmd
+            RecordAction $([Action]::new($behaviors, $subBehaviors, "Invoke-CimMethod", $behaviorProps, $MyInvocation, ""))
+        }
+    }
 }
