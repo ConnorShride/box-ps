@@ -1095,6 +1095,7 @@ function Get-Command {
     return $cmds
 }
 
+$global:testPathAttempts = 0;
 function Test-Path {
 
     param(
@@ -1114,8 +1115,11 @@ function Test-Path {
     RecordAction $([Action]::new($behaviors, $subBehaviors, "Test-Path", $behaviorProps, $MyInvocation, ""))
 
     # TODO: Need command line argument to make this return true or
-    # false.
-    return $false
+    #  false. For now return false until several calls have been made
+    # and then return true. This is to handle while loops checking to
+    # see if a file does or does not exist.
+    $global:testPathAttempts++
+    return ($testPathAttempts -gt 5)
 }
 
 function Invoke-CimMethod {
