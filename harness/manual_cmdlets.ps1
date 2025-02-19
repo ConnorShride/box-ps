@@ -1147,3 +1147,57 @@ function Invoke-CimMethod {
         }
     }
 }
+
+function Convert-String {
+
+    param(
+        $Example,
+        $InputObject
+    )
+
+    # This is a very limited implementation of Convert-String. It only
+    # handles 1 usage case where -Example is of the form '...=...' and
+    # -InputObject is a space delimited string.
+    if ((-not ($Example -is [string])) -or (-not ($InputObject -is [string]))) {
+        return
+    }
+    if (-not ($Example -like "*=*")) {
+        return
+    }
+
+    # Pull out the pattern into which to subsititute substrings.
+    $pat = (($Example -split "=")[1])
+
+    # Pull out the substrings to put into the pattern.
+    $substs = ($InputObject -split " ")
+
+    # Replace the substrings in reverse index order to make sure 10 is
+    #  replaced before 1. First step is replace the numbers in the
+    # pattern with '##NUM##' so that when handle cases where there are
+    # numbers in the replacement substrings.
+    $pos = ($substs.Length)
+    $r = $pat
+    while ($pos -gt 0) {
+        $r = ($r -replace ('' + $pos), ('##' + $pos + '##'))
+        $pos--
+    }
+
+    # Now actually substitute in the replacement substrings.
+    $pos = ($substs.Length)
+    while ($pos -gt 0) {
+        $currSubst = ($substs[$pos-1])
+        $r = ($r -replace ('##' + $pos + '##'), $currSubst)
+        $pos--
+    }
+
+    # Record that we ran this cmdlet.
+    $behaviors = @("other")
+    $subBehaviors = @()
+    $behaviorProps = @{
+	"result" = "" + $r
+    }
+    RecordAction $([Action]::new($behaviors, $subBehaviors, "Convert-String", $behaviorProps, $MyInvocation, ""))
+    
+    # Done.
+    return $r
+}
