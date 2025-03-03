@@ -1152,6 +1152,7 @@ function Convert-String {
 
     param(
         $Example,
+        [Parameter(ValueFromPipeline=$true)]
         $InputObject
     )
 
