@@ -842,6 +842,7 @@ function fakecmdexe {
 
     param(
         [Parameter(
+	     ValueFromPipeline=$true,
              Mandatory=$True,
              ValueFromRemainingArguments=$true,
              Position = 1
