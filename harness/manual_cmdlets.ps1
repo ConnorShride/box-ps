@@ -701,7 +701,7 @@ function Invoke-RestMethod {
 
     param(
         [Parameter(
-             Mandatory=$True,
+             #Mandatory=$True,
              ValueFromRemainingArguments=$true,
              Position = 1
          )][string[]]
@@ -738,7 +738,7 @@ function Invoke-RestMethod {
     }    
 
     RecordAction $([Action]::new($behaviors, $subBehaviors, "Invoke-RestMethod", $behaviorProps, $MyInvocation, ""))
-    return "1.2.3.4"
+    return "Write-Host ""EXECUTED DOWNLOADED PAYLOAD"""
 }
 
 function GetAsyncKeyState {
