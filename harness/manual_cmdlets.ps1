@@ -714,11 +714,11 @@ function Invoke-RestMethod {
     $maybe = ""
     foreach ($arg in $listArgs) {
         $maybe = $arg
-        $pos += 1
-        if (($arg -like "-uri*") -and ($pos -lt $listArgs.length)) {
-            $url = $listArgs[$pos]
+        if (($arg -like "-uri*") -and (($pos + 1) -lt $listArgs.length)) {
+            $url = $listArgs[$pos + 1]
             break
         }
+        $pos += 1
     }
 
     # If we have just a single argument, assume it is a URL.
