@@ -1203,3 +1203,8 @@ function Convert-String {
     # Done.
     return $r
 }
+
+# Fake the result of Get-Location.
+function Get-Location {
+    return "\C_DRIVE\Users\victim\AppData\Local\Temp";
+}
