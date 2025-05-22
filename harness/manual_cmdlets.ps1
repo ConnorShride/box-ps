@@ -359,7 +359,32 @@ function New-Object {
     # too noisy and not valuable except for debugging
     #RecordAction $([Action]::new($behaviors, $subBehaviors, "Microsoft.PowerShell.Utility\New-Object", $behaviorProps, $MyInvocation, ""))
 
-    if ($(GetOverridedClasses).Contains($behaviorProps["object"].ToLower() -replace "^system.")) {
+    # Linux PWSH does not have WindowsInstaller.Installer, so return a
+    # stubbed object in that case.
+    $className = ($behaviorProps["object"].ToLower() -replace "^system.")
+    if ($className -eq "windowsinstaller.installer") {
+
+        # Stubbed class.
+        class INSTALLER {
+            $UILevel
+            INSTALLER() {
+                $this.UILevel = 0
+            }
+            InstallProduct($url, $ignore) {
+                $behaviors = @("network")
+                $subBehaviors = @()
+                $behaviorProps = @{
+	            "uri" = $url
+                }
+                RecordAction $([Action]::new($behaviors, $subBehaviors, "WindowsInstaller.Installer.InstallProduct", $behaviorProps, $MyInvocation, ""))
+            }
+        }
+
+        # Return stubbed installer object.
+        return ([INSTALLER]::new())
+    }
+    
+    if ($(GetOverridedClasses).Contains($className)) {
 	return RedirectObjectCreation $TypeName $ArgumentList
     }
 
