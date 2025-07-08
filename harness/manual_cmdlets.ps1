@@ -1233,3 +1233,7 @@ function Convert-String {
 function Get-Location {
     return "\C_DRIVE\Users\victim\AppData\Local\Temp";
 }
+
+# A function that does nothing. Used to override commands/cmdlets that
+# we just want to ignore.
+function noop {}
