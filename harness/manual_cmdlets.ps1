@@ -1237,3 +1237,24 @@ function Get-Location {
 # A function that does nothing. Used to override commands/cmdlets that
 # we just want to ignore.
 function noop {}
+
+function fakeschtasks {
+
+    param(
+        [Parameter(
+	     ValueFromPipeline=$true,
+             Mandatory=$True,
+             ValueFromRemainingArguments=$true,
+             Position = 1
+         )][string[]]
+        $listArgs
+    )
+    
+    $behaviors = @("script_exec")
+    $subBehaviors = @()
+    $behaviorProps = @{
+	"args" = "" + $listArgs
+    }
+    
+    RecordAction $([Action]::new($behaviors, $subBehaviors, "schtasks", $behaviorProps, $MyInvocation, ""))
+}
