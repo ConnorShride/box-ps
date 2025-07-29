@@ -960,6 +960,7 @@ function Invoke-WebRequest {
     # Pull out the URL being hit from the arguments.
     $uriFlag = $false
     $url = ""
+    $lastArg = ""
     foreach ($arg in $listArgs) {
         if ($arg -eq "-uri") {
             $uriFlag = $true
@@ -969,8 +970,18 @@ function Invoke-WebRequest {
             $url = $arg;
         }
         $uriFlag = $false
+	$lastArg = $arg
     }
 
+    # Looks like you can leave the https:// off the URL. Check for
+    # that.
+    if (($url -eq "") -and ($lastArg.Length -gt 5)) {
+	$match = [Regex]::Match($lastArg[0], "[a-zA-Z0-9]")
+	if ($match.Success) {
+	    $url = ("https://" + $lastArg)
+	}
+    }
+    
     # Save the behavior.
     $behaviors = @("network")
     $subBehaviors = @()
