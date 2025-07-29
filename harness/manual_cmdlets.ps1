@@ -1272,7 +1272,7 @@ function Get-PSDrive {
     )
     
     $behaviors = @("file_system")
-    $subBehaviors = @("query")
+    $subBehaviors = @()
     $behaviorProps = @{
 	"args" = "" + $listArgs
     }
