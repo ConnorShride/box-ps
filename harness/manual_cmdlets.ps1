@@ -1258,3 +1258,30 @@ function fakeschtasks {
     
     RecordAction $([Action]::new($behaviors, $subBehaviors, "schtasks", $behaviorProps, $MyInvocation, ""))
 }
+
+function Get-PSDrive {
+
+    param(
+        [Parameter(
+	     ValueFromPipeline=$true,
+             Mandatory=$True,
+             ValueFromRemainingArguments=$true,
+             Position = 1
+         )][string[]]
+        $listArgs
+    )
+    
+    $behaviors = @("file_system")
+    $subBehaviors = @("query")
+    $behaviorProps = @{
+	"args" = "" + $listArgs
+    }
+    
+    RecordAction $([Action]::new($behaviors, $subBehaviors, "schtasks", $behaviorProps, $MyInvocation, ""))
+
+    # Fake some disk info.
+    $r = @(
+	@{"Name" = "C:\"; "Used" = 231.12; "Free" = 76.1; "Root" = "C:\"}
+    )
+    return $r;
+}
