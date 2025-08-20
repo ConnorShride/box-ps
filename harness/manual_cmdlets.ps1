@@ -1296,3 +1296,39 @@ function Get-PSDrive {
     )
     return $r;
 }
+
+function Get-CimInstance {
+
+    param(
+        [Parameter(ValueFromPipeline=$true)] $item
+    )
+
+    # record the command.
+    $behaviors = @("process")
+    $subBehaviors = @()
+    $behaviorProps = @{
+	"args" = "" + $item
+    }
+    
+    RecordAction $([Action]::new($behaviors, $subBehaviors, "Get-CimInstance", $behaviorProps, $MyInvocation, ""))
+    
+    # Stubbed class.
+    class INFO {
+        $TotalPhysicalMemory
+	$NumberOfCores
+        INFO() {
+            $this.TotalPhysicalMemory = 15032385536
+	    $this.NumberOfCores = 6
+        }
+    }
+    
+    # Only handling getting certain info.
+    if (($item -eq "Win32_ComputerSystem") -or ($item -eq "Win32_Processor")) {
+
+	# Return stubbed info object.
+        return ([INFO]::new())	
+    }
+
+    # Not handled.
+    throw ("Get-CimInstance on unhandled item " + $item)
+}
