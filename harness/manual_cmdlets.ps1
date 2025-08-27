@@ -1314,16 +1314,140 @@ function Get-CimInstance {
     
     # Stubbed class.
     class INFO {
+
         $TotalPhysicalMemory
 	$NumberOfCores
+	$Caption
+	$Description
+	$InstallDate
+	$Name
+	$Status
+	$Availability
+	$ConfigManagerErrorCode
+	$ConfigManagerUserConfig
+	$CreationClassName
+	$DeviceID
+	$ErrorCleared
+	$ErrorDescription
+	$LastErrorCode
+	$PNPDeviceID
+	$PowerManagementCapabilities
+	$PowerManagementSupported
+	$StatusInfo
+	$SystemCreationClassName
+	$SystemName
+	$MaxNumberControlled
+	$ProtocolSupported
+	$TimeOfLastReset
+	$AcceleratorCapabilities
+	$CapabilityDescriptions
+	$CurrentBitsPerPixel
+	$CurrentHorizontalResolution
+	$CurrentNumberOfColors
+	$CurrentNumberOfColumns
+	$CurrentNumberOfRows
+	$CurrentRefreshRate
+	$CurrentScanMode
+	$CurrentVerticalResolution
+	$MaxMemorySupported
+	$MaxRefreshRate
+	$MinRefreshRate
+	$NumberOfVideoPages
+	$VideoMemoryType
+	$VideoProcessor
+	$NumberOfColorPlanes
+	$VideoArchitecture
+	$VideoMode
+	$AdapterCompatibility
+	$AdapterDACType
+	$AdapterRAM
+	$ColorTableEntries
+	$DeviceSpecificPens
+	$DitherType
+	$DriverDate
+	$DriverVersion
+	$ICMIntent
+	$ICMMethod
+	$InfFilename
+	$InfSection
+	$InstalledDisplayDrivers
+	$Monochrome
+	$ReservedSystemPaletteEntries
+	$SpecificationVersion
+	$SystemPaletteEntries
+	$VideoModeDescription
+	$PSComputerName
+	
         INFO() {
             $this.TotalPhysicalMemory = 15032385536
 	    $this.NumberOfCores = 6
+	    $this.Caption = "Intel(R) Graphics"
+	    $this.Description = "Intel(R) Graphics"
+	    $this.InstallDate = ""
+	    $this.Name = "Intel(R) Graphics"
+	    $this.Status = "OK"
+	    $this.Availability = "3"
+	    $this.ConfigManagerErrorCode = "0"
+	    $this.ConfigManagerUserConfig = "False"
+	    $this.CreationClassName = "Win32_VideoController"
+	    $this.DeviceID = "VideoController1"
+	    $this.ErrorCleared = ""
+	    $this.ErrorDescription = ""
+	    $this.LastErrorCode = ""
+	    $this.PNPDeviceID = "PCI\VEN_8086&DEV_8AF7&SUBSYS_64D0A091&REV_08\3&11583659&0&10"
+	    $this.PowerManagementCapabilities = ""
+	    $this.PowerManagementSupported = ""
+	    $this.StatusInfo = ""
+	    $this.SystemCreationClassName = "Win32_ComputerSystem"
+	    $this.SystemName = "DESKTOP_862"
+	    $this.MaxNumberControlled = ""
+	    $this.ProtocolSupported = ""
+	    $this.TimeOfLastReset = ""
+	    $this.AcceleratorCapabilities = ""
+	    $this.CapabilityDescriptions = ""
+	    $this.CurrentBitsPerPixel = "32"
+	    $this.CurrentHorizontalResolution = "3440"
+	    $this.CurrentNumberOfColors = "4294967296"
+	    $this.CurrentNumberOfColumns = "0"
+	    $this.CurrentNumberOfRows = "0"
+	    $this.CurrentRefreshRate = "59"
+	    $this.CurrentScanMode = "4"
+	    $this.CurrentVerticalResolution = "1440"
+	    $this.MaxMemorySupported = ""
+	    $this.MaxRefreshRate = "75"
+	    $this.MinRefreshRate = "29"
+	    $this.NumberOfVideoPages = ""
+	    $this.VideoMemoryType = "2"
+	    $this.VideoProcessor = "Intel(R) Graphics Family"
+	    $this.NumberOfColorPlanes = ""
+	    $this.VideoArchitecture = "5"
+	    $this.VideoMode = ""
+	    $this.AdapterCompatibility = "Intel Corporation"
+	    $this.AdapterDACType = "Internal"
+	    $this.AdapterRAM = "2127378552"
+	    $this.ColorTableEntries = ""
+	    $this.DeviceSpecificPens = ""
+	    $this.DitherType = "0"
+	    $this.DriverDate = "9/12/2024 7:00:00 PM"
+	    $this.DriverVersion = "32.0.101.6078"
+	    $this.ICMIntent = ""
+	    $this.ICMMethod = ""
+	    $this.InfFilename = "oem302.inf"
+	    $this.InfSection = "MTL_IG"
+	    $this.InstalledDisplayDrivers = "C:\WINDOWS\System32\DriverStore\FileRepository\iigd_dch.inf_amd64_f40a5aed298593e0\igd9trinity64.dll"
+	    $this.Monochrome = "False"
+	    $this.ReservedSystemPaletteEntries = ""
+	    $this.SpecificationVersion = ""
+	    $this.SystemPaletteEntries = ""
+	    $this.VideoModeDescription = "3440 x 1440 x 4294967296 colors"
+	    $this.PSComputerName = ""	    
         }
     }
     
     # Only handling getting certain info.
-    if (($item -eq "Win32_ComputerSystem") -or ($item -eq "Win32_Processor")) {
+    if (($item -eq "Win32_ComputerSystem") -or
+	($item -eq "Win32_Processor") -or
+	($item -eq "Win32_VideoController")) {
 
 	# Return stubbed info object.
         return ([INFO]::new())	
