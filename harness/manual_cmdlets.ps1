@@ -1447,6 +1447,7 @@ function Get-CimInstance {
     # Only handling getting certain info.
     if (($item -eq "Win32_ComputerSystem") -or
 	($item -eq "Win32_Processor") -or
+	($item -eq "Win32_Process") -or
 	($item -eq "Win32_VideoController")) {
 
 	# Return stubbed info object.
