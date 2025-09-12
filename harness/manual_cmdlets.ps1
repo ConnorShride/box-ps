@@ -523,7 +523,8 @@ function Add-Type {
 	$behaviorProps["code"] = [string]$MemberDefinition
     }
     elseif ($PSBoundParameters.ContainsKey('AssemblyName')) {
-        $behaviorProps["code"] = "# Ignoring added assembly..."
+        #$behaviorProps["code"] = "# Ignoring added assembly..."
+        $behaviorProps["code"] = [string]$AssemblyName
     }
     
     $behaviors = @("code_import")
