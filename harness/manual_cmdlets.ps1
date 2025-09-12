@@ -722,18 +722,10 @@ function wget ($url) {
     return "";
 }
 
-function Invoke-RestMethod {
-
-    param(
-        [Parameter(
-             #Mandatory=$True,
-             ValueFromRemainingArguments=$true,
-             Position = 1
-         )][string[]]
-        $listArgs
-    )
+function Invoke-RestMethod() {
 
     # Pull out the URL. We're ignoring all other arguments for now.
+    $listArgs = $args
     $url = ""
     $pos = 0
     $maybe = ""
@@ -741,6 +733,10 @@ function Invoke-RestMethod {
         $maybe = $arg
         if (($arg -like "-uri*") -and (($pos + 1) -lt $listArgs.length)) {
             $url = $listArgs[$pos + 1]
+            break
+        }
+        if ($arg -like "http*") {
+            $url = $arg
             break
         }
         $pos += 1
@@ -946,18 +942,10 @@ function VirtualAlloc {
     RecordAction $([Action]::new($behaviors, $subBehaviors, "VirtualAlloc", $behaviorProps, $MyInvocation, ""))
 }
 
-function Invoke-WebRequest {
-
-    param(
-        [Parameter(
-             Mandatory=$True,
-             ValueFromRemainingArguments=$true,
-             Position = 1
-         )][string[]]
-        $listArgs
-    )
+function Invoke-WebRequest() {
 
     # Pull out the URL being hit from the arguments.
+    $listArgs = $args
     $uriFlag = $false
     $url = ""
     $lastArg = ""
