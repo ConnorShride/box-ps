@@ -104,7 +104,6 @@ function Invoke-Expression {
     Process {
 
         $isInteger = $false
-
         # don't do anything for commands that are just integers (using IEX to init a byte array)
         try {
             $test = [int]$Command
@@ -712,8 +711,34 @@ function New-ScheduledTaskSettingsSet {}
 function Register-ScheduledTask {}
 
 # Don't want to actually run wget ever.
-function wget ($url) {
+function wget {
 
+    # Pull out the URL being hit from the arguments.
+    $listArgs = $args
+    $uriFlag = $false
+    $url = ""
+    $lastArg = ""
+    foreach ($arg in $listArgs) {
+        if ($arg -eq "-uri") {
+            $uriFlag = $true
+            continue
+        }
+        if ($uriFlag -or ($arg -like "http*")) {
+            $url = $arg;
+        }
+        $uriFlag = $false
+	$lastArg = $arg
+    }
+
+    # Looks like you can leave the https:// off the URL. Check for
+    # that.
+    if (($url -eq "") -and ($lastArg.Length -gt 5)) {
+	$match = [Regex]::Match($lastArg[0], "[a-zA-Z0-9]")
+	if ($match.Success) {
+	    $url = ("https://" + $lastArg)
+	}
+    }
+    
     $behaviors = @("network")
     $subBehaviors = @()
     $behaviorProps = @{
