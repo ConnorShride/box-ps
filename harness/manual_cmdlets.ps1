@@ -1391,7 +1391,13 @@ function Get-CimInstance {
 	$SystemPaletteEntries
 	$VideoModeDescription
 	$PSComputerName
-	
+        $SystemDirectory
+        $Organization
+        $BuildNumber
+        $RegisteredUser
+        $SerialNumber
+        $Version
+        
         INFO() {
             $this.TotalPhysicalMemory = 15032385536
 	    $this.NumberOfCores = 6
@@ -1454,7 +1460,13 @@ function Get-CimInstance {
 	    $this.SpecificationVersion = ""
 	    $this.SystemPaletteEntries = ""
 	    $this.VideoModeDescription = "3440 x 1440 x 4294967296 colors"
-	    $this.PSComputerName = ""	    
+	    $this.PSComputerName = ""
+            $this.SystemDirectory = "C:\Windows\system32"
+            $this.Organization = "solegit.com"
+            $this.BuildNumber = "18363"
+            $this.RegisteredUser = "desktop01@solegit.com"
+            $this.SerialNumber = "00239-20000-00000-AAOEM"
+            $this.Version = "10.0.18363"
         }
     }
     
@@ -1462,6 +1474,7 @@ function Get-CimInstance {
     if (($item -eq "Win32_ComputerSystem") -or
 	($item -eq "Win32_Processor") -or
 	($item -eq "Win32_Process") -or
+        ($item -eq "Win32_OperatingSystem") -or
 	($item -eq "Win32_VideoController")) {
 
 	# Return stubbed info object.
