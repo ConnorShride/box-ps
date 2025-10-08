@@ -66,3 +66,6 @@ Set-Alias -Name "schtasks" -Value fakeschtasks
 # Set some environment variables.
 $env:computername = "LEGITMACHINE01"
 $env:username = "LEGITUSER"
+
+# Don't want to run ping. Just print args to STDOUT.
+Set-Alias -Name ping -Value Write-Host
