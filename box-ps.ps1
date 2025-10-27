@@ -646,10 +646,10 @@ else {
             # validate it's in valid JSON
             $envFileContent = Get-Content $EnvFile -Raw
             try {
-                $envFileContent | ConvertFrom-Json | Out-Null
+                $envFileContent | ConvertFrom-Json -AsHashTable | Out-Null
             }
             catch {
-                [Console]::Error.WriteLine("[-] input environment variable file is not formatted in valid JSON. exiting")
+                [Console]::Error.WriteLine("[-] input environment variable file $EnvFile is not formatted in valid JSON. exiting")
                 CleanExit -NoCleanUp $NoCleanUp -WorkDir $WORK_DIR -ExitCode 1
             }
 

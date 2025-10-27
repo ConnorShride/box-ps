@@ -773,7 +773,9 @@ function EnvironmentVars {
     if (Microsoft.PowerShell.Management\Test-Path $inputEnvFile) {
         $envVars = Microsoft.PowerShell.Management\Get-Content -Raw $inputEnvFile | ConvertFrom-Json -AsHashTable
         foreach ($envVar in $envVars.Keys) {
-            $code += "`${env:$envVar} = `"$($envVars[$envVar])`"`r`n"
+            if ($enVar -ne "") {
+                $code += "`${env:$envVar} = `"$($envVars[$envVar])`"`r`n"
+            }
         }
     }
 

@@ -370,6 +370,11 @@
                 "[ScriptBlock]": [
                     "[string] $string"
                 ]
+            },
+            "[System.Management.Automation.ScriptBlock]::Create": {
+                "[ScriptBlock]": [
+                    "[string] $string"
+                ]
             }
         },
         "ClassMembers": []

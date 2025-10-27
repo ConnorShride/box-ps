@@ -94,6 +94,28 @@ function mshta ($url) {
     RecordAction $([Action]::new($behaviors, $subBehaviors, "mshta", $behaviorProps, $MyInvocation, ""))
 }
 
+function Stub-Invoke($i) {
+
+    # Stub out some static assembly method references.
+    $iStr = "$i"
+    if ($iStr -eq "static scriptblock Create(string script)") {
+        class STUBBED {
+            [scriptblock] Invoke($script) {
+                $behaviors = @("code_create")
+                $subBehaviors = @("init_code_block")
+                
+                $behaviorProps = @{"code" = $script}
+                RecordAction $([Action]::new($behaviors, $subBehaviors, "[ScriptBlock]::Create", $behaviorProps, $PSBoundParameters, $MyInvocation.Line, ""))
+
+                return [scriptblock]::Create((PreProcessScript $script "<PID>"))
+            }
+        }
+        return ([STUBBED]::new())
+    }
+    
+    return $i
+}
+
 function Invoke-Expression {
     param(
 	[Parameter(ValueFromPipeline=$true,Position=0,Mandatory=$true)]
@@ -180,8 +202,11 @@ function Invoke-Expression {
                     }
                 }
             }
-            
-            $invokeRes
+
+            # We may want to stub out some results. Handle stubbing.
+            $r = Stub-Invoke($invokeRes)
+
+            $r
         }
 
         if ($isInteger) {

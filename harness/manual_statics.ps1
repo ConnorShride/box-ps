@@ -54,8 +54,19 @@ static [ScriptBlock] ScriptBlockCreate([string] $script) {
 
     $behaviorProps = @{"code" = $script}
     RecordAction $([Action]::new($behaviors, $subBehaviors, "[ScriptBlock]::Create", $behaviorProps, $PSBoundParameters, $MyInvocation.Line, ""))
-    
+
     return [scriptblock]::Create((PreProcessScript $script "<PID>"))
+}
+
+static [ScriptBlock] SystemManagementAutomationScriptBlockCreate([string] $script) {
+
+    $behaviors = @("code_create")
+    $subBehaviors = @("init_code_block")
+
+    $behaviorProps = @{"code" = $script}
+    RecordAction $([Action]::new($behaviors, $subBehaviors, "[ScriptBlock]::Create", $behaviorProps, $PSBoundParameters, $MyInvocation.Line, ""))
+
+    return [scriptblock]::Create((PreProcessScript $script "<PID>"))    
 }
 
 static [System.Diagnostics.Process] SystemDiagnosticsProcessStart([System.Diagnostics.ProcessStartInfo] $startInfo) {
