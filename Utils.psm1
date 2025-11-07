@@ -74,7 +74,7 @@ function SeparateLines
             elseif ($char -eq ';') { $whitespace = "`r`n" }
         }
         # otherwise if it's the ending quote of a string literal
-        elseif ($char -contains $quotes -and $quotingChar -eq $char -and $prevChar -ne '`') {
+        elseif ($char -contains $quotes -and $quotingChar -eq $char -and $prevChar -ne "``") {
             $quotingChar = ''
             $inLiteral = $false
         }
@@ -133,6 +133,23 @@ function StripWindowsPrincipal {
     $r
 }
 
+function RewriteInfiniteLoops {
+
+    # Rewrite things like while($true) to something that will
+    # complete.
+    
+    param (
+        [String] $code
+    )
+
+    $r = "`$FAKE_LOOP__ = 0`n`n" + $code
+    $pattern = 'while *\( *\$true *\)'
+    $replacement = 'while ($FAKE_LOOP__++ -lt 3)'
+
+    $r = $r -replace $pattern, $replacement
+    $r
+}
+
 function RewriteCode {
 
     # Top level function for all code rewrites. Add additional calls
@@ -143,6 +160,7 @@ function RewriteCode {
     )
     
     $r = StripWindowsPrincipal($code)
+    $r = RewriteInfiniteLoops($r)
     $r
 }
 
