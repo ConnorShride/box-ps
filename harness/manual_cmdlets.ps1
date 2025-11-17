@@ -779,9 +779,7 @@ function Invoke-RestMethod() {
     $listArgs = $args
     $url = ""
     $pos = 0
-    $maybe = ""
     foreach ($arg in $listArgs) {
-        $maybe = $arg
         if (($arg -like "-uri*") -and (($pos + 1) -lt $listArgs.length)) {
             $url = $listArgs[$pos + 1]
             break
@@ -793,9 +791,9 @@ function Invoke-RestMethod() {
         $pos += 1
     }
 
-    # If we have just a single argument, assume it is a URL.
-    if (($pos -eq 1) -and ($url -eq "")) {
-        $url = $maybe
+    # If we don't have a URL, try the 1st arg as the URL.
+    if (($pos -ge 1) -and ($url -eq "")) {
+        $url = $listArgs[0]
     }
 
     # Looks like you can leave the http: off. Fix that.
@@ -1000,16 +998,26 @@ function Invoke-WebRequest() {
     $uriFlag = $false
     $url = ""
     $lastArg = ""
+    $flagArg = $false
     foreach ($arg in $listArgs) {
         if ($arg -eq "-uri") {
             $uriFlag = $true
+            $flagArg = $true
             continue
         }
         if ($uriFlag -or ($arg -like "http*")) {
             $url = $arg;
         }
         $uriFlag = $false
-	$lastArg = $arg
+        if ($arg.StartsWith("-")) {
+            $flagArg = $true
+        }
+        else {
+            if (-not $flagArg) {
+                $lastArg = $arg
+            }
+            $flagArg = $false
+        }	
     }
 
     # Looks like you can leave the https:// off the URL. Check for
