@@ -149,7 +149,11 @@
             "SubBehaviors": ["start_process"],
             "BehaviorPropInfo": {
                 "files": ["FilePath"]
-            }
+            },
+	    "Routine": {
+                "fake_process_object": ""
+            },
+            "Return": "$routineReturn"
         },
         "Microsoft.PowerShell.Management\\Invoke-Item": {
             "Behaviors": ["file_exec"],
