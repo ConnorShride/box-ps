@@ -929,6 +929,13 @@ function fakecmdexe {
     
     RecordAction $([Action]::new($behaviors, $subBehaviors, "cmd.exe", $behaviorProps, $MyInvocation, ""))
 
+    # Fake up exit code for cmd.exe calls to exit if needed.
+    $args = ("" + $listArgs).Trim()
+    $exit_pat = "exit +(\d+)"
+    if ($args -match $exit_pat) {
+	$global:LASTEXITCODE = ([int] $Matches[1])
+    }
+
     # Echo commands could be run to return an array of strings back to
     # the powershell script. Look for that case.
     #
