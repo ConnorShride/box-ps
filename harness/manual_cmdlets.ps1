@@ -1068,8 +1068,8 @@ class WMICLASS {
         $this.WMIItem = $v
     }
 
-    Create($proc, $arg2, $arg3) {
-
+    Create([string[]] $margs) {
+        $proc = $margs[0]
         # record the full process creation command.
         $behaviors = @("script_exec")
         $subBehaviors = @("start_process")
@@ -1141,26 +1141,6 @@ function Copy-Item {
 	"args" = "" + $listArgs
     }
     RecordAction $([Action]::new($behaviors, $subBehaviors, "Copy-Item", $behaviorProps, $MyInvocation, ""))
-}
-
-function Get-WmiObject {
-
-    param(
-        [Parameter(
-             Mandatory=$True,
-             ValueFromRemainingArguments=$true,
-             Position = 1
-         )][string[]]
-        $listArgs
-    )
-
-    $behaviors = @("other")
-    $subBehaviors = @()
-    $behaviorProps = @{
-	"args" = "" + $listArgs
-    }
-    RecordAction $([Action]::new($behaviors, $subBehaviors, "Get-WmiObject", $behaviorProps, $MyInvocation, ""))
-    return @("1", "2", "3")
 }
 
 # gcm "i*x" returns more than just "iex" under Linux. Fix that.
@@ -1523,4 +1503,17 @@ function Get-CimInstance {
 
     # Not handled.
     throw ("Get-CimInstance on unhandled item " + $item)
+}
+
+function Get-WmiObject {
+
+    $listArgs = $args
+    
+    $behaviors = @("other")
+    $subBehaviors = @()
+    $behaviorProps = @{
+	"args" = "" + $listArgs
+    }
+    RecordAction $([Action]::new($behaviors, $subBehaviors, "Get-WmiObject", $behaviorProps, $MyInvocation, ""))
+    return ([WMICLASS]::new("" + $listArgs))
 }
