@@ -124,7 +124,11 @@ function StripWindowsPrincipal {
 
     ForEach ($line in $code.Split("`n")) {
         If ($line.Contains("Security.Principal.WindowsPrincipal")) {
-            continue
+            # Try to keep if lines.
+	    if ($line.ToLower().StartsWith("if")) {
+		$r += 'if ($false) {' + "`n"
+	    }
+	    continue
         }
         $r += $line + "`n"
     }

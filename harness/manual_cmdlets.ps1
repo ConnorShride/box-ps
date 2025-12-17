@@ -407,6 +407,23 @@ function New-Object {
         # Return stubbed installer object.
         return ([INSTALLER]::new())
     }
+    # Linux PWSH does not have Schedule.Service, so return a stubbed
+    # object in that case.
+    if ($className -eq "schedule.service") {
+
+        # Stubbed class.
+        class SERVICE {
+            SERVICE() {
+            }
+            Connect() {}
+	    [string[]] GetRunningTasks($arg) {
+		return @()
+	    }
+        }
+
+        # Return stubbed installer object.
+        return ([SERVICE]::new())
+    }
     
     if ($(GetOverridedClasses).Contains($className)) {
 	return RedirectObjectCreation $TypeName $ArgumentList
@@ -1007,6 +1024,7 @@ function Invoke-WebRequest() {
     $lastArg = ""
     $flagArg = $false
     foreach ($arg in $listArgs) {
+	$arg = "" + $arg
         if ($arg -eq "-uri") {
             $uriFlag = $true
             $flagArg = $true
@@ -1046,7 +1064,8 @@ function Invoke-WebRequest() {
     RecordAction $([Action]::new($behaviors, $subBehaviors, "Invoke-WebRequest", $behaviorProps, $MyInvocation, ""))
     # Return Write-Host so we can see if this is executed by IEX.
     return [PSCustomObject]@{
-        "content"="Write-Host ""EXECUTED DOWNLOADED PAYLOAD"""
+        "content"="Write-Host ""EXECUTED DOWNLOADED PAYLOAD""";
+	"Headers"=@{"Content-Type"="text/html"}
     }
 }
 
