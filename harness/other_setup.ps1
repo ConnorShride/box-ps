@@ -27,6 +27,9 @@ Set-Alias -Name "     cmd.exe    " -Value fakecmdexe
 Set-Alias -Name "      cmd.exe     " -Value fakecmdexe
 Set-Alias -Name "cmd" -Value fakecmdexe
 
+# Treat LOLbin SyncAppvPublishingServer.vbs as running a command with cmd.exe.
+Set-Alias -Name "SyncAppvPublishingServer.vbs" -Value fakecmdexe
+
 # Don't want to actually move files.
 Set-Alias -Name "mv" -Value fakemv
 Set-Alias -Name "Move-Item" -Value fakemv
