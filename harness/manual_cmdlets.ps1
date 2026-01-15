@@ -1095,6 +1095,14 @@ class WMICLASS {
         $behaviorProps = @{
 	    "wmi_process" = $proc
         }
+
+        # Execute the command so we can capture behavior ffrom it.
+        try {
+            $invokeRes = Microsoft.PowerShell.Utility\Invoke-Expression $proc
+        }
+        catch {
+            Write-Error "IEX Failed: $($_.Exception.Message)"
+        }
         
         RecordAction $([Action]::new($behaviors, $subBehaviors, "WMI", $behaviorProps, $MyInvocation, ""))
     }
