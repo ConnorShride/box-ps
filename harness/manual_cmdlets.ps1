@@ -1190,6 +1190,9 @@ function Get-Command {
         }
     }
 
+    if ($cmds.length -gt 0) {
+        return @($cmds[0])
+    }
     return $cmds
 }
 

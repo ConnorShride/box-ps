@@ -63,6 +63,9 @@ Set-Alias -Name "curl" -Value fakecurl
 # Override exit (no exits).
 Set-Alias -Name "exit" -Value noop
 
+# Don't actually perform sleeps.
+Set-Alias -Name "sleep" -Value noop
+
 # Track schtasks.
 Set-Alias -Name "schtasks" -Value fakeschtasks
 
