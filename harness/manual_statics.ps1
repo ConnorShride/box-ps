@@ -4,12 +4,12 @@ static [string] GetScriptFromArguments([string] $arguments) {
 
     $script = ""
     
-    if (($flagNdx = $arguments.ToLower().IndexOf("-e")) -ne -1) {
+    if (($flagNdx = $arguments.ToLower().IndexOf("-e ")) -ne -1) {
         $cmdNdx = $arguments.IndexOf(' ', $flagNdx) + 1
         $encodedScript = $arguments.SubString($cmdNdx)
         $script = [System.Text.Encoding]::Unicode.GetString([System.Convert]::FromBase64String($encodedScript))
     }
-    elseif (($flagNdx = $arguments.ToLower().IndexOf("-c")) -ne 1) {
+    elseif (($flagNdx = $arguments.ToLower().IndexOf("-c ")) -ne 1) {
         $cmdNdx = $arguments.IndexOf(' ', $flagNdx) + 1
         $script = $arguments.SubString($cmdNdx)
     }
@@ -79,7 +79,7 @@ static [System.Diagnostics.Process] SystemDiagnosticsProcessStart([System.Diagno
 
         $behaviors += @("script_exec")
         $script = [BoxPSStatics]::GetScriptFromArguments($startInfo.Arguments)
-
+        
         # record the action
         $behaviorProps["script"] = $script
         RecordAction $([Action]::new($behaviors, $subBehaviors, "[System.Diagnostics.Process]::Start", $behaviorProps, $PSBoundParameters, $MyInvocation.Line, ""))

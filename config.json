@@ -137,12 +137,6 @@
             }
         },
         "Microsoft.PowerShell.Utility\\Start-Sleep": {
-            "Behaviors": ["process"],
-            "SubBehaviors": ["pause_process"],
-            "BehaviorPropInfo": {
-                "processes": null,
-                "duration": ["Seconds"]
-            }
         },
         "Microsoft.PowerShell.Management\\Start-Process": {
             "Behaviors": ["file_exec"],
