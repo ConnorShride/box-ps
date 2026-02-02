@@ -12,6 +12,7 @@
         "$env:localappdata": "\\C_DRIVE\\Users\\victim\\AppData\\Local",
         "$env:logonserver": "\\\\fakelogonserver",
         "$env:path": "\\C_DRIVE\\Program Files\\Python35\\Scripts\\;\\C_DRIVE\\Program Files\\Python35\\;\\C_DRIVE\\Program Files (x86)\\Common Files\\Oracle\\Java\\javapath;\\C_DRIVE\\WINDOWS\\system32;\\C_DRIVE\\WINDOWS;\\C_DRIVE\\WINDOWS\\System32\\WindowsPowerShell\\v1.0\\;\\C_DRIVE\\Program Files\\Java\\jdk-10.0.2\\bin;",
+        "$env:PROCESSOR_ARCHITECTURE": "AMD64",
         "$env:programdata": "\\C_DRIVE\\ProgramData",
         "$env:programfiles": "\\C_DRIVE\\Program Files",
         "${env:programfiles(x86)}": "\\C_DRIVE\\Program Files (x86)",
