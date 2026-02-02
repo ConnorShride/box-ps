@@ -296,7 +296,11 @@
             "SubBehaviors": ["import_dotnet_binary"],
             "BehaviorPropInfo": {
                 "bytes": ["rawAssembly"]
-            }
+            },
+            "Routine": {
+                "fake_assembly_object": "rawAssembly"
+            },
+            "Return": "$routineReturn"
         },
         "[Reflection.Assembly]::Load": {
             "Behaviors": ["binary_import"],
