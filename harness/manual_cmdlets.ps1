@@ -1547,3 +1547,28 @@ function Get-WmiObject {
     RecordAction $([Action]::new($behaviors, $subBehaviors, "Get-WmiObject", $behaviorProps, $MyInvocation, ""))
     return ([WMICLASS]::new("" + $listArgs))
 }
+
+function Resolve-DnsName {
+
+    param(
+        [Parameter(ValueFromPipeline=$true,Position=0)]
+        $Name,
+        $Server,
+        $Type
+    )
+
+    Write-Host "DNS!"
+    Write-Host $Name
+    Write-Host $Server
+
+    $behaviors = @("network")
+    $subBehaviors = @()
+    $behaviorProps = @{
+	"name" = $Name;
+        # Fake up a URL for IOC tracking.
+        "uri" = "http://$Name";
+        "server" = $Server
+    }
+
+    RecordAction $([Action]::new($behaviors, $subBehaviors, "Resolve-DnsName", $behaviorProps, $MyInvocation, ""))
+}
