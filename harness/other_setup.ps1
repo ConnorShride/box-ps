@@ -75,3 +75,21 @@ $env:username = "LEGITUSER"
 
 # Don't want to run ping. Just print args to STDOUT.
 Set-Alias -Name ping -Value Write-Host
+
+# Pre-create common sandbox temporary directories relative to working directory to prevent Out-File crashes
+$commonSandboxPaths = @(
+    "$env:temp",
+    "$env:tmp",
+    "$env:userprofile\AppData\Local\Temp",
+    "C_DRIVE\Users\victim\AppData\Local\Temp",
+    "C_DRIVE\WINDOWS\Temp",
+    "C_DRIVE\WINDOWS\system32"
+)
+foreach ($path in $commonSandboxPaths) {
+    # Clean leading slashes to force it relative to the working directory
+    $cleanPath = $path.TrimStart('\').TrimStart('/')
+    if ($cleanPath -and -not (Test-Path $cleanPath)) {
+        New-Item -ItemType Directory -Force -Path $cleanPath | Out-Null
+    }
+}
+

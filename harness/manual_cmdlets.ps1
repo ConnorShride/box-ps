@@ -1306,7 +1306,7 @@ function Convert-String {
 
 # Fake the result of Get-Location.
 function Get-Location {
-    return "\C_DRIVE\Users\victim\AppData\Local\Temp";
+    return "C_DRIVE\Users\victim\AppData\Local\Temp";
 }
 
 # A function that does nothing. Used to override commands/cmdlets that
@@ -1572,3 +1572,29 @@ function Resolve-DnsName {
 
     RecordAction $([Action]::new($behaviors, $subBehaviors, "Resolve-DnsName", $behaviorProps, $MyInvocation, ""))
 }
+
+# Hook Start-Job to prevent process escaping and run synchronously
+function Start-Job {
+    param(
+        [Parameter(Mandatory=$true)]
+        [scriptblock]$ScriptBlock,
+        [parameter(ValueFromPipeline=$true)]
+        $InputObject,
+        $ArgumentList
+    )
+    Write-Host "[MCP-HOOK] Intercepted Start-Job. Redirecting to synchronous execution."
+    
+    $behaviors = @("process")
+    $subBehaviors = @("spawn_process")
+    $behaviorProps = @{
+        "script" = $ScriptBlock.ToString();
+    }
+    RecordAction $([Action]::new($behaviors, $subBehaviors, "Start-Job", $behaviorProps, $MyInvocation, ""))
+
+    if ($ArgumentList) {
+        & $ScriptBlock @ArgumentList
+    } else {
+        & $ScriptBlock
+    }
+}
+
