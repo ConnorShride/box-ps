@@ -1623,3 +1623,33 @@ function Start-Job {
     }
 }
 
+function Join-Path {
+    [cmdletbinding(DefaultParameterSetName="Path")]
+    param(
+        [Parameter(Position=0, Mandatory=$true, ValueFromPipeline=$true, ValueFromPipelineByPropertyName=$true)]
+        [string[]] $Path,
+        
+        [Parameter(Position=1, Mandatory=$true, ValueFromPipelineByPropertyName=$true)]
+        [string] $ChildPath,
+        
+        [switch] $Resolve,
+        [switch] $AdditionalChildPath
+    )
+    
+    # Clean C: drive prefix from Path to prevent Linux PSDrive crash
+    $cleanPaths = @()
+    foreach ($p in $Path) {
+        $clean = $p -replace "^[a-zA-Z]:", ""
+        $clean = $clean -replace "^[\\\/]", "" # Strip leading slash if any
+        $cleanPaths += $clean
+    }
+    
+    # Call the real Microsoft.PowerShell.Management\Join-Path with clean paths
+    $params = @{}
+    $params["Path"] = $cleanPaths
+    $params["ChildPath"] = $ChildPath
+    if ($PSBoundParameters.ContainsKey("Resolve")) { $params["Resolve"] = $Resolve }
+    
+    return Microsoft.PowerShell.Management\Join-Path @params
+}
+
