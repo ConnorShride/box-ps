@@ -424,6 +424,34 @@ function New-Object {
         # Return stubbed installer object.
         return ([SERVICE]::new())
     }
+
+    if ($className -eq "winhttp.winhttprequest.5.1") {
+        # Stubbed class.
+        class WINHTTP {
+            [int] $Status
+            [byte[]] $ResponseBody
+            
+            WINHTTP() {
+                $this.Status = 200
+                $this.ResponseBody = [System.Text.Encoding]::ASCII.GetBytes("Write-Host 'EXECUTED EMBEDDED EXE'")
+            }
+            
+            Open([string]$method, [string]$url, [bool]$async) {
+                $behaviors = @("network")
+                $subBehaviors = @()
+                $behaviorProps = @{
+                    "uri" = $url
+                }
+                RecordAction $([Action]::new($behaviors, $subBehaviors, "WinHTTP.WinHTTPRequest.Open", $behaviorProps, $null, ""))
+            }
+            
+            Send() {
+                # Do nothing
+            }
+        }
+
+        return ([WINHTTP]::new())
+    }
     
     if ($(GetOverridedClasses).Contains($className)) {
 	return RedirectObjectCreation $TypeName $ArgumentList
