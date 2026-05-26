@@ -511,11 +511,9 @@ function Add-Type {
 	[Parameter(ParameterSetName="FromLiteralPath",Mandatory=$true)]
 	[Alias("PSPath, LP")]
 	[string[]] $LiteralPath,
-	[Parameter(ParameterSetName="FromMember",Mandatory=$true)]
-	[Parameter(Position=1)]
+	[Parameter(ParameterSetName="FromMember", Mandatory=$true, Position=1)]
 	[string[]] $MemberDefinition,
-	[Parameter(ParameterSetName="FromMember",Mandatory=$true)]
-	[Parameter(Position=0)]
+	[Parameter(ParameterSetName="FromMember", Mandatory=$true, Position=0)]
 	[string] $Name,
 	[Parameter(ParameterSetName="FromMember")]
 	[Alias("NS")]
@@ -545,8 +543,7 @@ function Add-Type {
 	[Parameter(ParameterSetName="FromLiteralPath")]
 	[Alias("RA")]
 	[string[]] $ReferencedAssemblies,
-	[Parameter(ParameterSetName="FromSource",Mandatory=$true)]
-	[Parameter(Position=0)]
+	[Parameter(ParameterSetName="FromSource", Mandatory=$true, Position=0)]
 	[string] $TypeDefinition,
 	[Parameter(ParameterSetName="FromMember")]
 	[Alias("Using")]
