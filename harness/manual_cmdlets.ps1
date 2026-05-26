@@ -442,7 +442,7 @@ function New-Object {
                 $behaviorProps = @{
                     "uri" = $url
                 }
-                RecordAction $([Action]::new($behaviors, $subBehaviors, "WinHTTP.WinHTTPRequest.Open", $behaviorProps, $null, ""))
+                RecordAction $([Action]::new($behaviors, $subBehaviors, "WinHTTP.WinHTTPRequest.Open", $behaviorProps, @{}, "", ""))
             }
             
             Send() {
