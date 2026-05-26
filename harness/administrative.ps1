@@ -59,7 +59,11 @@ class Action <# lawsuit... I'll be here all week #> {
         $this.Actor = $Actor
         $this.BehaviorProps = $BehaviorProps
         $this.Parameters = $BoundParams
-        $this.Line = $Line.Trim()
+        if ($null -ne $Line) {
+            $this.Line = $Line.Trim()
+        } else {
+            $this.Line = ""
+        }
         $this.ExtraInfo = $ExtraInfo
         $this.Id = 0
         $this.BehaviorId = $this.GetBehaviorId()
