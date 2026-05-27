@@ -122,6 +122,7 @@ function StripWindowsPrincipal {
         [String] $code
     )
 
+    $r = ""
     ForEach ($line in $code.Split("`n")) {
         If ($line.Contains("Security.Principal.WindowsPrincipal")) {
             # Try to keep if lines.
@@ -154,6 +155,22 @@ function RewriteInfiniteLoops {
     $r
 }
 
+function RewriteGetItem {
+
+    # Rewrite `(Get-Item Variable:_).Value` to `$_`.
+    
+    param (
+        [String] $code
+    )
+
+    $pattern = '\( *Get-Item +Variable:_ *\)\.Value'
+    $replacement = 'GUHGUH_'
+    
+    $r = $code -replace $pattern, $replacement
+    $r = $r -replace "GUHGUH", "$"
+    $r
+}
+
 function RewriteCode {
 
     # Top level function for all code rewrites. Add additional calls
@@ -165,6 +182,7 @@ function RewriteCode {
     
     $r = StripWindowsPrincipal($code)
     $r = RewriteInfiniteLoops($r)
+    $r = RewriteGetItem($r)
     $r
 }
 
