@@ -171,6 +171,39 @@ function RewriteGetItem {
     $r
 }
 
+function RewriteStringConcats {
+
+    # Rewrite `'a'+'b'+'c'` to `'abc'`.
+    
+    param (
+        [String] $code
+    )
+
+    $pattern = "'([^']*)' *\+ *'([^']*)'"
+    $replacement = '''$1$2'''
+    $old_r = ""
+    $r = $code
+    while ($old_r -ne $r) {
+        $old_r = $r
+        $r = $r -replace $pattern, $replacement
+    }
+    $r
+}
+
+function RewriteAssemblyLoad {
+
+    # Rewrite `$foo::('Load')` to `[Reflection.Assembly]::Load`.
+    
+    param (
+        [String] $code
+    )
+
+    $pattern = '\$\w+::\( *''Load'' *\)'
+    $replacement = '[Reflection.Assembly]::Load'
+    $r = $code -replace $pattern, $replacement
+    $r
+}
+
 function RewriteCode {
 
     # Top level function for all code rewrites. Add additional calls
@@ -181,8 +214,10 @@ function RewriteCode {
     )
     
     $r = StripWindowsPrincipal($code)
+    $r = RewriteStringConcats($r)
     $r = RewriteInfiniteLoops($r)
     $r = RewriteGetItem($r)
+    $r = RewriteAssemblyLoad($r)
     $r
 }
 
