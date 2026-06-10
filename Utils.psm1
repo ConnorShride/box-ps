@@ -204,6 +204,27 @@ function RewriteAssemblyLoad {
     $r
 }
 
+function RewriteCurrentDomainLoad {
+
+    # Rewrite `$foo.Load(` to `[AppDomain]::CurrentDomain.Load(`.
+    
+    param (
+        [String] $code
+    )
+
+    # Got [AppDomain]::CurrentDomain in sample?
+    if ($code.Contains("[AppDomain]::CurrentDomain")) {
+
+	# Do rewrite.
+	$pattern = '\$\w+\.Load\('
+	$replacement = '[AppDomain]::CurrentDomain.Load('
+	$r = $code -replace $pattern, $replacement
+	return $r
+    }
+
+    $code
+}
+
 function RewriteCode {
 
     # Top level function for all code rewrites. Add additional calls
@@ -218,6 +239,7 @@ function RewriteCode {
     $r = RewriteInfiniteLoops($r)
     $r = RewriteGetItem($r)
     $r = RewriteAssemblyLoad($r)
+    $r = RewriteCurrentDomainLoad($r)
     $r
 }
 
