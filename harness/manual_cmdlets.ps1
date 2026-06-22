@@ -407,6 +407,7 @@ function New-Object {
         # Return stubbed installer object.
         return ([INSTALLER]::new())
     }
+
     # Linux PWSH does not have Schedule.Service, so return a stubbed
     # object in that case.
     if ($className -eq "schedule.service") {
@@ -423,6 +424,31 @@ function New-Object {
 
         # Return stubbed installer object.
         return ([SERVICE]::new())
+    }
+
+    # Linux PWSH does not have WScript.Shell, so return a
+    # stubbed object in that case.
+    $className = ($behaviorProps["object"].ToLower() -replace "^system.")
+    if ($className -eq "wscript.shell") {
+
+        # Stubbed class.
+        class SHELL {
+            SHELL() {}
+            Run($cmd) {
+		$behaviors = @("script_exec")
+		$subBehaviors = @("start_process")
+                $behaviorProps = @{
+	            "script" = $cmd
+                }
+                RecordAction $([Action]::new($behaviors, $subBehaviors, "WScript.Shell.Run", $behaviorProps, $MyInvocation, ""))
+            }
+            Run($cmd, $skip1, $skip2) {
+		$this.Run($cmd)
+            }
+        }
+
+        # Return stubbed shell object.
+        return ([SHELL]::new())
     }
     
     if ($(GetOverridedClasses).Contains($className)) {
