@@ -341,6 +341,32 @@ function Start-Job {
     }
 }
 
+# Stubbed Client.WebSocket class.
+class WEBSOCKET {
+    $State
+    WEBSOCKET() {
+	$this.State = [System.Net.WebSockets.WebSocketState]::Open
+    }
+    ReceiveAsync($ignore1, $ignore2) {
+	Write-Host "ReceiveAsync"
+    }
+    SendAsync($ignore1, $ignore2, $ignore3, $ignore4) {
+	Write-Host "SendAsync"
+    }
+    CloseAsync($ignore1, $ignore2, $ignore3) {
+	Write-Host "CloseAsync"
+    }
+    Dispose() {}
+    ConnectAsync($uri, $ignore2) {
+	$behaviors = @("network")
+        $subBehaviors = @()
+        $behaviorProps = @{
+	    "uri" = $uri
+        }
+        RecordAction $([Action]::new($behaviors, $subBehaviors, "System.Net.WebSockets.ClientWebSocket", $behaviorProps, $MyInvocation, ""))
+    }
+}
+
 function New-Object {
     param(
 	[Parameter(ParameterSetName="Net",Position=1)]
@@ -428,7 +454,6 @@ function New-Object {
 
     # Linux PWSH does not have WScript.Shell, so return a
     # stubbed object in that case.
-    $className = ($behaviorProps["object"].ToLower() -replace "^system.")
     if ($className -eq "wscript.shell") {
 
         # Stubbed class.
@@ -449,6 +474,13 @@ function New-Object {
 
         # Return stubbed shell object.
         return ([SHELL]::new())
+    }
+
+    # Track WebSockets.
+    if ($className -eq "net.websockets.clientwebsocket") {
+       
+        # Return stubbed shell object.
+        return ([WEBSOCKET]::new())
     }
     
     if ($(GetOverridedClasses).Contains($className)) {
