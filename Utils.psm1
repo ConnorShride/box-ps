@@ -239,6 +239,21 @@ function RewriteExit {
     $r
 }
 
+function RewriteWebsocketParams {
+
+    # box-ps has overridden System.Net.WebSockets.ClientWebSocket so
+    # we need to change parameter types to the override class.
+    
+    param (
+        [String] $code
+    )
+
+    $pattern = "\[ *System\.Net\.WebSockets\.ClientWebSocket *\]"
+    $replacement = '[WEBSOCKET]'
+    $r = $code -replace $pattern, $replacement
+    $r
+}
+
 function RewriteCode {
 
     # Top level function for all code rewrites. Add additional calls
@@ -255,6 +270,7 @@ function RewriteCode {
     $r = RewriteAssemblyLoad($r)
     $r = RewriteCurrentDomainLoad($r)
     $r = RewriteExit($r)
+    $r = RewriteWebsocketParams($r)
     $r
 }
 
