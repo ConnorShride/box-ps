@@ -341,29 +341,41 @@ function Start-Job {
     }
 }
 
+# Stubbed class with a noop Wait() method.
+class STUBBEDWAIT {
+    STUBBEDWAIT() { }
+    Wait() {}
+}
+    
 # Stubbed Client.WebSocket class.
 class WEBSOCKET {
     $State
     WEBSOCKET() {
 	$this.State = [System.Net.WebSockets.WebSocketState]::Open
     }
-    ReceiveAsync($ignore1, $ignore2) {
-	Write-Host "ReceiveAsync"
+    [STUBBEDWAIT] ReceiveAsync($ignore1, $ignore2) {
+	#Write-Host "ReceiveAsync"
+	return ([STUBBEDWAIT]::new())
     }
-    SendAsync($ignore1, $ignore2, $ignore3, $ignore4) {
-	Write-Host "SendAsync"
+    [STUBBEDWAIT] SendAsync($ignore1, $ignore2, $ignore3, $ignore4) {
+	#Write-Host "SendAsync"
+	return ([STUBBEDWAIT]::new())
     }
-    CloseAsync($ignore1, $ignore2, $ignore3) {
-	Write-Host "CloseAsync"
+    [STUBBEDWAIT] CloseAsync($ignore1, $ignore2, $ignore3) {
+	#Write-Host "CloseAsync"
+	return ([STUBBEDWAIT]::new())
     }
-    Dispose() {}
-    ConnectAsync($uri, $ignore2) {
+    [STUBBEDWAIT] Dispose() {
+	return ([STUBBEDWAIT]::new())
+    }
+    [STUBBEDWAIT] ConnectAsync($uri, $ignore2) {
 	$behaviors = @("network")
         $subBehaviors = @()
         $behaviorProps = @{
 	    "uri" = $uri
         }
         RecordAction $([Action]::new($behaviors, $subBehaviors, "System.Net.WebSockets.ClientWebSocket", $behaviorProps, $MyInvocation, ""))
+	return ([STUBBEDWAIT]::new())
     }
 }
 
