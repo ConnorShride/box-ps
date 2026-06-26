@@ -254,6 +254,18 @@ function RewriteWebsocketParams {
     $r
 }
 
+function RewriteMaybeScriptBlock {
+
+    param (
+        [String] $code
+    )
+
+    $pattern = '\$\w+\.InvokeMember\(\s*\$\w+ *,\s*''Public, Static, InvokeMethod'' *,\s*\$null *,\s*\$null *,\s*((?:(?:\([^\)]+\))|(?:\$\w+)))\s*\)'
+    $replacement = '[scriptblock]::Create($1)'
+    $r = $code -replace $pattern, $replacement
+    $r
+}
+
 function RewriteCode {
 
     # Top level function for all code rewrites. Add additional calls
@@ -271,6 +283,7 @@ function RewriteCode {
     $r = RewriteCurrentDomainLoad($r)
     $r = RewriteExit($r)
     $r = RewriteWebsocketParams($r)
+    $r = RewriteMaybeScriptBlock($r)
     $r
 }
 
