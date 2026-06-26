@@ -225,6 +225,20 @@ function RewriteCurrentDomainLoad {
     $code
 }
 
+function RewriteExit {
+
+    # We can't override exit, so rewrite exit as a noop.
+    
+    param (
+        [String] $code
+    )
+
+    $pattern = "(\s)exit(\s)"
+    $replacement = '$1noop$2'
+    $r = $code -replace $pattern, $replacement
+    $r
+}
+
 function RewriteCode {
 
     # Top level function for all code rewrites. Add additional calls
@@ -240,6 +254,7 @@ function RewriteCode {
     $r = RewriteGetItem($r)
     $r = RewriteAssemblyLoad($r)
     $r = RewriteCurrentDomainLoad($r)
+    $r = RewriteExit($r)
     $r
 }
 
