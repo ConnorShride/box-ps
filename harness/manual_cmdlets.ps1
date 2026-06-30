@@ -119,12 +119,13 @@ function Stub-Invoke($i) {
 function Invoke-Expression {
     param(
 	[Parameter(ValueFromPipeline=$true,Position=0,Mandatory=$true)]
-	[string] $Command
+	$Command
     )
 
     Begin {}
     Process {
 
+        $Command = "" + $Command
         $isInteger = $false
         # don't do anything for commands that are just integers (using IEX to init a byte array)
         try {
@@ -170,7 +171,7 @@ function Invoke-Expression {
             }
 
             $modifiedCommand = PreProcessScript $Command "<PID>"
-
+            
             # actually run it, assign the result for situations like...
             # ex. $foo = Invoke-Expression "New-Object System.Net.WebClient"
             try {
