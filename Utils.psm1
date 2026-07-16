@@ -179,6 +179,12 @@ function RewriteStringConcats {
         [String] $code
     )
 
+    # Skip some samples where this rewrite can cause problems.
+    if ((([regex]::Matches($code, "Remove")).Count -gt 100) -and
+        (([regex]::Matches($code, "Insert")).Count -gt 100)) {
+            return $code
+        }
+        
     $pattern = "'([^']*)' *\+ *'([^']*)'"
     $replacement = '''$1$2'''
     $old_r = ""
@@ -274,7 +280,7 @@ function RewriteCode {
     param (
         [String] $code
     )
-    
+
     $r = StripWindowsPrincipal($code)
     $r = RewriteStringConcats($r)
     $r = RewriteInfiniteLoops($r)
