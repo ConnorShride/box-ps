@@ -272,6 +272,18 @@ function RewriteMaybeScriptBlock {
     $r
 }
 
+function RewriteAmsiFailed {
+
+    param (
+        [String] $code
+    )
+
+    $pattern = '\$?\(? *\[ *int *\] *\( *\$\( *''Ref'' *-as *\[ *Type *\] *\)\.''?Assembly''?\.''?GetType''?\(? *\$?''?System\.Management\.Automation\.AmsiUtils''? *\)?\.''?GetField''?\( *\$?''?amsiInitFailed''? *, *''?NonPublic,Static''? *\)\.''?GetValue''?\( *\$null *\) *\) *\)?'
+    $replacement = '1'
+    $r = $code -replace $pattern, $replacement
+    $r
+}
+
 function RewriteCode {
 
     # Top level function for all code rewrites. Add additional calls
@@ -290,6 +302,7 @@ function RewriteCode {
     $r = RewriteExit($r)
     $r = RewriteWebsocketParams($r)
     $r = RewriteMaybeScriptBlock($r)
+    $r = RewriteAmsiFailed($r)
     $r
 }
 
