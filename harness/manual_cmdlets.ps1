@@ -1628,10 +1628,6 @@ function Resolve-DnsName {
         $Type
     )
 
-    Write-Host "DNS!"
-    Write-Host $Name
-    Write-Host $Server
-
     $behaviors = @("network")
     $subBehaviors = @()
     $behaviorProps = @{
@@ -1642,4 +1638,14 @@ function Resolve-DnsName {
     }
 
     RecordAction $([Action]::new($behaviors, $subBehaviors, "Resolve-DnsName", $behaviorProps, $MyInvocation, ""))
+}
+
+function Get-Clipboard {
+    $behaviors = @("other")
+    $subBehaviors = @()
+    $behaviorProps = @{}
+
+    RecordAction $([Action]::new($behaviors, $subBehaviors, "Get-Clipboard", $behaviorProps, $MyInvocation, ""))
+
+    return ("0" * 1000)
 }
