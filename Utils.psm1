@@ -122,14 +122,22 @@ function StripWindowsPrincipal {
         [String] $code
     )
 
+    # ([Security.Principal.WindowsPrincipal][Security.Principal.WindowsIdentity]::GetCurrent()).IsInRole([Security.Principal.WindowsBuiltInRole]::Administrator)
+
+    # First replace obvious checks of whether the script is being run
+    # with elevated permissions.
+    $pattern = '\(\s*\[\s*Security\.Principal\.WindowsPrincipal\s*\]\s*\[\s*Security\.Principal\.WindowsIdentity\s*\]::GetCurrent\(\s*\)\s*\)\.IsInRole\(\s*\[\s*Security\.Principal\.WindowsBuiltInRole\s*\]::Administrator\s*\)'
+    $replacement = '$true'
+    $code = $code -replace $pattern, $replacement
+    
     $r = ""
     ForEach ($line in $code.Split("`n")) {
         If ($line.Contains("Security.Principal.WindowsPrincipal")) {
             # Try to keep if lines.
-	    if ($line.ToLower().StartsWith("if")) {
-		$r += 'if ($false) {' + "`n"
-	    }
-	    continue
+	        if ($line.ToLower().StartsWith("if")) {
+		        $r += 'if ($false) {' + "`n"
+	        }
+	        continue
         }
         $r += $line + "`n"
     }
@@ -184,7 +192,7 @@ function RewriteStringConcats {
         (([regex]::Matches($code, "Insert")).Count -gt 100)) {
             return $code
         }
-        
+    
     $pattern = "'([^']*)' *\+ *'([^']*)'"
     $replacement = '''$1$2'''
     $old_r = ""
@@ -221,11 +229,11 @@ function RewriteCurrentDomainLoad {
     # Got [AppDomain]::CurrentDomain in sample?
     if ($code.Contains("[AppDomain]::CurrentDomain")) {
 
-	# Do rewrite.
-	$pattern = '\$\w+\.Load\('
-	$replacement = '[AppDomain]::CurrentDomain.Load('
-	$r = $code -replace $pattern, $replacement
-	return $r
+	    # Do rewrite.
+	    $pattern = '\$\w+\.Load\('
+	    $replacement = '[AppDomain]::CurrentDomain.Load('
+	    $r = $code -replace $pattern, $replacement
+	    return $r
     }
 
     $code
