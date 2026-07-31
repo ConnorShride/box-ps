@@ -125,7 +125,10 @@
             "ArgModifications": {
                 "InputObject": ["FlattenProcessObjects <arg>"]
             },
-            "Flags": ["call_parent"]
+            "Routine": {
+                "fake_process_object": "ArgumentList"
+            },
+            "Return": "$routineReturn"
         },
         "Microsoft.PowerShell.Management\\Stop-Process": {
             "Behaviors": ["process"],

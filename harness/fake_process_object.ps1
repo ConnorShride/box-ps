@@ -2,8 +2,10 @@
 # succeeded.
 class StubbedProcess {
     $ExitCode
+    $Name
     StubbedProcess() {
-	$this.ExitCode = 0
+	    $this.ExitCode = 0
+        $this.Name = "explorer"
     }
     WaitForExit() {}
 }
