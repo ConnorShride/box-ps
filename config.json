@@ -126,7 +126,7 @@
                 "InputObject": ["FlattenProcessObjects <arg>"]
             },
             "Routine": {
-                "fake_process_object": "ArgumentList"
+                "fake_process_object": "Name"
             },
             "Return": "$routineReturn"
         },

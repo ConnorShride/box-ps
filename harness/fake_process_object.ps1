@@ -9,4 +9,15 @@ class StubbedProcess {
     }
     WaitForExit() {}
 }
-([StubbedProcess]::new())
+
+# Some malware gates based on whether a certain process is
+# running. Return an empty list in those cases.
+$r = ([StubbedProcess]::new())
+$gateProcs = @("aspnet_compiler")
+foreach ($gateProc in $gateProcs) {
+    if ($routineArg -eq $gateProc) {
+        $r = @()
+    }
+}
+
+$r
