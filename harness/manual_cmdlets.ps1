@@ -29,6 +29,7 @@ function fakecurl {
     # -usebasicparsing option.
     $useBasic = $false
     $realArgs = @()
+    $url = ""
     foreach ($arg in $args) {
         if (-not ($arg -like "-*")) {
             $realArgs += $arg
@@ -36,18 +37,24 @@ function fakecurl {
         if ($arg -like "-useb*") {
             $useBasic = $true
         }
+        if (($arg -like "https://*") -or ($arg -like "http://*")) {
+            $url = $arg
+        }
     }
     
     # Pull out URL and maybe output file. This assumes arguments go in
     # a certain order.
     $o = $false
-    $url = ""
     if ($realArgs.length -ge 2) {
         $o = $realArgs[-1]
-        $url = $realArgs[-2]
+        if ($url -eq "") {
+            $url = $realArgs[-2]
+        }
     }
     elseif ($realArgs.length -eq 1) {
-        $url = $realArgs[-1]
+        if ($url -eq "") {
+            $url = $realArgs[-1]
+        }
     }
     
     # A malware campaign has a mistake in their obfuscation and spaces
