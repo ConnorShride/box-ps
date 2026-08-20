@@ -77,13 +77,13 @@ function fakecurl {
     $behaviors = @("network")
     $subBehaviors = @()
     $behaviorProps = @{
-	"uri" = $url
+        "uri" = $url
     }
 
     if ($o) {
-	$behaviors += @("file_system")
-	$subBehaviors += @("file_write")
-	$behaviorProps["paths"] = @($o)
+        $behaviors += @("file_system")
+        $subBehaviors += @("file_write")
+        $behaviorProps["paths"] = @($o)
     }
 
     RecordAction $([Action]::new($behaviors, $subBehaviors, "curl.exe", $behaviorProps, $MyInvocation, ""))
@@ -95,7 +95,7 @@ function mshta ($url) {
     $behaviors = @("network")
     $subBehaviors = @()
     $behaviorProps = @{
-	"uri" = $url
+        "uri" = $url
     }
 
     RecordAction $([Action]::new($behaviors, $subBehaviors, "mshta", $behaviorProps, $MyInvocation, ""))
@@ -125,8 +125,8 @@ function Stub-Invoke($i) {
 
 function Invoke-Expression {
     param(
-	[Parameter(ValueFromPipeline=$true,Position=0,Mandatory=$true)]
-	$Command
+        [Parameter(ValueFromPipeline=$true,Position=0,Mandatory=$true)]
+        $Command
     )
 
     Begin {}
@@ -142,12 +142,12 @@ function Invoke-Expression {
         # assume we've got a live one
         catch {
 
-	    # record the action
+            # record the action
             $behaviors = @("script_exec")
             $subBehaviors = @()
-	    $behaviorProps = @{
-		"script" = $Command
-	    }
+            $behaviorProps = @{
+                "script" = $Command
+            }
 
             RecordAction $([Action]::new($behaviors, $subBehaviors, "Microsoft.PowerShell.Utility\Invoke-Expression", $behaviorProps, $MyInvocation, ""))
 
@@ -228,57 +228,57 @@ function Start-Job {
 
     [cmdletbinding(DefaultParameterSetName="ComputerName")]
     param(
-	[Parameter(ParameterSetName="FilePathComputerName")]
-	[Parameter(ParameterSetName="ComputerName")]
-	[Parameter(ParameterSetName="LiteralFilePathComputerName")]
-	[Alias("Args")]
-	[Object[]] $ArgumentList,
-	[Parameter(ParameterSetName="LiteralFilePathComputerName")]
-	[Parameter(ParameterSetName="ComputerName")]
-	[Parameter(ParameterSetName="FilePathComputerName")]
-	[AuthenticationMechanism] $Authentication,
-	[Parameter(ParameterSetName="ComputerName")]
-	[Parameter(ParameterSetName="FilePathComputerName")]
-	[Parameter(ParameterSetName="LiteralFilePathComputerName")]
-	[pscredential] $Credential,
-	[Parameter(ParameterSetName="DefinitionName",Mandatory=$true)]
-	[string] $DefinitionName,
-	[Parameter(ParameterSetName="DefinitionName")]
-	[string] $DefinitionPath,
-	[Parameter(ParameterSetName="FilePathComputerName",Mandatory=$true)]
-	[string] $FilePath,
-	[Parameter(ParameterSetName="ComputerName")]
-	[Parameter(ParameterSetName="LiteralFilePathComputerName")]
-	[Parameter(ParameterSetName="FilePathComputerName")]
-	[scriptblock] $InitializationScript,
-	[Parameter(ParameterSetName="LiteralFilePathComputerName")]
-	[Parameter(ParameterSetName="ComputerName")]
-	[Parameter(ParameterSetName="FilePathComputerName")]
-	[Parameter(ValueFromPipeline=$true)]
-	[psobject] $InputObject,
-	[Parameter(ParameterSetName="LiteralFilePathComputerName",Mandatory=$true)]
-	[Alias("PSPath, LP")]
-	[string] $LiteralPath,
-	[Parameter(ParameterSetName="ComputerName")]
-	[Parameter(ParameterSetName="FilePathComputerName")]
-	[Parameter(ParameterSetName="LiteralFilePathComputerName")]
-	[Parameter(ValueFromPipeline=$true)]
-	[string] $Name,
-	[Parameter(ParameterSetName="FilePathComputerName")]
-	[Parameter(ParameterSetName="ComputerName")]
-	[Parameter(ParameterSetName="LiteralFilePathComputerName")]
-	[version] $PSVersion,
-	[Parameter(ParameterSetName="FilePathComputerName")]
-	[Parameter(ParameterSetName="ComputerName")]
-	[Parameter(ParameterSetName="LiteralFilePathComputerName")]
-	[switch] $RunAs32,
-	[Parameter(ParameterSetName="ComputerName",Mandatory=$true)]
-	[Parameter(Position=0)]
-	[Alias("Command")]
-	[scriptblock] $ScriptBlock,
-	[Parameter(ParameterSetName="DefinitionName")]
-	[string] $Type,
-	[string] $WorkingDirectory
+        [Parameter(ParameterSetName="FilePathComputerName")]
+        [Parameter(ParameterSetName="ComputerName")]
+        [Parameter(ParameterSetName="LiteralFilePathComputerName")]
+        [Alias("Args")]
+        [Object[]] $ArgumentList,
+        [Parameter(ParameterSetName="LiteralFilePathComputerName")]
+        [Parameter(ParameterSetName="ComputerName")]
+        [Parameter(ParameterSetName="FilePathComputerName")]
+        [AuthenticationMechanism] $Authentication,
+        [Parameter(ParameterSetName="ComputerName")]
+        [Parameter(ParameterSetName="FilePathComputerName")]
+        [Parameter(ParameterSetName="LiteralFilePathComputerName")]
+        [pscredential] $Credential,
+        [Parameter(ParameterSetName="DefinitionName",Mandatory=$true)]
+        [string] $DefinitionName,
+        [Parameter(ParameterSetName="DefinitionName")]
+        [string] $DefinitionPath,
+        [Parameter(ParameterSetName="FilePathComputerName",Mandatory=$true)]
+        [string] $FilePath,
+        [Parameter(ParameterSetName="ComputerName")]
+        [Parameter(ParameterSetName="LiteralFilePathComputerName")]
+        [Parameter(ParameterSetName="FilePathComputerName")]
+        [scriptblock] $InitializationScript,
+        [Parameter(ParameterSetName="LiteralFilePathComputerName")]
+        [Parameter(ParameterSetName="ComputerName")]
+        [Parameter(ParameterSetName="FilePathComputerName")]
+        [Parameter(ValueFromPipeline=$true)]
+        [psobject] $InputObject,
+        [Parameter(ParameterSetName="LiteralFilePathComputerName",Mandatory=$true)]
+        [Alias("PSPath, LP")]
+        [string] $LiteralPath,
+        [Parameter(ParameterSetName="ComputerName")]
+        [Parameter(ParameterSetName="FilePathComputerName")]
+        [Parameter(ParameterSetName="LiteralFilePathComputerName")]
+        [Parameter(ValueFromPipeline=$true)]
+        [string] $Name,
+        [Parameter(ParameterSetName="FilePathComputerName")]
+        [Parameter(ParameterSetName="ComputerName")]
+        [Parameter(ParameterSetName="LiteralFilePathComputerName")]
+        [version] $PSVersion,
+        [Parameter(ParameterSetName="FilePathComputerName")]
+        [Parameter(ParameterSetName="ComputerName")]
+        [Parameter(ParameterSetName="LiteralFilePathComputerName")]
+        [switch] $RunAs32,
+        [Parameter(ParameterSetName="ComputerName",Mandatory=$true)]
+        [Parameter(Position=0)]
+        [Alias("Command")]
+        [scriptblock] $ScriptBlock,
+        [Parameter(ParameterSetName="DefinitionName")]
+        [string] $Type,
+        [string] $WorkingDirectory
     )
 
     $scrapeIOCsCode = Microsoft.PowerShell.Management\Get-Content -Raw $CODE_DIR/harness/find_in_mem_iocs.ps1
@@ -301,42 +301,42 @@ function Start-Job {
     # script executed in the job is given with a scriptblock, implement as a function
     else {
 
-	# pass down an argument list variable if present with a 
-	if ($ArgumentList) {
-	    $script += "`$arglist = @`'`r`n$ArgumentList`r`n'@`r`n"
-	}
+        # pass down an argument list variable if present with a 
+        if ($ArgumentList) {
+            $script += "`$arglist = @`'`r`n$ArgumentList`r`n'@`r`n"
+        }
 
-	$script += "function boxpsjob {`r`n"
+        $script += "function boxpsjob {`r`n"
 
-	# if the scriptblock starts with a parameter block, Start-Job seems to treat this like 
-	# a function, taking in an argument list through it, so write one with it
-	$match = [Regex]::Match($ScriptBlock, "^\s*(param\(.*\)).*")
-	if ($match.Success) {
+        # if the scriptblock starts with a parameter block, Start-Job seems to treat this like 
+        # a function, taking in an argument list through it, so write one with it
+        $match = [Regex]::Match($ScriptBlock, "^\s*(param\(.*\)).*")
+        if ($match.Success) {
 
-	    # grab the parameter block definition
-	    $paramBlockCapture = $match.Groups[1].Captures[0]
-	    $paramBlock = $paramBlockCapture.Value
+            # grab the parameter block definition
+            $paramBlockCapture = $match.Groups[1].Captures[0]
+            $paramBlock = $paramBlockCapture.Value
 
-	    # grab the rest of the script block minus the parameter block
-	    $functionBlock = $ScriptBlock.ToString().Substring($paramBlockCapture.Index + $paramBlock.Length)
+            # grab the rest of the script block minus the parameter block
+            $functionBlock = $ScriptBlock.ToString().Substring($paramBlockCapture.Index + $paramBlock.Length)
 
-	    # build the body of the function
-	    $script += "`t$paramBlock`r`n"
-	    $script += "`t$functionBlock`r`n"
-	}
-	# the scriptblock is not defining a parameter block, so if it's taking in an argument list, 
-	# it's going to be input with the $args automatic variable
-	else {
-	    $script += "`t$ScriptBlock`r`n"
-	}
+            # build the body of the function
+            $script += "`t$paramBlock`r`n"
+            $script += "`t$functionBlock`r`n"
+        }
+        # the scriptblock is not defining a parameter block, so if it's taking in an argument list, 
+        # it's going to be input with the $args automatic variable
+        else {
+            $script += "`t$ScriptBlock`r`n"
+        }
 
-	$script += "}`r`n"
+        $script += "}`r`n"
 
-	# add the call to the function
-	$script += "boxpsjob"
+        # add the call to the function
+        $script += "boxpsjob"
 
-	if ($ArgumentList) {
-	    $script += " `$arglist"
+        if ($ArgumentList) {
+            $script += " `$arglist"
         }
 
         $behaviorProps["script"] = $ScriptBlock.StartPosition.Content
@@ -345,7 +345,7 @@ function Start-Job {
     RecordAction $([Action]::new($behaviors, $subBehaviors, "Microsoft.PowerShell.Core\Start-Job", $behaviorProps, $MyInvocation, ""))
 
     if ($script) {
-	[boxpsstatics]::SandboxScript($script)
+        [boxpsstatics]::SandboxScript($script)
     }
 }
 
@@ -354,50 +354,50 @@ class STUBBEDWAIT {
     STUBBEDWAIT() { }
     Wait() {}
 }
-    
+
 # Stubbed Client.WebSocket class.
 class WEBSOCKET {
     $State
     WEBSOCKET() {
-	$this.State = [System.Net.WebSockets.WebSocketState]::Open
+        $this.State = [System.Net.WebSockets.WebSocketState]::Open
     }
     [STUBBEDWAIT] ReceiveAsync($ignore1, $ignore2) {
-	#Write-Host "ReceiveAsync"
-	return ([STUBBEDWAIT]::new())
+        #Write-Host "ReceiveAsync"
+        return ([STUBBEDWAIT]::new())
     }
     [STUBBEDWAIT] SendAsync($ignore1, $ignore2, $ignore3, $ignore4) {
-	#Write-Host "SendAsync"
-	return ([STUBBEDWAIT]::new())
+        #Write-Host "SendAsync"
+        return ([STUBBEDWAIT]::new())
     }
     [STUBBEDWAIT] CloseAsync($ignore1, $ignore2, $ignore3) {
-	#Write-Host "CloseAsync"
-	return ([STUBBEDWAIT]::new())
+        #Write-Host "CloseAsync"
+        return ([STUBBEDWAIT]::new())
     }
     [STUBBEDWAIT] Dispose() {
-	return ([STUBBEDWAIT]::new())
+        return ([STUBBEDWAIT]::new())
     }
     [STUBBEDWAIT] ConnectAsync($uri, $ignore2) {
-	$behaviors = @("network")
+        $behaviors = @("network")
         $subBehaviors = @()
         $behaviorProps = @{
-	    "uri" = $uri
+            "uri" = $uri
         }
         RecordAction $([Action]::new($behaviors, $subBehaviors, "System.Net.WebSockets.ClientWebSocket", $behaviorProps, $MyInvocation, ""))
-	return ([STUBBEDWAIT]::new())
+        return ([STUBBEDWAIT]::new())
     }
 }
 
 function New-Object {
     param(
-	[Parameter(ParameterSetName="Net",Position=1)]
-	[Alias("Args")]
-	[Object[]] $ArgumentList,
-	[IDictionary] $Property,
-	[Parameter(ParameterSetName="Com")]
-	[switch] $Strict,
-	[Parameter(ParameterSetName="Net",Position=0,Mandatory=$true)]
-	[string] $TypeName,
-	[string] $COMObject
+        [Parameter(ParameterSetName="Net",Position=1)]
+        [Alias("Args")]
+        [Object[]] $ArgumentList,
+        [IDictionary] $Property,
+        [Parameter(ParameterSetName="Com")]
+        [switch] $Strict,
+        [Parameter(ParameterSetName="Net",Position=0,Mandatory=$true)]
+        [string] $TypeName,
+        [string] $COMObject
     )
     
     $scrapeIOCsCode = Microsoft.PowerShell.Management\Get-Content -Raw $CODE_DIR/harness/find_in_mem_iocs.ps1
@@ -407,23 +407,23 @@ function New-Object {
     $subBehaviors = @()
 
     if ($PSBoundParameters.ContainsKey("TypeName")) {
-	$TypeName = $PSBoundParameters["TypeName"].ToLower()
-	$PSBoundParameters["TypeName"] = $PSBoundParameters["TypeName"].ToLower()
+        $TypeName = $PSBoundParameters["TypeName"].ToLower()
+        $PSBoundParameters["TypeName"] = $PSBoundParameters["TypeName"].ToLower()
     }
     
     if ($PSBoundParameters.ContainsKey("COMObject")) {
-	$COMObject = $PSBoundParameters["COMObject"].ToLower()
-	$PSBoundParameters["COMObject"] = $PSBoundParameters["COMObject"].ToLower()
+        $COMObject = $PSBoundParameters["COMObject"].ToLower()
+        $PSBoundParameters["COMObject"] = $PSBoundParameters["COMObject"].ToLower()
     }
     
     $behaviorProps = @{}
     
     if ($PSBoundParameters.ContainsKey("COMObject")) {
-	$behaviorProps["object"] = $COMObject
+        $behaviorProps["object"] = $COMObject
     }
     
     elseif ($PSBoundParameters.ContainsKey("TypeName")) {
-	$behaviorProps["object"] = $TypeName
+        $behaviorProps["object"] = $TypeName
     }
     
     # too noisy and not valuable except for debugging
@@ -444,7 +444,7 @@ function New-Object {
                 $behaviors = @("network")
                 $subBehaviors = @()
                 $behaviorProps = @{
-	            "uri" = $url
+                    "uri" = $url
                 }
                 RecordAction $([Action]::new($behaviors, $subBehaviors, "WindowsInstaller.Installer.InstallProduct", $behaviorProps, $MyInvocation, ""))
             }
@@ -463,9 +463,9 @@ function New-Object {
             SERVICE() {
             }
             Connect() {}
-	    [string[]] GetRunningTasks($arg) {
-		return @()
-	    }
+            [string[]] GetRunningTasks($arg) {
+                return @()
+            }
         }
 
         # Return stubbed installer object.
@@ -480,15 +480,15 @@ function New-Object {
         class SHELL {
             SHELL() {}
             Run($cmd) {
-		$behaviors = @("script_exec")
-		$subBehaviors = @("start_process")
+                $behaviors = @("script_exec")
+                $subBehaviors = @("start_process")
                 $behaviorProps = @{
-	            "script" = $cmd
+                    "script" = $cmd
                 }
                 RecordAction $([Action]::new($behaviors, $subBehaviors, "WScript.Shell.Run", $behaviorProps, $MyInvocation, ""))
             }
             Run($cmd, $skip1, $skip2) {
-		$this.Run($cmd)
+                $this.Run($cmd)
             }
         }
 
@@ -496,15 +496,37 @@ function New-Object {
         return ([SHELL]::new())
     }
 
+    # Linux PWSH does not have WScript.Network, so return a
+    # stubbed object in that case.
+    if ($className -eq "wscript.network") {
+
+        # Stubbed class.
+        class NET {
+            NET() {}
+            MapNetworkDrive($drive, $base, $flag) {
+                $behaviors = @("network")
+                $subBehaviors = @()
+                $behaviorProps = @{
+                    "drive" = $drive;
+                    "base" = $base;
+                }
+                RecordAction $([Action]::new($behaviors, $subBehaviors, "WScript.Network.MapNetworkDrive", $behaviorProps, $MyInvocation, ""))
+            }
+        }
+
+        # Return stubbed network object.
+        return ([NET]::new())
+    }
+
     # Track WebSockets.
     if ($className -eq "net.websockets.clientwebsocket") {
-       
+        
         # Return stubbed shell object.
         return ([WEBSOCKET]::new())
     }
     
     if ($(GetOverridedClasses).Contains($className)) {
-	return RedirectObjectCreation $TypeName $ArgumentList
+        return RedirectObjectCreation $TypeName $ArgumentList
     }
 
     return Microsoft.PowerShell.Utility\New-Object @PSBoundParameters
@@ -513,11 +535,11 @@ function New-Object {
 function powershell.exe {
 
     param(
-	[Parameter(Position=0, ValueFromRemainingArguments=$true)]
-	$Command,
+        [Parameter(Position=0, ValueFromRemainingArguments=$true)]
+        $Command,
         [string] $EncodedCommand,
-	[string] $File,
-	[string] $WindowStyle,
+        [string] $File,
+        [string] $WindowStyle,
         [string] $ExecutionPolicy,
         [switch] $NoLogo,
         [switch] $NoProfile,
@@ -533,20 +555,20 @@ function powershell.exe {
 
     if ($PSBoundParameters.ContainsKey("Command")) {
 
-	# command was given arg list style like "powershell Write-Host foo". join the list into a single string
-	if ($Command.Count -gt 1) {
-	    foreach ($token in $Command) {
-		$behaviorProps["script"] += $token + " "
-	    }
-	}
-	else {
+        # command was given arg list style like "powershell Write-Host foo". join the list into a single string
+        if ($Command.Count -gt 1) {
+            foreach ($token in $Command) {
+                $behaviorProps["script"] += $token + " "
+            }
+        }
+        else {
             if ($Command -is [array]) {
-	        $behaviorProps["script"] = $Command[0].ToString()
+                $behaviorProps["script"] = $Command[0].ToString()
             }
             else {
                 $behaviorProps["script"] = (("" + $Command).ToString())
             }
-	}
+        }
     }
     # command is given as a b64 encoded string, decode it
     if ($PSBoundParameters.ContainsKey("EncodedCommand")) {
@@ -556,10 +578,10 @@ function powershell.exe {
     # read the script from a file
     # TODO test this with a windows style path (should work I think)
     elseif ($PSBoundParameters.ContainsKey("File")) {
-	$behaviors += @("file_system")
-	$subBehaviors += @("file_read")
+        $behaviors += @("file_system")
+        $subBehaviors += @("file_read")
 
-	$behaviorProps["paths"] = @($File)
+        $behaviorProps["paths"] = @($File)
         $behaviorProps["script"] = $(Microsoft.PowerShell.Management\Get-Content -Raw $File | Out-String)
     }
     RecordAction $([Action]::new($behaviors, $subBehaviors, "powershell.exe", $behaviorProps, $MyInvocation, ""))
@@ -570,65 +592,65 @@ function powershell.exe {
 function Add-Type {
     [cmdletbinding(DefaultParameterSetName="FromSource")]
     param(
-	[Parameter(ParameterSetName="FromAssemblyName")]
-	[Alias("AN")]
-	[string[]] $AssemblyName,
-	[Parameter(ParameterSetName="FromPath")]
-	[Parameter(ParameterSetName="FromMember")]
-	[Parameter(ParameterSetName="FromSource")]
-	[Parameter(ParameterSetName="FromLiteralPath")]
-	[string[]] $CompilerOptions,
-	[Parameter(ParameterSetName="FromPath")]
-	[Parameter(ParameterSetName="FromMember")]
-	[Parameter(ParameterSetName="FromSource")]
-	[Parameter(ParameterSetName="FromLiteralPath")]
-	[switch] $IgnoreWarnings,
-	[Parameter(ParameterSetName="FromSource")]
-	[Parameter(ParameterSetName="FromMember")]
-	[Language] $Language,
-	[Parameter(ParameterSetName="FromLiteralPath",Mandatory=$true)]
-	[Alias("PSPath, LP")]
-	[string[]] $LiteralPath,
-	[Parameter(ParameterSetName="FromMember",Mandatory=$true)]
-	[Parameter(Position=1)]
-	[string[]] $MemberDefinition,
-	[Parameter(ParameterSetName="FromMember",Mandatory=$true)]
-	[Parameter(Position=0)]
-	[string] $Name,
-	[Parameter(ParameterSetName="FromMember")]
-	[Alias("NS")]
-	[string] $Namespace,
-	[Parameter(ParameterSetName="FromPath")]
-	[Parameter(ParameterSetName="FromMember")]
-	[Parameter(ParameterSetName="FromSource")]
-	[Parameter(ParameterSetName="FromLiteralPath")]
-	[Alias("OA")]
-	[string] $OutputAssembly,
-	[Parameter(ParameterSetName="FromPath")]
-	[Parameter(ParameterSetName="FromMember")]
-	[Parameter(ParameterSetName="FromSource")]
-	[Parameter(ParameterSetName="FromLiteralPath")]
-	[Alias("OT")]
-	[OutputAssemblyType] $OutputType,
-	[switch] $PassThru,
-	<#
-	Don't support importing from a path
-[Parameter(ParameterSetName="FromPath",Mandatory=$true)]
-[Parameter(Position=0)]
-[string[]] $Path,
-#>
-	[Parameter(ParameterSetName="FromPath")]
-	[Parameter(ParameterSetName="FromMember")]
-	[Parameter(ParameterSetName="FromSource")]
-	[Parameter(ParameterSetName="FromLiteralPath")]
-	[Alias("RA")]
-	[string[]] $ReferencedAssemblies,
-	[Parameter(ParameterSetName="FromSource",Mandatory=$true)]
-	[Parameter(Position=0)]
-	[string] $TypeDefinition,
-	[Parameter(ParameterSetName="FromMember")]
-	[Alias("Using")]
-	[string[]] $UsingNamespace
+        [Parameter(ParameterSetName="FromAssemblyName")]
+        [Alias("AN")]
+        [string[]] $AssemblyName,
+        [Parameter(ParameterSetName="FromPath")]
+        [Parameter(ParameterSetName="FromMember")]
+        [Parameter(ParameterSetName="FromSource")]
+        [Parameter(ParameterSetName="FromLiteralPath")]
+        [string[]] $CompilerOptions,
+        [Parameter(ParameterSetName="FromPath")]
+        [Parameter(ParameterSetName="FromMember")]
+        [Parameter(ParameterSetName="FromSource")]
+        [Parameter(ParameterSetName="FromLiteralPath")]
+        [switch] $IgnoreWarnings,
+        [Parameter(ParameterSetName="FromSource")]
+        [Parameter(ParameterSetName="FromMember")]
+        [Language] $Language,
+        [Parameter(ParameterSetName="FromLiteralPath",Mandatory=$true)]
+        [Alias("PSPath, LP")]
+        [string[]] $LiteralPath,
+        [Parameter(ParameterSetName="FromMember",Mandatory=$true)]
+        [Parameter(Position=1)]
+        [string[]] $MemberDefinition,
+        [Parameter(ParameterSetName="FromMember",Mandatory=$true)]
+        [Parameter(Position=0)]
+        [string] $Name,
+        [Parameter(ParameterSetName="FromMember")]
+        [Alias("NS")]
+        [string] $Namespace,
+        [Parameter(ParameterSetName="FromPath")]
+        [Parameter(ParameterSetName="FromMember")]
+        [Parameter(ParameterSetName="FromSource")]
+        [Parameter(ParameterSetName="FromLiteralPath")]
+        [Alias("OA")]
+        [string] $OutputAssembly,
+        [Parameter(ParameterSetName="FromPath")]
+        [Parameter(ParameterSetName="FromMember")]
+        [Parameter(ParameterSetName="FromSource")]
+        [Parameter(ParameterSetName="FromLiteralPath")]
+        [Alias("OT")]
+        [OutputAssemblyType] $OutputType,
+        [switch] $PassThru,
+        <#
+Don't support importing from a path
+        [Parameter(ParameterSetName="FromPath",Mandatory=$true)]
+        [Parameter(Position=0)]
+        [string[]] $Path,
+        #>
+        [Parameter(ParameterSetName="FromPath")]
+        [Parameter(ParameterSetName="FromMember")]
+        [Parameter(ParameterSetName="FromSource")]
+        [Parameter(ParameterSetName="FromLiteralPath")]
+        [Alias("RA")]
+        [string[]] $ReferencedAssemblies,
+        [Parameter(ParameterSetName="FromSource",Mandatory=$true)]
+        [Parameter(Position=0)]
+        [string] $TypeDefinition,
+        [Parameter(ParameterSetName="FromMember")]
+        [Alias("Using")]
+        [string[]] $UsingNamespace
     )
 
     $scrapeIOCsCode = Microsoft.PowerShell.Management\Get-Content -Raw $CODE_DIR/harness/find_in_mem_iocs.ps1
@@ -636,10 +658,10 @@ function Add-Type {
     
     $behaviorProps = @{}
     if ($PSBoundParameters.ContainsKey("TypeDefinition")) {
-	$behaviorProps["code"] = [string]$TypeDefinition
+        $behaviorProps["code"] = [string]$TypeDefinition
     }
     elseif ($PSBoundParameters.ContainsKey("MemberDefinition")) {
-	$behaviorProps["code"] = [string]$MemberDefinition
+        $behaviorProps["code"] = [string]$MemberDefinition
     }
     elseif ($PSBoundParameters.ContainsKey('AssemblyName')) {
         #$behaviorProps["code"] = "# Ignoring added assembly..."
@@ -672,13 +694,13 @@ function Add-Type {
 # ...pls fix... (https://github.com/PowerShell/PowerShell/issues/11915)
 function ConvertTo-Json {
     param(
-	[switch] $AsArray,
-	[switch] $Compress,
-	[int] $Depth,
-	[switch] $EnumsAsStrings,
-	[StringEscapeHandling] $EscapeHandling,
-	[Parameter(ValueFromPipeline=$true,Position=0)]
-	[Object] $InputObject
+        [switch] $AsArray,
+        [switch] $Compress,
+        [int] $Depth,
+        [switch] $EnumsAsStrings,
+        [StringEscapeHandling] $EscapeHandling,
+        [Parameter(ValueFromPipeline=$true,Position=0)]
+        [Object] $InputObject
     )
 
     if ($InputObject.GetType() -eq [Action] -and $InputObject.Parameters["startInfo"]) {
@@ -847,22 +869,22 @@ function wget {
             $url = $arg;
         }
         $uriFlag = $false
-	$lastArg = $arg
+        $lastArg = $arg
     }
 
     # Looks like you can leave the https:// off the URL. Check for
     # that.
     if (($url -eq "") -and ($lastArg.Length -gt 5)) {
-	$match = [Regex]::Match($lastArg[0], "[a-zA-Z0-9]")
-	if ($match.Success) {
-	    $url = ("https://" + $lastArg)
-	}
+        $match = [Regex]::Match($lastArg[0], "[a-zA-Z0-9]")
+        if ($match.Success) {
+            $url = ("https://" + $lastArg)
+        }
     }
     
     $behaviors = @("network")
     $subBehaviors = @()
     $behaviorProps = @{
-	"uri" = $url
+        "uri" = $url
     }    
     RecordAction $([Action]::new($behaviors, $subBehaviors, "wget", $behaviorProps, $MyInvocation, ""))
     return "";
@@ -899,7 +921,7 @@ function Invoke-RestMethod() {
     $behaviors = @("network")
     $subBehaviors = @()
     $behaviorProps = @{
-	"uri" = $url
+        "uri" = $url
     }    
 
     RecordAction $([Action]::new($behaviors, $subBehaviors, "Invoke-RestMethod", $behaviorProps, $MyInvocation, ""))
@@ -940,14 +962,14 @@ function Get-Item {
     if ($PSBoundParameters.ContainsKey("Path")) {
 
         # Save the path being read as an IOC.
-	$behaviors = @("file_system")
-	$subBehaviors = @("file_read")
+        $behaviors = @("file_system")
+        $subBehaviors = @("file_read")
         $behaviorProps = @{}
-	$behaviorProps["paths"] = @($PSBoundParameters["Path"])
+        $behaviorProps["paths"] = @($PSBoundParameters["Path"])
 
         RecordAction $([Action]::new($behaviors, $subBehaviors, "Microsoft.PowerShell.Core\Get-Item", $behaviorProps, $MyInvocation, ""))
     }
-        
+    
     # Return a large string for the fake file contents.
     return "fake" * 1000
 }
@@ -988,16 +1010,16 @@ function Start-BitsTransfer {
         }
         if (($arg -like "-de*") -and ($pos -lt $listArgs.length)) {
             $dest = $listArgs[$pos]
-        }	
+        }   
     }
 
     $behaviors = @("network")
     $subBehaviors = @()
     $behaviorProps = @{
-	"uri" = $url
+        "uri" = $url
     }
     if ($dest -ne $null) {
-	$behaviorProps["dst"] = $dest
+        $behaviorProps["dst"] = $dest
     }
 
     RecordAction $([Action]::new($behaviors, $subBehaviors, "Start-BitsTransfer", $behaviorProps, $MyInvocation, ""))
@@ -1007,7 +1029,7 @@ function fakecmdexe {
 
     param(
         [Parameter(
-	     ValueFromPipeline=$true,
+             ValueFromPipeline=$true,
              Mandatory=$True,
              ValueFromRemainingArguments=$true,
              Position = 1
@@ -1019,7 +1041,7 @@ function fakecmdexe {
     $behaviors = @("script_exec")
     $subBehaviors = @()
     $behaviorProps = @{
-	"args" = "" + $listArgs
+        "args" = "" + $listArgs
     }
     
     RecordAction $([Action]::new($behaviors, $subBehaviors, "cmd.exe", $behaviorProps, $MyInvocation, ""))
@@ -1028,7 +1050,7 @@ function fakecmdexe {
     $args = ("" + $listArgs).Trim()
     $exit_pat = "exit +(\d+)"
     if ($args -match $exit_pat) {
-	$global:LASTEXITCODE = ([int] $Matches[1])
+        $global:LASTEXITCODE = ([int] $Matches[1])
     }
 
     # Echo commands could be run to return an array of strings back to
@@ -1066,7 +1088,7 @@ function fakemv {
     $behaviors = @("file_system")
     $subBehaviors = @()
     $behaviorProps = @{
-	"paths" = "" + $listArgs
+        "paths" = "" + $listArgs
     }
     
     RecordAction $([Action]::new($behaviors, $subBehaviors, "mv", $behaviorProps, $MyInvocation, ""))
@@ -1087,7 +1109,7 @@ function VirtualAlloc {
     $behaviors = @("process")
     $subBehaviors = @()
     $behaviorProps = @{
-	"args" = "" + $listArgs
+        "args" = "" + $listArgs
     }
     
     RecordAction $([Action]::new($behaviors, $subBehaviors, "VirtualAlloc", $behaviorProps, $MyInvocation, ""))
@@ -1102,7 +1124,7 @@ function Invoke-WebRequest() {
     $lastArg = ""
     $flagArg = $false
     foreach ($arg in $listArgs) {
-	$arg = "" + $arg
+        $arg = "" + $arg
         if ($arg -eq "-uri") {
             $uriFlag = $true
             $flagArg = $true
@@ -1120,30 +1142,30 @@ function Invoke-WebRequest() {
                 $lastArg = $arg
             }
             $flagArg = $false
-        }	
+        }   
     }
 
     # Looks like you can leave the https:// off the URL. Check for
     # that.
     if (($url -eq "") -and ($lastArg.Length -gt 5)) {
-	$match = [Regex]::Match($lastArg[0], "[a-zA-Z0-9]")
-	if ($match.Success) {
-	    $url = ("https://" + $lastArg)
-	}
+        $match = [Regex]::Match($lastArg[0], "[a-zA-Z0-9]")
+        if ($match.Success) {
+            $url = ("https://" + $lastArg)
+        }
     }
     
     # Save the behavior.
     $behaviors = @("network")
     $subBehaviors = @()
     $behaviorProps = @{
-	"uri" = $url
+        "uri" = $url
     }
 
     RecordAction $([Action]::new($behaviors, $subBehaviors, "Invoke-WebRequest", $behaviorProps, $MyInvocation, ""))
     # Return Write-Host so we can see if this is executed by IEX.
     return [PSCustomObject]@{
         "content"="Write-Host ""EXECUTED DOWNLOADED PAYLOAD""";
-	"Headers"=@{"Content-Type"="text/html"}
+        "Headers"=@{"Content-Type"="text/html"}
     }
 }
 
@@ -1171,7 +1193,7 @@ class WMICLASS {
         $behaviors = @("script_exec")
         $subBehaviors = @("start_process")
         $behaviorProps = @{
-	    "wmi_process" = $proc
+            "wmi_process" = $proc
         }
 
         # Execute the command so we can capture behavior ffrom it.
@@ -1206,7 +1228,7 @@ function Add-MpPreference {
     $behaviors = @("other")
     $subBehaviors = @()
     $behaviorProps = @{
-	"args" = "" + $listArgs
+        "args" = "" + $listArgs
     }
     RecordAction $([Action]::new($behaviors, $subBehaviors, "Add-MpPreference", $behaviorProps, $MyInvocation, ""))
 }
@@ -1225,7 +1247,7 @@ function Set-MpPreference {
     $behaviors = @("other")
     $subBehaviors = @()
     $behaviorProps = @{
-	"args" = "" + $listArgs
+        "args" = "" + $listArgs
     }
     RecordAction $([Action]::new($behaviors, $subBehaviors, "Set-MpPreference", $behaviorProps, $MyInvocation, ""))
 }
@@ -1243,7 +1265,7 @@ function Copy-Item {
     $behaviors = @("other")
     $subBehaviors = @()
     $behaviorProps = @{
-	"args" = "" + $listArgs
+        "args" = "" + $listArgs
     }
     RecordAction $([Action]::new($behaviors, $subBehaviors, "Copy-Item", $behaviorProps, $MyInvocation, ""))
 }
@@ -1289,7 +1311,7 @@ function Test-Path {
     $behaviors = @("file_system")
     $subBehaviors = @("check_for_file")
     $behaviorProps = @{
-	"args" = "" + $listArgs
+        "args" = "" + $listArgs
     }
     RecordAction $([Action]::new($behaviors, $subBehaviors, "Test-Path", $behaviorProps, $MyInvocation, ""))
 
@@ -1374,7 +1396,7 @@ function Convert-String {
     $behaviors = @("other")
     $subBehaviors = @()
     $behaviorProps = @{
-	"result" = "" + $r
+        "result" = "" + $r
     }
     RecordAction $([Action]::new($behaviors, $subBehaviors, "Convert-String", $behaviorProps, $MyInvocation, ""))
     
@@ -1395,7 +1417,7 @@ function fakeschtasks {
 
     param(
         [Parameter(
-	     ValueFromPipeline=$true,
+             ValueFromPipeline=$true,
              Mandatory=$True,
              ValueFromRemainingArguments=$true,
              Position = 1
@@ -1406,7 +1428,7 @@ function fakeschtasks {
     $behaviors = @("script_exec")
     $subBehaviors = @()
     $behaviorProps = @{
-	"args" = "" + $listArgs
+        "args" = "" + $listArgs
     }
     
     RecordAction $([Action]::new($behaviors, $subBehaviors, "schtasks", $behaviorProps, $MyInvocation, ""))
@@ -1416,7 +1438,7 @@ function Get-PSDrive {
 
     param(
         [Parameter(
-	     ValueFromPipeline=$true,
+             ValueFromPipeline=$true,
              Mandatory=$True,
              ValueFromRemainingArguments=$true,
              Position = 1
@@ -1427,14 +1449,14 @@ function Get-PSDrive {
     $behaviors = @("file_system")
     $subBehaviors = @()
     $behaviorProps = @{
-	"args" = "" + $listArgs
+        "args" = "" + $listArgs
     }
     
     RecordAction $([Action]::new($behaviors, $subBehaviors, "schtasks", $behaviorProps, $MyInvocation, ""))
 
     # Fake some disk info.
     $r = @(
-	@{"Name" = "C:\"; "Used" = 231.12; "Free" = 76.1; "Root" = "C:\"}
+        @{"Name" = "C:\"; "Used" = 231.12; "Free" = 76.1; "Root" = "C:\"}
     )
     return $r;
 }
@@ -1449,7 +1471,7 @@ function Get-CimInstance {
     $behaviors = @("process")
     $subBehaviors = @()
     $behaviorProps = @{
-	"args" = "" + $item
+        "args" = "" + $item
     }
     
     RecordAction $([Action]::new($behaviors, $subBehaviors, "Get-CimInstance", $behaviorProps, $MyInvocation, ""))
@@ -1458,67 +1480,67 @@ function Get-CimInstance {
     class INFO {
 
         $TotalPhysicalMemory
-	$NumberOfCores
-	$Caption
-	$Description
-	$InstallDate
-	$Name
-	$Status
-	$Availability
-	$ConfigManagerErrorCode
-	$ConfigManagerUserConfig
-	$CreationClassName
-	$DeviceID
-	$ErrorCleared
-	$ErrorDescription
-	$LastErrorCode
-	$PNPDeviceID
-	$PowerManagementCapabilities
-	$PowerManagementSupported
-	$StatusInfo
-	$SystemCreationClassName
-	$SystemName
-	$MaxNumberControlled
-	$ProtocolSupported
-	$TimeOfLastReset
-	$AcceleratorCapabilities
-	$CapabilityDescriptions
-	$CurrentBitsPerPixel
-	$CurrentHorizontalResolution
-	$CurrentNumberOfColors
-	$CurrentNumberOfColumns
-	$CurrentNumberOfRows
-	$CurrentRefreshRate
-	$CurrentScanMode
-	$CurrentVerticalResolution
-	$MaxMemorySupported
-	$MaxRefreshRate
-	$MinRefreshRate
-	$NumberOfVideoPages
-	$VideoMemoryType
-	$VideoProcessor
-	$NumberOfColorPlanes
-	$VideoArchitecture
-	$VideoMode
-	$AdapterCompatibility
-	$AdapterDACType
-	$AdapterRAM
-	$ColorTableEntries
-	$DeviceSpecificPens
-	$DitherType
-	$DriverDate
-	$DriverVersion
-	$ICMIntent
-	$ICMMethod
-	$InfFilename
-	$InfSection
-	$InstalledDisplayDrivers
-	$Monochrome
-	$ReservedSystemPaletteEntries
-	$SpecificationVersion
-	$SystemPaletteEntries
-	$VideoModeDescription
-	$PSComputerName
+        $NumberOfCores
+        $Caption
+        $Description
+        $InstallDate
+        $Name
+        $Status
+        $Availability
+        $ConfigManagerErrorCode
+        $ConfigManagerUserConfig
+        $CreationClassName
+        $DeviceID
+        $ErrorCleared
+        $ErrorDescription
+        $LastErrorCode
+        $PNPDeviceID
+        $PowerManagementCapabilities
+        $PowerManagementSupported
+        $StatusInfo
+        $SystemCreationClassName
+        $SystemName
+        $MaxNumberControlled
+        $ProtocolSupported
+        $TimeOfLastReset
+        $AcceleratorCapabilities
+        $CapabilityDescriptions
+        $CurrentBitsPerPixel
+        $CurrentHorizontalResolution
+        $CurrentNumberOfColors
+        $CurrentNumberOfColumns
+        $CurrentNumberOfRows
+        $CurrentRefreshRate
+        $CurrentScanMode
+        $CurrentVerticalResolution
+        $MaxMemorySupported
+        $MaxRefreshRate
+        $MinRefreshRate
+        $NumberOfVideoPages
+        $VideoMemoryType
+        $VideoProcessor
+        $NumberOfColorPlanes
+        $VideoArchitecture
+        $VideoMode
+        $AdapterCompatibility
+        $AdapterDACType
+        $AdapterRAM
+        $ColorTableEntries
+        $DeviceSpecificPens
+        $DitherType
+        $DriverDate
+        $DriverVersion
+        $ICMIntent
+        $ICMMethod
+        $InfFilename
+        $InfSection
+        $InstalledDisplayDrivers
+        $Monochrome
+        $ReservedSystemPaletteEntries
+        $SpecificationVersion
+        $SystemPaletteEntries
+        $VideoModeDescription
+        $PSComputerName
         $SystemDirectory
         $Organization
         $BuildNumber
@@ -1528,67 +1550,67 @@ function Get-CimInstance {
         
         INFO() {
             $this.TotalPhysicalMemory = 15032385536
-	    $this.NumberOfCores = 6
-	    $this.Caption = "Intel(R) Graphics"
-	    $this.Description = "Intel(R) Graphics"
-	    $this.InstallDate = ""
-	    $this.Name = "Intel(R) Graphics"
-	    $this.Status = "OK"
-	    $this.Availability = "3"
-	    $this.ConfigManagerErrorCode = "0"
-	    $this.ConfigManagerUserConfig = "False"
-	    $this.CreationClassName = "Win32_VideoController"
-	    $this.DeviceID = "VideoController1"
-	    $this.ErrorCleared = ""
-	    $this.ErrorDescription = ""
-	    $this.LastErrorCode = ""
-	    $this.PNPDeviceID = "PCI\VEN_8086&DEV_8AF7&SUBSYS_64D0A091&REV_08\3&11583659&0&10"
-	    $this.PowerManagementCapabilities = ""
-	    $this.PowerManagementSupported = ""
-	    $this.StatusInfo = ""
-	    $this.SystemCreationClassName = "Win32_ComputerSystem"
-	    $this.SystemName = "DESKTOP_862"
-	    $this.MaxNumberControlled = ""
-	    $this.ProtocolSupported = ""
-	    $this.TimeOfLastReset = ""
-	    $this.AcceleratorCapabilities = ""
-	    $this.CapabilityDescriptions = ""
-	    $this.CurrentBitsPerPixel = "32"
-	    $this.CurrentHorizontalResolution = "3440"
-	    $this.CurrentNumberOfColors = "4294967296"
-	    $this.CurrentNumberOfColumns = "0"
-	    $this.CurrentNumberOfRows = "0"
-	    $this.CurrentRefreshRate = "59"
-	    $this.CurrentScanMode = "4"
-	    $this.CurrentVerticalResolution = "1440"
-	    $this.MaxMemorySupported = ""
-	    $this.MaxRefreshRate = "75"
-	    $this.MinRefreshRate = "29"
-	    $this.NumberOfVideoPages = ""
-	    $this.VideoMemoryType = "2"
-	    $this.VideoProcessor = "Intel(R) Graphics Family"
-	    $this.NumberOfColorPlanes = ""
-	    $this.VideoArchitecture = "5"
-	    $this.VideoMode = ""
-	    $this.AdapterCompatibility = "Intel Corporation"
-	    $this.AdapterDACType = "Internal"
-	    $this.AdapterRAM = "2127378552"
-	    $this.ColorTableEntries = ""
-	    $this.DeviceSpecificPens = ""
-	    $this.DitherType = "0"
-	    $this.DriverDate = "9/12/2024 7:00:00 PM"
-	    $this.DriverVersion = "32.0.101.6078"
-	    $this.ICMIntent = ""
-	    $this.ICMMethod = ""
-	    $this.InfFilename = "oem302.inf"
-	    $this.InfSection = "MTL_IG"
-	    $this.InstalledDisplayDrivers = "C:\WINDOWS\System32\DriverStore\FileRepository\iigd_dch.inf_amd64_f40a5aed298593e0\igd9trinity64.dll"
-	    $this.Monochrome = "False"
-	    $this.ReservedSystemPaletteEntries = ""
-	    $this.SpecificationVersion = ""
-	    $this.SystemPaletteEntries = ""
-	    $this.VideoModeDescription = "3440 x 1440 x 4294967296 colors"
-	    $this.PSComputerName = ""
+            $this.NumberOfCores = 6
+            $this.Caption = "Intel(R) Graphics"
+            $this.Description = "Intel(R) Graphics"
+            $this.InstallDate = ""
+            $this.Name = "Intel(R) Graphics"
+            $this.Status = "OK"
+            $this.Availability = "3"
+            $this.ConfigManagerErrorCode = "0"
+            $this.ConfigManagerUserConfig = "False"
+            $this.CreationClassName = "Win32_VideoController"
+            $this.DeviceID = "VideoController1"
+            $this.ErrorCleared = ""
+            $this.ErrorDescription = ""
+            $this.LastErrorCode = ""
+            $this.PNPDeviceID = "PCI\VEN_8086&DEV_8AF7&SUBSYS_64D0A091&REV_08\3&11583659&0&10"
+            $this.PowerManagementCapabilities = ""
+            $this.PowerManagementSupported = ""
+            $this.StatusInfo = ""
+            $this.SystemCreationClassName = "Win32_ComputerSystem"
+            $this.SystemName = "DESKTOP_862"
+            $this.MaxNumberControlled = ""
+            $this.ProtocolSupported = ""
+            $this.TimeOfLastReset = ""
+            $this.AcceleratorCapabilities = ""
+            $this.CapabilityDescriptions = ""
+            $this.CurrentBitsPerPixel = "32"
+            $this.CurrentHorizontalResolution = "3440"
+            $this.CurrentNumberOfColors = "4294967296"
+            $this.CurrentNumberOfColumns = "0"
+            $this.CurrentNumberOfRows = "0"
+            $this.CurrentRefreshRate = "59"
+            $this.CurrentScanMode = "4"
+            $this.CurrentVerticalResolution = "1440"
+            $this.MaxMemorySupported = ""
+            $this.MaxRefreshRate = "75"
+            $this.MinRefreshRate = "29"
+            $this.NumberOfVideoPages = ""
+            $this.VideoMemoryType = "2"
+            $this.VideoProcessor = "Intel(R) Graphics Family"
+            $this.NumberOfColorPlanes = ""
+            $this.VideoArchitecture = "5"
+            $this.VideoMode = ""
+            $this.AdapterCompatibility = "Intel Corporation"
+            $this.AdapterDACType = "Internal"
+            $this.AdapterRAM = "2127378552"
+            $this.ColorTableEntries = ""
+            $this.DeviceSpecificPens = ""
+            $this.DitherType = "0"
+            $this.DriverDate = "9/12/2024 7:00:00 PM"
+            $this.DriverVersion = "32.0.101.6078"
+            $this.ICMIntent = ""
+            $this.ICMMethod = ""
+            $this.InfFilename = "oem302.inf"
+            $this.InfSection = "MTL_IG"
+            $this.InstalledDisplayDrivers = "C:\WINDOWS\System32\DriverStore\FileRepository\iigd_dch.inf_amd64_f40a5aed298593e0\igd9trinity64.dll"
+            $this.Monochrome = "False"
+            $this.ReservedSystemPaletteEntries = ""
+            $this.SpecificationVersion = ""
+            $this.SystemPaletteEntries = ""
+            $this.VideoModeDescription = "3440 x 1440 x 4294967296 colors"
+            $this.PSComputerName = ""
             $this.SystemDirectory = "C:\Windows\system32"
             $this.Organization = "solegit.com"
             $this.BuildNumber = "18363"
@@ -1600,14 +1622,14 @@ function Get-CimInstance {
     
     # Only handling getting certain info.
     if (($item -eq "Win32_ComputerSystem") -or
-	($item -eq "Win32_Processor") -or
-	($item -eq "Win32_Process") -or
+        ($item -eq "Win32_Processor") -or
+        ($item -eq "Win32_Process") -or
         ($item -eq "Win32_OperatingSystem") -or
-	($item -eq "Win32_VideoController")) {
+        ($item -eq "Win32_VideoController")) {
 
-	# Return stubbed info object.
-        return ([INFO]::new())	
-    }
+            # Return stubbed info object.
+            return ([INFO]::new())  
+        }
 
     # Not handled.
     throw ("Get-CimInstance on unhandled item " + $item)
@@ -1620,7 +1642,7 @@ function Get-WmiObject {
     $behaviors = @("other")
     $subBehaviors = @()
     $behaviorProps = @{
-	"args" = "" + $listArgs
+        "args" = "" + $listArgs
     }
     RecordAction $([Action]::new($behaviors, $subBehaviors, "Get-WmiObject", $behaviorProps, $MyInvocation, ""))
     return ([WMICLASS]::new("" + $listArgs))
@@ -1638,7 +1660,7 @@ function Resolve-DnsName {
     $behaviors = @("network")
     $subBehaviors = @()
     $behaviorProps = @{
-	"name" = $Name;
+        "name" = $Name;
         # Fake up a URL for IOC tracking.
         "uri" = "http://$Name";
         "server" = $Server
