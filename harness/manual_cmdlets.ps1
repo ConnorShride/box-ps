@@ -505,7 +505,7 @@ function New-Object {
             NET() {}
             MapNetworkDrive($drive, $base, $flag) {
                 $behaviors = @("network")
-                $subBehaviors = @()
+                $subBehaviors = @("map_drive")
                 $behaviorProps = @{
                     "drive" = $drive;
                     "base" = $base;
@@ -968,6 +968,11 @@ function Get-Item {
         $behaviorProps["paths"] = @($PSBoundParameters["Path"])
 
         RecordAction $([Action]::new($behaviors, $subBehaviors, "Microsoft.PowerShell.Core\Get-Item", $behaviorProps, $MyInvocation, ""))
+    }
+
+    # Hiding getting a reference to COMSPEC?
+    if (('' + $listArgs) -like "*ComSpec*") {
+        return @{"Value" = "cmd.exe"}
     }
     
     # Return a large string for the fake file contents.
