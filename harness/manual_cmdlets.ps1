@@ -972,6 +972,12 @@ function Get-Item {
 
     # Hiding getting a reference to COMSPEC?
     if (('' + $listArgs) -like "*ComSpec*") {
+        $behaviors = @("file_system")
+        $subBehaviors = @("file_read")
+        $behaviorProps = @{}
+        $behaviorProps["paths"] = @('Env:\ComSpec')
+        RecordAction $([Action]::new($behaviors, $subBehaviors, "Microsoft.PowerShell.Core\Get-Item", $behaviorProps, $MyInvocation, ""))
+
         return @{"Value" = "cmd.exe"}
     }
     
