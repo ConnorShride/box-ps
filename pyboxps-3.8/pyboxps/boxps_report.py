@@ -63,6 +63,7 @@ class SubBehaviors(Enum):
     import_dotnet_binary = 20
     init_code_block = 21
     new_task = 22
+    map_drive = 23
     
 ####################################################################################################
 class Action:
