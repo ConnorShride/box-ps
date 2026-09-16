@@ -195,7 +195,8 @@ class BoxPS:
                 env_vars=None,
                 timeout=None,
                 report_only=False,
-                report_file=None):
+                report_file=None,
+                files_exist=False):
         """
         Sandbox powershell to produce a BoxPSReport and other script artifacts if desired. Unlimits
         any soft memory limits on processes during the sanboxing, then resets them.
@@ -238,7 +239,8 @@ class BoxPS:
         @param timeout (int) timeout for script sandboxing in seconds
         @param report_only (bool) whether or not to return the path to a full analysis directory
         @param report_file (str) path to place the outputted JSON report
-
+        @param files_exist (boolean) If true run box-ps with the -FilesExist flag to fake that all files exist.
+        
         @return (BoxPSReport) report_only is given, otherwise a tuple where the first element is the
         report and the second is the path to the full analysis directory
         """
@@ -307,6 +309,9 @@ class BoxPS:
 
             if timeout is not None:
                 cmd += ["-Timeout", str(timeout)]
+
+            if files_exist:
+                cmd += ["-FilesExist", str(timeout)]
 
             limit = self._unset_soft_vmem_limit()
 
