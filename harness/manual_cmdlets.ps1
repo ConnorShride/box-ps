@@ -1326,6 +1326,11 @@ function Test-Path {
     }
     RecordAction $([Action]::new($behaviors, $subBehaviors, "Test-Path", $behaviorProps, $MyInvocation, ""))
 
+    # Running with --FilesExist (files always exist) flag?
+    if ($__FilesExist) {
+        return $true
+    }
+    
     # TODO: Need command line argument to make this return true or
     #  false. For now return false until several calls have been made
     # and then return true. This is to handle while loops checking to

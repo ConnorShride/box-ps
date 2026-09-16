@@ -21,7 +21,8 @@ param (
     [parameter(ParameterSetName="IncludeArtifacts")]
     [string] $OutDir,
     [switch] $NoCleanUp,
-    [string] $Timeout
+    [string] $Timeout,
+    [switch] $FilesExist
 )
 
 # can't give both InFile and script content
@@ -663,8 +664,13 @@ else {
     $harness = (BuildHarness).Replace("<CODE_DIR>", $PSScriptRoot).Replace("<PID>", $PID)
     $ScriptContent = PreProcessScript $ScriptContent $PID
 
+    # Set a flag to always say a file exists. Used on stubbed Test-Path.
     # attach the harness to the script
-    $harnessedScript = $harness + "`r`n`r`n" + $ScriptContent
+    $tmpBool = '$false'
+    if ($FilesExist) {
+        $tmpBool = '$true'
+    }
+    $harnessedScript = $harness + "`r`n`r`n" + '$__FilesExist = ' + $tmpBool + "`r`n" + $ScriptContent
     $harnessedScript | Out-File -FilePath $harnessedScriptPath
 
     Write-Host " done"
