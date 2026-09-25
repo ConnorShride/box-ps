@@ -61,20 +61,20 @@ function CmdletParamsCode {
         if ($helpParam.parameterSetName -ne $null -and
             $helpParam.parameterSetName -ne "(All)" -and
             $helpParam.parameterSetName -ne "Default") {
-		$setNames = $helpParam.parameterSetName.Split(",")
+                $setNames = $helpParam.parameterSetName.Split(",")
 
-		foreach ($setName in $setNames) {
+                foreach ($setName in $setNames) {
 
                     $code += "`t[Parameter(ParameterSetName=`"$($setName.Trim())`""
 
                     # parameters are mandatory with respect to the individual sets they're in,
                     # and if a parameter is in multiple sets and mandatory, it's mandatory for all sets
                     if ($helpParam.required -eq "true") {
-			$code += ",Mandatory=`$true"
+                        $code += ",Mandatory=`$true"
                     }
 
                     $code += ")]`r`n"
-		}
+                }
             }
 
         $paramOptLine = "`t[Parameter("
@@ -104,12 +104,16 @@ function CmdletParamsCode {
             $code = $code.TrimEnd(",") + ")]`r`n"
         }
 
-	# Byte encoding not supported in Linux PWSH, so replace
-	# Encoding type with string.
-	$typeName = $helpParam.type.name
-	if ($typeName -eq "Encoding") {
-	    $typeName = "string"
-	}
+        # Byte encoding not supported in Linux PWSH, so replace
+        # Encoding type with string.
+        $typeName = $helpParam.type.name
+        # Handle changes in the PWSH help system :( .
+        if (-not $typeName) {
+            $typeName = $helpParam.parameterValue
+        }
+        if ($typeName -eq "Encoding") {
+            $typeName = "string"
+        }
         $code += "`t[$($typeName)] `$$($helpParam.Name),`r`n"
 
         $doneParams += $helpParam.Name
@@ -465,17 +469,17 @@ function GetFunctionSignatures {
 
     # get the list of signatures
     if ($Static) {
-	$signatures = $(Microsoft.PowerShell.Utility\Invoke-Expression $FuncName).OverloadDefinitions
+        $signatures = $(Microsoft.PowerShell.Utility\Invoke-Expression $FuncName).OverloadDefinitions
     }
     elseif ($InstanceMember) {
         $guineaPig = Microsoft.PowerShell.Utility\New-Object $ParentClass
         $signatures = $guineaPig | Microsoft.PowerShell.Utility\Get-Member | Microsoft.PowerShell.Core\Where-Object Name -eq $FuncName
         $signatures = $signatures.Definition.Split("),") | Microsoft.PowerShell.Core\ForEach-Object {
-	    if (!$_.EndsWith(")")) {
-		$_ += ")"
-	    }
-	    $_.Trim()
-	}
+            if (!$_.EndsWith(")")) {
+                $_ += ")"
+            }
+            $_.Trim()
+        }
     }
 
     $sigAndArgs = @{}
@@ -550,7 +554,7 @@ function ClassFunctionOverrides {
         if (!$Exclude.Contains($signature)) {
 
             $sigAndArgs = [Tuple]::Create($signature, $sigArgs)
-	    
+            
             # if the signature does not take an argument that we listed in the config file, then we aren't supporting it
             $BehaviorPropInfo = $OverrideInfo["BehaviorPropInfo"]
             $supportedArgs = @()
@@ -561,7 +565,7 @@ function ClassFunctionOverrides {
             }
 
             $intersection = $utils.ListIntersection($sigAndArgs[1], $supportedArgs)
-	    
+            
             # this signature contains a parameter we're wanting to track as a behavior property
             if ($intersection) {
 
@@ -590,22 +594,22 @@ function ClassFunctionOverrides {
                 else {
                     $code += "`tRecordAction `$([Action]::new(`$behaviors, `$subBehaviors, `"$ParentClass`.$FuncName`", `$behaviorProps, `$PSBoundParameters, `$MyInvocation.Line, `$extraInfo))`r`n"
                 }
-		
+                
                 # if the method actually has a return value
                 if (!$signature.Contains("[void]")) {
-		    
+                    
                     # build a call to the real function to return the actual result from the override
                     if ($OverrideInfo["Flags"] -and $OverrideInfo["Flags"].Contains("call_parent")) {
-			
+                        
                         $code += "`treturn "
-			
+                        
                         if ($Static) {
                             $code += "$FuncName("
                         }
                         else {
                             $code += "([$ParentClass]`$this).$FuncName("
                         }
-			
+                        
                         # build arguments to the function
                         $args = ""
                         foreach ($arg in $sigArgs) {
@@ -622,7 +626,7 @@ function ClassFunctionOverrides {
                         $code += "`treturn `$null`r`n"
                     }
                 }
-		
+                
                 $code += "}`r`n`r`n"
             }
         }
@@ -774,7 +778,7 @@ function EnvironmentVars {
         $envVars = Microsoft.PowerShell.Management\Get-Content -Raw $inputEnvFile | ConvertFrom-Json -AsHashTable
         foreach ($envVar in $envVars.Keys) {
             if ($enVar -ne "") {
-		$varVal = ("@'`r`n" + $envVars[$envVar] + "`r`n'@")
+                $varVal = ("@'`r`n" + $envVars[$envVar] + "`r`n'@")
                 $code += "`${env:$envVar} = $varVal`r`n"
             }
         }
