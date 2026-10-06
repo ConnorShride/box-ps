@@ -387,6 +387,23 @@ class WEBSOCKET {
     }
 }
 
+# Stubbed WinHttp.WinHttpRequest COMObject class.
+class WINHTTPREQUEST {
+
+    WINHTTPREQUEST() {}
+
+    Open($method, $url) {
+        $behaviors = @("network")
+        $subBehaviors = @()
+        $behaviorProps = @{
+            "uri" = $url
+            "method" = $method
+        }
+        RecordAction $([Action]::new($behaviors, $subBehaviors, "WinHttp.WinHttpRequest.Open", $behaviorProps, $MyInvocation, ""))
+    }
+    
+}
+
 function New-Object {
     param(
         [Parameter(ParameterSetName="Net",Position=1)]
@@ -432,6 +449,7 @@ function New-Object {
     # Linux PWSH does not have WindowsInstaller.Installer, so return a
     # stubbed object in that case.
     $className = ($behaviorProps["object"].ToLower() -replace "^system.")
+    Write-Host $className
     if ($className -eq "windowsinstaller.installer") {
 
         # Stubbed class.
@@ -521,8 +539,15 @@ function New-Object {
     # Track WebSockets.
     if ($className -eq "net.websockets.clientwebsocket") {
         
-        # Return stubbed shell object.
+        # Return stubbed object.
         return ([WEBSOCKET]::new())
+    }
+
+    # Track WinHttp.WinHttpRequest objects.
+    if ($className -like "winhttp.winhttprequest*") {
+        
+        # Return stubbed object.
+        return ([WINHTTPREQUEST]::new())
     }
     
     if ($(GetOverridedClasses).Contains($className)) {
