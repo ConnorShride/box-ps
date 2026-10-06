@@ -401,7 +401,8 @@ class WINHTTPREQUEST {
         }
         RecordAction $([Action]::new($behaviors, $subBehaviors, "WinHttp.WinHttpRequest.Open", $behaviorProps, $MyInvocation, ""))
     }
-    
+
+    Send() {}
 }
 
 function New-Object {
