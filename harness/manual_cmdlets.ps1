@@ -1152,6 +1152,27 @@ function VirtualAlloc {
     RecordAction $([Action]::new($behaviors, $subBehaviors, "VirtualAlloc", $behaviorProps, $MyInvocation, ""))
 }
 
+function CreateThread {
+
+    param(
+        [Parameter(
+             Mandatory=$True,
+             ValueFromRemainingArguments=$true,
+             Position = 1
+         )][string[]]
+        $listArgs
+    )
+
+    # record the VirtualAlloc command.
+    $behaviors = @("process")
+    $subBehaviors = @()
+    $behaviorProps = @{
+        "args" = "" + $listArgs
+    }
+    
+    RecordAction $([Action]::new($behaviors, $subBehaviors, "CreateThread", $behaviorProps, $MyInvocation, ""))
+}
+
 function Invoke-WebRequest() {
 
     # Pull out the URL being hit from the arguments.
