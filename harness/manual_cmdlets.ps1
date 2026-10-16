@@ -405,6 +405,34 @@ class WINHTTPREQUEST {
     Send() {}
 }
 
+# Stubbed msxml2.serverxmlhttp COMObject class.
+class SERVERXMLHTTP {
+
+    SERVERXMLHTTP() {}
+
+    Open($method, $url, $flag) {
+        $behaviors = @("network")
+        $subBehaviors = @()
+        $behaviorProps = @{
+            "uri" = $url
+            "method" = $method
+        }
+        RecordAction $([Action]::new($behaviors, $subBehaviors, "MSXML2.ServerXMLHTTP.Open", $behaviorProps, $MyInvocation, ""))
+    }
+
+    setRequestHeader($field, $value) {
+        $behaviors = @("network")
+        $subBehaviors = @()
+        $behaviorProps = @{
+            "field" = $field
+            "value" = $value
+        }
+        RecordAction $([Action]::new($behaviors, $subBehaviors, "MSXML2.ServerXMLHTTP.setRequestHeader", $behaviorProps, $MyInvocation, ""))
+    }
+    
+    Send() {}
+}
+
 function New-Object {
     param(
         [Parameter(ParameterSetName="Net",Position=1)]
@@ -450,7 +478,7 @@ function New-Object {
     # Linux PWSH does not have WindowsInstaller.Installer, so return a
     # stubbed object in that case.
     $className = ($behaviorProps["object"].ToLower() -replace "^system.")
-    Write-Host $className
+    #Write-Host $className
     if ($className -eq "windowsinstaller.installer") {
 
         # Stubbed class.
@@ -549,6 +577,13 @@ function New-Object {
         
         # Return stubbed object.
         return ([WINHTTPREQUEST]::new())
+    }
+
+    # Track msxml2.serverxmlhttp objects.
+    if ($className -like "msxml2.serverxmlhttp*") {
+        
+        # Return stubbed object.
+        return ([SERVERXMLHTTP]::new())
     }
     
     if ($(GetOverridedClasses).Contains($className)) {

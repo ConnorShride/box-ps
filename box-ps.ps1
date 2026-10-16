@@ -112,7 +112,9 @@ class Report {
             if (!$table[$key1].ContainsKey($key2)) {
                 $table[$key1][$key2] = @()
             }
-            $table[$key1][$key2] += $obj
+            if (-not $table[$key1][$key2].contains($obj)) {
+                $table[$key1][$key2] += $obj
+            }
         }
 
         $envReport = @{}
