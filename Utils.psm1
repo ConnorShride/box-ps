@@ -192,7 +192,8 @@ function RewriteStringConcats {
         (([regex]::Matches($code, "Insert")).Count -gt 100)) {
             return $code
         }
-    
+
+    # Replace string concats with their final value.
     $pattern = "'([^']*)' *\+ *'([^']*)'"
     $replacement = '''$1$2'''
     $old_r = ""
@@ -200,6 +201,17 @@ function RewriteStringConcats {
     while ($old_r -ne $r) {
         $old_r = $r
         $r = $r -replace $pattern, $replacement
+    }
+
+    # This can mess up .Replace() of the '+' character. Fix that.
+    # .Replace('-', )
+    $rep_pat = "\.Replace\( *'([^']+)' *, *\)"
+    $rep_rep = '.Replace(''$1'', ''+'')'
+    $r -match $rep_pat
+    $old_r = ""
+    while ($old_r -ne $r) {
+        $old_r = $r
+        $r = $r -replace $rep_pat, $rep_rep
     }
     $r
 }
