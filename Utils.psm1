@@ -207,7 +207,6 @@ function RewriteStringConcats {
     # .Replace('-', )
     $rep_pat = "\.Replace\( *'([^']+)' *, *\)"
     $rep_rep = '.Replace(''$1'', ''+'')'
-    $r -match $rep_pat
     $old_r = ""
     while ($old_r -ne $r) {
         $old_r = $r
